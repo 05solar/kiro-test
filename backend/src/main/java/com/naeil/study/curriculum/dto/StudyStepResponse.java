@@ -1,6 +1,7 @@
 package com.naeil.study.curriculum.dto;
 
 import com.naeil.study.curriculum.entity.PriorityReason;
+import com.naeil.study.curriculum.entity.SkipReason;
 import com.naeil.study.curriculum.entity.StudyStep;
 import com.naeil.study.curriculum.entity.StudyStepStatus;
 import com.naeil.study.curriculum.entity.StudyStepType;
@@ -27,7 +28,9 @@ import java.util.UUID;
  *
  * @param topicId    {@code REVIEW} 단계에는 없다
  * @param importance {@code REVIEW} 단계에는 없다
+ * @param allocatedMinutes   재조정으로 줄어들 수 있고, {@code SKIPPED} 면 0이다
  * @param actualStudyMinutes 완료 전에는 없다
+ * @param skipReason 시간 부족으로 제외된 경우에만 있다. 그 밖에는 null
  * @param startedAt  시작 전에는 없다
  * @param completedAt 완료 전에는 없다
  */
@@ -44,6 +47,7 @@ public record StudyStepResponse(
         boolean mandatory,
         List<PriorityReason> priorityReasons,
         StudyStepStatus status,
+        SkipReason skipReason,
         LocalDateTime startedAt,
         LocalDateTime completedAt
 ) {
@@ -63,6 +67,7 @@ public record StudyStepResponse(
                 step.isMandatory(),
                 step.getPriorityReasons(),
                 step.getStatus(),
+                step.getSkipReason(),
                 step.getStartedAt(),
                 step.getCompletedAt()
         );

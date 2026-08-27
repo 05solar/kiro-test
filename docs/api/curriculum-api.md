@@ -132,18 +132,19 @@ GET /api/sessions/7K2M9QXF/curriculum
 
 ### 진행 상태를 함께 담는다
 
-학습이 진행되면 각 단계에 진행 정보가 채워진다.
+학습이 진행되면 각 단계에 진행 정보가 채워진다. 동적 재조정(9단계)으로 줄어든 배정 시간이나
+시간 부족으로 제외된 단계도 이 응답에 그대로 반영된다.
 
 ```json
 {
-  "progress": { "completedSteps": 1, "totalSteps": 3, "percentage": 33 },
+  "progress": { "completedSteps": 1, "skippedSteps": 1, "totalSteps": 3, "percentage": 67 },
   "steps": [
-    { "order": 1, "status": "COMPLETED",   "allocatedMinutes": 50, "actualStudyMinutes": 38,
-      "startedAt": "2026-08-27T20:09:56", "completedAt": "2026-08-27T20:47:06" },
-    { "order": 2, "status": "IN_PROGRESS", "allocatedMinutes": 45, "actualStudyMinutes": null,
-      "startedAt": "2026-08-27T20:48:10", "completedAt": null },
-    { "order": 3, "status": "PENDING",     "allocatedMinutes": 43, "actualStudyMinutes": null,
-      "startedAt": null, "completedAt": null }
+    { "order": 1, "status": "COMPLETED",   "allocatedMinutes": 50, "actualStudyMinutes": 65,
+      "skipReason": null, "startedAt": "2026-08-27T20:09:56", "completedAt": "2026-08-27T21:14:06" },
+    { "order": 2, "status": "PENDING",     "allocatedMinutes": 30, "actualStudyMinutes": null,
+      "skipReason": null, "startedAt": null, "completedAt": null },
+    { "order": 3, "status": "SKIPPED",     "allocatedMinutes": 0,  "actualStudyMinutes": null,
+      "skipReason": "TIME_CONSTRAINT", "startedAt": null, "completedAt": null }
   ]
 }
 ```
@@ -155,7 +156,12 @@ GET /api/sessions/7K2M9QXF/curriculum
 `progress`는 DB에 저장하지 않고 단계 상태에서 매번 센다. 복습 단계도 전체에 포함하며,
 `percentage`는 반올림한 정수다. 진행률을 따로 저장하면 단계 상태와 어긋날 수 있다.
 
-단계를 시작하고 완료하는 방법은 [study-step-api.md](study-step-api.md)를 참고한다.
+**`SKIPPED`도 처리된 단계로 센다.** 시간 부족으로 제외된 단계는 더 이상 수행 대상이 아니므로
+진행 흐름상 완료한 것과 같이 지나간 단계다. 그래서 진행률은 `(완료 + 제외) / 전체`이며,
+화면에서 둘을 구분할 수 있도록 `completedSteps`와 `skippedSteps`를 나눠 담는다.
+위 예는 완료 1 + 제외 1 = 처리 2 / 전체 3 → 67%다.
+
+단계를 시작·완료하는 방법과 동적 재조정 규칙은 [study-step-api.md](study-step-api.md)를 참고한다.
 
 ---
 
@@ -382,9 +388,12 @@ CREATED → IN_PROGRESS → COMPLETED
 
 ```
 PENDING → IN_PROGRESS → COMPLETED
-                      ↘ SKIPPED
+   │
+   └──(다른 단계 완료 시 남은 시간 부족)──> SKIPPED
 ```
 
 계획을 만든 직후에는 모두 `PENDING`이며 `startedAt` / `completedAt` / `actualStudyMinutes`가 비어 있다.
 상태를 바꾸는 방법은 [study-step-api.md](study-step-api.md)를 참고한다.
-`SKIPPED`는 아직 만들지 않는다.
+`SKIPPED`는 9단계 동적 재조정에서 남은 시간이 부족해 자동으로 제외된 단계다.
+`allocatedMinutes`가 0이 되고 `skipReason`이 `TIME_CONSTRAINT`로 채워진다. 사용자가 직접 건너뛴
+것이 아니다.

@@ -220,6 +220,22 @@ public class StudySession {
     }
 
     /**
+     * STEP 완료 후 재계산한 남은 학습 시간을 반영한다.
+     *
+     * <p>{@code remainingStudyMinutes} 를 실제 학습 기록만큼 단순히 빼지 않는다. 사용자가 학습
+     * 사이에 쉰 시간, 브라우저를 닫아 둔 시간까지 실제 학습시간에 들어가기 때문이다. 대신
+     * "사용자 예산에서 실제로 쓴 시간을 뺀 값"과 "지금부터 시험까지 남은 시간" 중 작은 값을
+     * 서비스가 다시 계산해 그 결과를 여기에 담는다. 재계산된 값이 곧 현재 남은 시간이다.
+     *
+     * <p>{@link #availableStudyMinutes} 는 건드리지 않는다. 그 값은 진행 중 불변인 기준값이다.
+     * 음수는 저장하지 않는다.
+     */
+    public void recalculateRemainingStudyMinutes(int minutes, LocalDateTime now) {
+        this.remainingStudyMinutes = Math.max(0, minutes);
+        this.updatedAt = now;
+    }
+
+    /**
      * AI 분석을 시작한다.
      *
      * <p>분석은 언제든 다시 요청할 수 있으므로 어느 상태에서든 넘어간다.

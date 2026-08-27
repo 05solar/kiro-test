@@ -6,6 +6,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.naeil.study.curriculum.entity.Curriculum;
 import com.naeil.study.curriculum.entity.CurriculumStatus;
+import com.naeil.study.curriculum.entity.SkipReason;
 import com.naeil.study.curriculum.entity.StudyStep;
 import com.naeil.study.curriculum.entity.StudyStepStatus;
 import com.naeil.study.curriculum.exception.AnotherStepInProgressException;
@@ -15,6 +16,7 @@ import com.naeil.study.curriculum.exception.InvalidStudyStepOrderException;
 import com.naeil.study.curriculum.exception.StudyStepAlreadyCompletedException;
 import com.naeil.study.curriculum.exception.StudyStepNotFoundException;
 import com.naeil.study.curriculum.exception.StudyStepNotStartedException;
+import com.naeil.study.curriculum.planner.CurriculumPlanner;
 import com.naeil.study.curriculum.repository.CurriculumRepository;
 import com.naeil.study.curriculum.repository.StudyStepRepository;
 import com.naeil.study.curriculum.service.StudyStepService.CompletionResult;
@@ -98,8 +100,10 @@ class StudyStepServiceTest {
     @BeforeEach
     void setUp() throws Exception {
         clock = new MovableClock(START);
+        CurriculumReallocationService reallocationService = new CurriculumReallocationService(
+                new StudyTimeCalculator(), new CurriculumPlanner(5, 10, 45));
         studyStepService = new StudyStepService(
-                curriculumRepository, studyStepRepository, sessionService, clock);
+                curriculumRepository, studyStepRepository, sessionService, reallocationService, clock);
 
         session = StudySession.create(SESSION_CODE, START.minusHours(3), 30L);
         setId(StudySession.class, session, SESSION_ID);
@@ -141,6 +145,12 @@ class StudyStepServiceTest {
     private void givenFirst(StudyStepStatus status, StudyStep step) {
         given(studyStepRepository.findFirstByCurriculumIdAndStatusOrderByStepOrderAsc(
                 CURRICULUM_ID, status)).willReturn(Optional.ofNullable(step));
+    }
+
+    /** 완료 후 재조정이 읽는 전체 단계 목록을 준비한다. */
+    private void givenAllSteps(StudyStep... steps) {
+        given(studyStepRepository.findAllByCurriculumIdOrderByStepOrderAsc(CURRICULUM_ID))
+                .willReturn(List.of(steps));
     }
 
     /** 첫 단계를 실제로 시작한 상태로 만든다. */
@@ -287,7 +297,7 @@ class StudyStepServiceTest {
             givenSession();
             givenCurriculum();
             givenStep(step);
-            givenFirst(StudyStepStatus.PENDING, next);
+            givenAllSteps(step, next);
             clock.moveTo(START.plusMinutes(37));
 
             CompletionResult result = studyStepService.complete(SESSION_CODE, step.getId());
@@ -307,7 +317,7 @@ class StudyStepServiceTest {
             givenSession();
             givenCurriculum();
             givenStep(step);
-            givenFirst(StudyStepStatus.PENDING, null);
+            givenAllSteps(step);
             clock.moveTo(START.plusSeconds(25));
 
             studyStepService.complete(SESSION_CODE, step.getId());
@@ -322,7 +332,7 @@ class StudyStepServiceTest {
             givenSession();
             givenCurriculum();
             givenStep(step);
-            givenFirst(StudyStepStatus.PENDING, null);
+            givenAllSteps(step);
             clock.moveTo(START.plusMinutes(62));
 
             studyStepService.complete(SESSION_CODE, step.getId());
@@ -339,7 +349,7 @@ class StudyStepServiceTest {
             givenSession();
             givenCurriculum();
             givenStep(step);
-            givenFirst(StudyStepStatus.PENDING, next);
+            givenAllSteps(step, next);
             clock.moveTo(START.plusMinutes(30));
 
             studyStepService.complete(SESSION_CODE, step.getId());
@@ -368,7 +378,7 @@ class StudyStepServiceTest {
             givenSession();
             givenCurriculum();
             givenStep(step);
-            givenFirst(StudyStepStatus.PENDING, next);
+            givenAllSteps(step, next);
             clock.moveTo(START.plusMinutes(30));
             studyStepService.complete(SESSION_CODE, step.getId());
 
@@ -387,7 +397,7 @@ class StudyStepServiceTest {
             givenSession();
             givenCurriculum();
             givenStep(step);
-            givenFirst(StudyStepStatus.PENDING, null);
+            givenAllSteps(step);
             clock.moveTo(START.plusMinutes(28));
 
             CompletionResult result = studyStepService.complete(SESSION_CODE, step.getId());
@@ -399,19 +409,44 @@ class StudyStepServiceTest {
         }
 
         @Test
-        @DisplayName("완료해도 남은 학습 시간을 차감하지 않는다")
-        void doesNotDeductRemainingStudyMinutes() throws Exception {
+        @DisplayName("완료하면 남은 학습 시간을 재계산하지만 전체 학습 가능 시간은 그대로 둔다")
+        void recalculatesRemainingButKeepsAvailable() throws Exception {
             StudyStep step = startedStep(1, "프로세스와 스레드", 40);
             givenSession();
             givenCurriculum();
             givenStep(step);
-            givenFirst(StudyStepStatus.PENDING, null);
+            givenAllSteps(step);
             clock.moveTo(START.plusMinutes(50));
 
-            studyStepService.complete(SESSION_CODE, step.getId());
+            CompletionResult result = studyStepService.complete(SESSION_CODE, step.getId());
 
-            assertThat(session.getRemainingStudyMinutes()).isEqualTo(180);
+            // 예산 기준 180 - 50 = 130, 시험까지 190분 → 130
+            assertThat(result.remainingStudyMinutes()).isEqualTo(130);
+            assertThat(session.getRemainingStudyMinutes()).isEqualTo(130);
             assertThat(session.getAvailableStudyMinutes()).isEqualTo(180);
+        }
+
+        @Test
+        @DisplayName("남은 시간이 없으면 남은 단계를 SKIPPED 하고 다음 단계가 없다")
+        void skipsPendingWhenNoTimeLeft() throws Exception {
+            StudyStep step = startedStep(1, "프로세스와 스레드", 40);
+            StudyStep next = step(2, "CPU 스케줄링", 35);
+            givenSession();
+            givenCurriculum();
+            givenStep(step);
+            givenAllSteps(step, next);
+            // 시험 시각을 넘겨 완료하면 시험 기준 남은 시간이 0이 된다
+            clock.moveTo(session.getExamAt().plusMinutes(5));
+
+            CompletionResult result = studyStepService.complete(SESSION_CODE, step.getId());
+
+            assertThat(result.remainingStudyMinutes()).isZero();
+            assertThat(next.getStatus()).isEqualTo(StudyStepStatus.SKIPPED);
+            assertThat(next.getAllocatedMinutes()).isZero();
+            assertThat(next.getSkipReason()).isEqualTo(SkipReason.TIME_CONSTRAINT);
+            assertThat(result.nextStep()).isEmpty();
+            assertThat(result.curriculumCompleted()).isTrue();
+            assertThat(result.reallocation().changed()).isTrue();
         }
 
         @Test
@@ -421,7 +456,7 @@ class StudyStepServiceTest {
             givenSession();
             givenCurriculum();
             givenStep(step);
-            givenFirst(StudyStepStatus.PENDING, null);
+            givenAllSteps(step);
             clock.moveTo(session.getExamAt().plusMinutes(5));
 
             studyStepService.complete(SESSION_CODE, step.getId());

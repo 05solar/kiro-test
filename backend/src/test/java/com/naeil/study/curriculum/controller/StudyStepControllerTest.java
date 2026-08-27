@@ -18,6 +18,9 @@ import com.naeil.study.curriculum.exception.InvalidStudyStepOrderException;
 import com.naeil.study.curriculum.exception.StudyStepAlreadyCompletedException;
 import com.naeil.study.curriculum.exception.StudyStepNotFoundException;
 import com.naeil.study.curriculum.exception.StudyStepNotStartedException;
+import com.naeil.study.curriculum.entity.StudyStepStatus;
+import com.naeil.study.curriculum.service.CurriculumReallocationService.ReallocationOutcome;
+import com.naeil.study.curriculum.service.CurriculumReallocationService.StepChange;
 import com.naeil.study.curriculum.service.StudyStepService;
 import com.naeil.study.curriculum.service.StudyStepService.CompletionResult;
 import com.naeil.study.session.entity.StudySession;
@@ -102,8 +105,10 @@ class StudyStepControllerTest {
         completed.start(START);
         completed.complete(START.plusMinutes(52));
         StudyStep next = step(3, "교착상태", 35, NEXT_STEP_ID);
+        ReallocationOutcome reallocation = new ReallocationOutcome(95, true, List.of(
+                new StepChange(NEXT_STEP_ID, 40, 30, StudyStepStatus.PENDING)));
         given(studyStepService.complete(anyString(), any(UUID.class)))
-                .willReturn(new CompletionResult(completed, Optional.of(next), false));
+                .willReturn(new CompletionResult(completed, Optional.of(next), false, 95, reallocation));
 
         mockMvc.perform(post(completeUrl(STEP_ID)))
                 .andExpect(status().isOk())
@@ -112,6 +117,12 @@ class StudyStepControllerTest {
                 .andExpect(jsonPath("$.completedStep.allocatedMinutes").value(40))
                 .andExpect(jsonPath("$.completedStep.actualStudyMinutes").value(52))
                 .andExpect(jsonPath("$.completedStep.completedAt").exists())
+                .andExpect(jsonPath("$.time.remainingStudyMinutes").value(95))
+                .andExpect(jsonPath("$.reallocation.changed").value(true))
+                .andExpect(jsonPath("$.reallocation.steps[0].stepId").value(NEXT_STEP_ID.toString()))
+                .andExpect(jsonPath("$.reallocation.steps[0].previousAllocatedMinutes").value(40))
+                .andExpect(jsonPath("$.reallocation.steps[0].allocatedMinutes").value(30))
+                .andExpect(jsonPath("$.reallocation.steps[0].status").value("PENDING"))
                 .andExpect(jsonPath("$.nextStep.stepId").value(NEXT_STEP_ID.toString()))
                 .andExpect(jsonPath("$.nextStep.stepOrder").value(3))
                 .andExpect(jsonPath("$.nextStep.status").value("PENDING"))
@@ -124,11 +135,14 @@ class StudyStepControllerTest {
         StudyStep completed = step(5, "핵심 개념 최종 복습", 30, STEP_ID);
         completed.start(START);
         completed.complete(START.plusMinutes(30));
+        ReallocationOutcome reallocation = new ReallocationOutcome(0, false, List.of());
         given(studyStepService.complete(anyString(), any(UUID.class)))
-                .willReturn(new CompletionResult(completed, Optional.empty(), true));
+                .willReturn(new CompletionResult(completed, Optional.empty(), true, 0, reallocation));
 
         mockMvc.perform(post(completeUrl(STEP_ID)))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.time.remainingStudyMinutes").value(0))
+                .andExpect(jsonPath("$.reallocation.changed").value(false))
                 .andExpect(jsonPath("$.nextStep").value(nullValue()))
                 .andExpect(jsonPath("$.curriculumCompleted").value(true));
     }

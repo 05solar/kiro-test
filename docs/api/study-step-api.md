@@ -10,12 +10,14 @@
 
 | 다룬다 | 다루지 않는다 |
 | --- | --- |
-| 단계 시작 / 완료 | 남은 학습 시간 재계산 |
-| 실제 학습시간 기록 | 남은 단계의 배정 시간 재조정 |
-| 진행 중 단계 추적 | 일시정지 / 건너뛰기 |
-| 계획 완료 판정 | 세션 최종 완료 판정 |
+| 단계 시작 / 완료 | 사용자 수동 건너뛰기 |
+| 실제 학습시간 기록 | 일시정지 / 자리비움 감지 |
+| 완료 시 남은 학습 시간 재계산 (9단계) | 세션 최종 완료 판정 |
+| 남은 단계 배정 시간 동적 재조정 (9단계) | 재조정 이력 저장 |
+| 시간 부족 단계 자동 제외 (`SKIPPED`) | AI 재계획 (재조정은 규칙 기반) |
 
-오른쪽 항목은 이후 단계에서 구현한다. 이 API는 **기록을 정확히 남기는 것**까지가 책임이다.
+완료 시 남은 시간 재계산과 재조정은 9단계에서 더해졌다. 자세한 규칙은 아래
+[완료 시 동적 재조정](#완료-시-동적-재조정)을 참고한다.
 
 ---
 
@@ -39,6 +41,8 @@ StudyStep.actualStudyMinutes       사용자가 실제로 쓴 시간         52�
 
 ```
 PENDING ──start──> IN_PROGRESS ──complete──> COMPLETED
+   │
+   └──(다른 단계 완료 시 남은 시간 부족)──> SKIPPED
 ```
 
 허용하지 않는 전이
@@ -47,13 +51,15 @@ PENDING ──start──> IN_PROGRESS ──complete──> COMPLETED
 | --- | --- |
 | `PENDING` → complete | 409 `STUDY_STEP_NOT_STARTED` |
 | `COMPLETED` → start | 409 `STUDY_STEP_ALREADY_COMPLETED` |
-| `COMPLETED` → complete | **200** — 기존 결과를 그대로 반환 |
+| `COMPLETED` → complete | **200** — 기존 결과를 그대로 반환 (재조정도 다시 하지 않는다) |
 | `IN_PROGRESS` → start | **200** — 기존 상태를 그대로 반환 |
+| `SKIPPED` → start | 409 `INVALID_STUDY_STEP_ORDER` (제외된 단계는 시작할 수 없다) |
 
-마지막 두 줄은 오류가 아니다. 버튼을 두 번 누르거나 요청이 재전송된 경우이며,
-여기서 값을 다시 계산하면 시작 시각이 덮이거나 학습시간이 요청할 때마다 늘어난다.
+`COMPLETED`·`IN_PROGRESS` 재요청은 오류가 아니다. 버튼을 두 번 누르거나 요청이 재전송된
+경우이며, 여기서 값을 다시 계산하면 시작 시각이 덮이거나 학습시간이 요청할 때마다 늘어난다.
 
-`SKIPPED`는 열거형에 있지만 이 단계에서 만들지 않는다.
+`SKIPPED`는 **다른 단계를 완료할 때** 남은 시간이 부족해 자동으로 제외된 상태다(9단계).
+사용자가 직접 건너뛴 것이 아니며, 그 사실을 `skipReason = TIME_CONSTRAINT` 로 남긴다.
 
 ---
 
@@ -127,9 +133,20 @@ PENDING ──start──> IN_PROGRESS ──complete──> COMPLETED
     "title": "프로세스와 스레드",
     "status": "COMPLETED",
     "allocatedMinutes": 50,
-    "actualStudyMinutes": 38,
+    "actualStudyMinutes": 65,
     "startedAt": "2026-08-27T20:09:56.405325",
-    "completedAt": "2026-08-27T20:47:06.239489"
+    "completedAt": "2026-08-27T21:14:06.239489"
+  },
+  "time": {
+    "remainingStudyMinutes": 95
+  },
+  "reallocation": {
+    "changed": true,
+    "steps": [
+      { "stepId": "8cf3c63f-...", "previousAllocatedMinutes": 50, "allocatedMinutes": 40, "status": "PENDING" },
+      { "stepId": "3515a653-...", "previousAllocatedMinutes": 40, "allocatedMinutes": 35, "status": "PENDING" },
+      { "stepId": "b0b2e0f1-...", "previousAllocatedMinutes": 30, "allocatedMinutes": 0,  "status": "SKIPPED" }
+    ]
   },
   "nextStep": {
     "stepId": "8cf3c63f-8395-4565-8513-d55548986c0f",
@@ -137,7 +154,7 @@ PENDING ──start──> IN_PROGRESS ──complete──> COMPLETED
     "type": "STUDY",
     "title": "CPU 스케줄링",
     "status": "PENDING",
-    "allocatedMinutes": 45,
+    "allocatedMinutes": 40,
     "actualStudyMinutes": null,
     "startedAt": null,
     "completedAt": null
@@ -146,30 +163,44 @@ PENDING ──start──> IN_PROGRESS ──complete──> COMPLETED
 }
 ```
 
-`nextStep`은 **알려주기만 한다. 자동으로 시작하지 않는다.** 완료 버튼을 누른 시각과
-실제로 다음 공부를 시작하는 시각은 다르고, 그 차이가 실제 학습시간에 그대로 들어가기 때문이다.
+| 필드 | 의미 |
+| --- | --- |
+| `time.remainingStudyMinutes` | 완료 후 재계산한 남은 학습 시간 |
+| `reallocation.changed` | 남은 단계의 배정 시간·상태가 하나라도 바뀌었으면 `true` |
+| `reallocation.steps` | 재조정 대상이던 `PENDING` 단계들. `previous`/현재 값으로 "50분 → 40분", "제외"를 화면에 보여줄 수 있다 |
 
-### 마지막 단계를 완료하면
+`nextStep`은 **알려주기만 한다. 자동으로 시작하지 않는다.** 완료 버튼을 누른 시각과 실제로
+다음 공부를 시작하는 시각은 다르고, 그 차이가 실제 학습시간에 그대로 들어가기 때문이다.
+**재조정을 먼저 하고 그다음에 `nextStep`을 찾는다.** 순서가 바뀌면 방금 제외된 단계를 다음
+단계로 잘못 알려 줄 수 있다.
+
+### 마지막 단계를 완료하면 / 남은 단계가 모두 제외되면
 
 ```json
 {
   "completedStep": { "...": "..." },
+  "time": { "remainingStudyMinutes": 0 },
+  "reallocation": { "changed": true, "steps": [ "..." ] },
   "nextStep": null,
   "curriculumCompleted": true
 }
 ```
 
-`Curriculum.status`가 `COMPLETED`가 된다.
-**`StudySession.status`는 `IN_PROGRESS`로 남는다.** 이후 퀴즈와 최종 복습이 남아 있기 때문이다.
+수행 가능한 `PENDING` 단계가 없으면 `Curriculum.status`가 `COMPLETED`가 된다.
+마지막 단계를 완료한 경우뿐 아니라, 남은 시간이 부족해 남은 단계가 모두 `SKIPPED`된 경우도
+포함한다. **`StudySession.status`는 `IN_PROGRESS`로 남는다.** 이후 퀴즈와 최종 복습이 남아 있기 때문이다.
 
 ### 함께 바뀌는 것
 
 | 대상 | 변화 |
 | --- | --- |
 | `StudySession.currentStepOrder` | **`null`** — 진행 중인 단계가 없어졌다 |
-| `Curriculum.status` | 남은 `PENDING`이 없으면 `COMPLETED` |
-| `StudySession.remainingStudyMinutes` | **바뀌지 않는다** |
-| 남은 단계의 `allocatedMinutes` | **바뀌지 않는다** |
+| `StudySession.remainingStudyMinutes` | **재계산된 값으로 갱신** (아래 계산식 참고) |
+| 남은 `PENDING` 단계의 `allocatedMinutes` | 남은 시간에 맞춰 **재배분**. 최소 시간도 못 맞추면 `SKIPPED`(0) |
+| `Curriculum.totalAllocatedMinutes` | 현재 활성 계획의 총 배정 시간으로 갱신 |
+| `Curriculum.status` | 수행 가능한 `PENDING`이 없으면 `COMPLETED` |
+| `StudySession.availableStudyMinutes` | **바뀌지 않는다** (진행 중 불변 기준값) |
+| `COMPLETED` / `IN_PROGRESS` 단계의 시간 값 | **바뀌지 않는다** |
 
 ### 실패
 
@@ -216,8 +247,65 @@ actualStudyMinutes = 62   ← 그대로 저장
 시작 후 브라우저를 닫고 하루 뒤에 완료를 누르면 그 시간이 전부 실제 학습시간에 들어간다.
 MVP에서는 이를 허용한다. 일시정지와 자리비움 감지는 이후 기능이다.
 
-이 값을 그대로 남은 학습 시간에서 빼면 시험까지 남은 실제 시간과 어긋나므로,
-**이 API는 남은 시간을 차감하지 않는다.**
+이 값을 그대로 남은 학습 시간에서 빼면 시험까지 남은 실제 시간과 어긋난다. 그래서
+**단순 차감을 쓰지 않고 현재 시각을 함께 보고 다시 계산한다.** 아래를 참고한다.
+
+---
+
+## 완료 시 동적 재조정
+
+최초 계획은 계획일 뿐이다. 사용자는 예상보다 빨리 끝낼 수도, 오래 걸릴 수도, 중간에 쉴 수도
+있다. 그래서 단계를 완료할 때마다 남은 시간을 다시 계산하고 남은 `PENDING` 단계를 재배분한다.
+
+### 남은 학습 시간 재계산
+
+```
+remainingByUserBudget = max(0, availableStudyMinutes - 완료한 실제 학습시간 합)
+remainingUntilExam    = max(0, 지금부터 시험까지 남은 분)   // 초 단위 버림
+remainingStudyMinutes = min(remainingByUserBudget, remainingUntilExam)
+```
+
+- **예산 기준**은 사용자가 "공부할 수 있다"고 정한 전체 시간을 넘지 않게 한다.
+  시험까지 600분이 남아도 처음 300분으로 정했다면 300분을 기준으로 본다.
+- **시험 기준**은 실제로 남은 시간을 넘지 않게 한다. 학습 사이에 쉰 시간은 여기서 자연히 빠진다.
+- 시험 시각이 지났으면 `remainingUntilExam = 0` 이 되어 남은 단계가 모두 제외될 수 있다.
+
+### 남은 단계 재배분
+
+규칙 기반이다. **AI를 다시 부르지 않는다.** 최초 계획과 같은 압축 하한·복습 정책을 재사용한다.
+
+```
+1. 선택   우선순위 순으로 최소 시간을 확보할 수 있는 단계만 남긴다
+2. 배분   남은 시간을 우선순위 순으로 나눠 상한까지 늘린다
+```
+
+| 규칙 | 내용 |
+| --- | --- |
+| 대상 | `PENDING` 단계만. `COMPLETED` / `IN_PROGRESS` 는 건드리지 않는다 |
+| 제외·유지 우선순위 | `mustStudy` → 중요도 → 교수 강조 → 기출 → 취약 → `stepOrder`. 복습은 가장 먼저 줄인다 |
+| STUDY 상한 | `originalEstimatedMinutes` 를 넘지 않는다 |
+| STUDY 하한 | 최소 학습시간(5분)과 중요도별 압축 하한. 못 맞추면 `SKIPPED` |
+| 복습 단계 | 시간이 부족하면 일반 STUDY 보다 먼저 줄이고, 그래도 부족하면 `SKIPPED` |
+| 순서 | `stepOrder` 를 다시 매기지 않는다. `SKIPPED` 단계도 자리를 유지한다 |
+
+시간이 늘어난 경우(예상보다 빨리 완료)에는 같은 우선순위로 취약·강조 단계부터 시간을 돌려주되,
+`originalEstimatedMinutes` 를 넘겨 늘리지 않는다. 모든 STUDY가 원래 시간에 도달하면 남는 시간은
+복습 단계에 붙이고, 그래도 남으면 억지로 쓰지 않는다.
+
+### 보장하는 불변조건
+
+```
+remainingStudyMinutes >= 0
+PENDING 단계 배정 시간의 합 <= remainingStudyMinutes
+PENDING STUDY 배정 시간 >= 최소 학습시간, <= originalEstimatedMinutes
+SKIPPED 단계 배정 시간 = 0, skipReason = TIME_CONSTRAINT
+COMPLETED / IN_PROGRESS 단계의 시간 값은 재조정으로 바뀌지 않는다
+```
+
+### 재조정 이력
+
+별도 버전 테이블에 남기지 않는다. 현재 `PENDING` 단계의 배정 시간을 직접 고치고, 디버깅을 위해
+서버 로그에 이전·현재 배정 시간과 남은 시간만 남긴다(강의 내용 등 민감한 값은 남기지 않는다).
 
 ---
 

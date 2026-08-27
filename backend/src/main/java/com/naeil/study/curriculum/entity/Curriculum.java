@@ -125,4 +125,19 @@ public class Curriculum {
     public boolean isCompleted() {
         return status == CurriculumStatus.COMPLETED;
     }
+
+    /**
+     * 동적 재조정 뒤 현재 배정 시간의 합을 다시 기록한다.
+     *
+     * <p>{@link #totalAllocatedMinutes} 는 "현재 활성 계획의 총 배정 시간"을 뜻한다.
+     * 완료 / 진행 중 / 남은 단계의 배정 시간을 모두 더한 값이며, {@code SKIPPED} 단계는
+     * 배정 시간이 0이라 자연히 빠진다. 완료 단계의 실제 학습시간과는 별개의 값이다.
+     *
+     * <p>{@link #initialRemainingMinutes} 는 바꾸지 않는다. 그 값은 계획을 처음 세운 시점의
+     * 기준이라 이후 불변이다.
+     */
+    public void updateTotalAllocatedMinutes(int totalAllocatedMinutes, LocalDateTime now) {
+        this.totalAllocatedMinutes = totalAllocatedMinutes;
+        this.updatedAt = now;
+    }
 }

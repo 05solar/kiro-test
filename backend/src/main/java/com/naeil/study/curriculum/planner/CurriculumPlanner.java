@@ -1,7 +1,9 @@
 package com.naeil.study.curriculum.planner;
 
+import com.naeil.study.curriculum.entity.StudyStepStatus;
 import com.naeil.study.curriculum.entity.StudyStepType;
 import com.naeil.study.curriculum.exception.CurriculumGenerationFailedException;
+import com.naeil.study.topic.entity.TopicImportance;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -108,6 +110,202 @@ public class CurriculumPlanner {
         log.info("curriculum planned: available={}, allocated={}, steps={}, topics={}/{}",
                 availableMinutes, used, steps.size(), allocation.size(), topics.size());
         return plan;
+    }
+
+    /**
+     * 남은 {@code PENDING} 단계를 새 남은 시간에 맞춰 다시 배정한다.
+     *
+     * <p><b>최초 계획과 뼈대는 같다.</b> 우선순위 순으로 최소 시간을 확보할 수 있는 단계만 남기고,
+     * 남은 시간을 다시 우선순위 순으로 나눈다. 다른 점은 입력이 전체 Topic 이 아니라 아직 수행하지
+     * 않은 {@code PENDING} 단계라는 것, 그리고 배정 상한이 {@code originalEstimatedMinutes}(복습은
+     * 복습 상한)라는 것이다.
+     *
+     * <pre>
+     * 1. 선택   우선순위 순으로 최소 시간을 확보할 수 있는 단계만 남긴다. 못 남긴 단계는 SKIPPED
+     * 2. 배분   남은 시간을 우선순위 순으로 나눠 상한까지 늘린다
+     * </pre>
+     *
+     * <p><b>제외·유지 우선순위</b> (앞설수록 끝까지 남긴다)
+     * <pre>
+     * STUDY 먼저, REVIEW 나중          복습은 보조 단계라 시간이 부족하면 먼저 줄이거나 뺀다
+     * mustStudy(mandatory) 먼저          사용자가 반드시 하겠다고 한 단계는 가장 늦게 제외한다
+     * 중요도 VERY_HIGH → LOW
+     * 교수 강조 → 기출 → 취약 있는 쪽 먼저  같은 중요도면 맥락 일치가 없는 쪽을 먼저 줄인다
+     * stepOrder                          그래도 같으면 원래 순서를 지킨다
+     * </pre>
+     *
+     * 선택과 배분에 같은 순서를 쓴다. 그래서 취약·강조 단계는 같은 중요도의 일반 단계보다
+     * 시간이 덜 깎이고, 남은 시간이 생기면 먼저 시간을 돌려받는다. 별도 보정 규칙이 없다.
+     *
+     * <p><b>순서는 다시 매기지 않는다.</b> {@code stepOrder} 는 그대로 두고 상태만 바꾼다.
+     * SKIPPED 된 단계도 자리를 유지해야 진행 이력을 추적할 수 있다.
+     *
+     * @param remainingMinutes 재계산된 남은 학습 시간(분). 0 이하이면 모든 단계가 SKIPPED 된다
+     * @param candidates       재조정 대상 {@code PENDING} 단계들. 입력 순서를 그대로 결과에 유지한다
+     */
+    public ReallocationResult reallocate(int remainingMinutes, List<ReallocationCandidate> candidates) {
+        if (candidates == null || candidates.isEmpty()) {
+            return new ReallocationResult(List.of(), 0);
+        }
+
+        int budget = Math.max(0, remainingMinutes);
+        List<ReallocationCandidate> byPriority = candidates.stream()
+                .sorted(reallocationPriority())
+                .toList();
+
+        Map<UUID, Integer> allocation = selectSurvivors(byPriority, budget);
+        growSurvivors(byPriority, allocation, budget);
+
+        List<ReallocatedStep> steps = new ArrayList<>(candidates.size());
+        int used = 0;
+        for (ReallocationCandidate candidate : candidates) {
+            Integer minutes = allocation.get(candidate.stepId());
+            if (minutes == null) {
+                steps.add(new ReallocatedStep(candidate.stepId(), 0, StudyStepStatus.SKIPPED));
+            } else {
+                steps.add(new ReallocatedStep(candidate.stepId(), minutes, StudyStepStatus.PENDING));
+                used += minutes;
+            }
+        }
+
+        ReallocationResult result = new ReallocationResult(List.copyOf(steps), used);
+        verifyReallocation(result, budget, candidates);
+        return result;
+    }
+
+    /**
+     * 남길 단계를 우선순위 순으로 고른다. 각 단계의 최소 시간을 확보할 수 있을 때만 남긴다.
+     *
+     * <p>최초 계획의 {@code selectWithMinimum} 과 같은 방식이다. 앞 단계가 안 들어가도 멈추지 않고,
+     * 뒤의 더 짧은 단계는 담는다.
+     */
+    private Map<UUID, Integer> selectSurvivors(List<ReallocationCandidate> byPriority, int budget) {
+        Map<UUID, Integer> allocation = new LinkedHashMap<>();
+        int remaining = budget;
+        for (ReallocationCandidate candidate : byPriority) {
+            int minimum = minimumMinutes(candidate);
+            if (minimum <= remaining) {
+                allocation.put(candidate.stepId(), minimum);
+                remaining -= minimum;
+            }
+        }
+        return allocation;
+    }
+
+    /**
+     * 남긴 단계에 남은 시간을 우선순위 순으로 나눠 준다. 각 단계의 상한을 넘기지 않는다.
+     *
+     * <p>STUDY 상한은 {@code originalEstimatedMinutes}, REVIEW 상한은 복습 최대 시간이다.
+     * STUDY 가 우선순위상 REVIEW 보다 앞서므로, 남는 시간은 STUDY 를 원래 시간까지 채운 뒤에야
+     * REVIEW 로 간다.
+     */
+    private void growSurvivors(
+            List<ReallocationCandidate> byPriority, Map<UUID, Integer> allocation, int budget) {
+        int used = allocation.values().stream().mapToInt(Integer::intValue).sum();
+        int remaining = budget - used;
+
+        for (ReallocationCandidate candidate : byPriority) {
+            if (remaining <= 0) {
+                break;
+            }
+            Integer current = allocation.get(candidate.stepId());
+            if (current == null) {
+                continue;
+            }
+            int room = maximumMinutes(candidate) - current;
+            if (room <= 0) {
+                continue;
+            }
+            int given = Math.min(room, remaining);
+            allocation.put(candidate.stepId(), current + given);
+            remaining -= given;
+        }
+    }
+
+    /**
+     * 이 단계를 남긴다면 최소한 배정할 시간.
+     *
+     * <p>STUDY 는 최초 계획과 같은 압축 하한을 쓴다. REVIEW 는 복습을 만드는 최소 기준
+     * (복습 최소 시간)을 하한으로 삼되, 원래 배정보다 크게 잡지 않는다.
+     */
+    private int minimumMinutes(ReallocationCandidate candidate) {
+        if (candidate.isReview()) {
+            return Math.min(reviewMinMinutes, candidate.originalEstimatedMinutes());
+        }
+        return CurriculumPolicy.minimumMinutes(
+                candidate.importance(), candidate.originalEstimatedMinutes(), minTopicMinutes);
+    }
+
+    /** 이 단계에 배정할 수 있는 상한. STUDY 는 권장 시간, REVIEW 는 복습 최대 시간. */
+    private int maximumMinutes(ReallocationCandidate candidate) {
+        if (candidate.isReview()) {
+            return reviewMaxMinutes;
+        }
+        return candidate.originalEstimatedMinutes();
+    }
+
+    /**
+     * 제외·유지·배분에 함께 쓰는 우선순위. 앞설수록 끝까지 남기고 먼저 시간을 준다.
+     */
+    private Comparator<ReallocationCandidate> reallocationPriority() {
+        return Comparator
+                .comparing((ReallocationCandidate c) -> c.isReview())
+                .thenComparing(c -> !c.mandatory())
+                .thenComparingInt(c -> importanceRank(c.importance()))
+                .thenComparing(c -> !c.professorEmphasisMatched())
+                .thenComparing(c -> !c.pastExamMatched())
+                .thenComparing(c -> !c.weakAreaMatched())
+                .thenComparingInt(ReallocationCandidate::stepOrder);
+    }
+
+    /** 중요도를 앞설수록 작은 수로 바꾼다. 복습처럼 중요도가 없으면 가장 뒤로 둔다. */
+    private static int importanceRank(TopicImportance importance) {
+        if (importance == null) {
+            return Integer.MAX_VALUE;
+        }
+        return importance.ordinal();
+    }
+
+    /**
+     * 재조정 결과가 지켜야 할 조건을 확인한다. 최초 계획의 {@code verify} 와 같은 이유로 둔다.
+     *
+     * <p>재조정은 STEP 완료와 한 트랜잭션이라, 여기서 어긋난 계획을 내보내면 완료까지 함께
+     * 뒤집힌다. 그럴 바에는 코딩 오류를 바로 드러내는 편이 낫다.
+     */
+    private void verifyReallocation(
+            ReallocationResult result, int budget, List<ReallocationCandidate> candidates) {
+        Map<UUID, ReallocationCandidate> byId = new LinkedHashMap<>();
+        candidates.forEach(candidate -> byId.put(candidate.stepId(), candidate));
+
+        int sum = 0;
+        for (ReallocatedStep step : result.steps()) {
+            ReallocationCandidate candidate = byId.get(step.stepId());
+            if (candidate == null) {
+                throw new CurriculumGenerationFailedException("unknown step in reallocation: " + step.stepId());
+            }
+            if (step.status() == StudyStepStatus.SKIPPED) {
+                if (step.allocatedMinutes() != 0) {
+                    throw new CurriculumGenerationFailedException("skipped step must allocate zero");
+                }
+                continue;
+            }
+            if (step.allocatedMinutes() < minimumMinutes(candidate)) {
+                throw new CurriculumGenerationFailedException(
+                        "reallocated step below minimum: " + step.allocatedMinutes());
+            }
+            if (step.allocatedMinutes() > maximumMinutes(candidate)) {
+                throw new CurriculumGenerationFailedException(
+                        "reallocated step exceeds maximum: " + step.allocatedMinutes());
+            }
+            sum += step.allocatedMinutes();
+        }
+        if (sum != result.totalAllocatedMinutes()) {
+            throw new CurriculumGenerationFailedException("reallocation total minutes mismatch");
+        }
+        if (sum > budget) {
+            throw new CurriculumGenerationFailedException(
+                    "reallocation exceeds remaining minutes: " + sum + " > " + budget);
+        }
     }
 
     /**

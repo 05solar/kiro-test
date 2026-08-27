@@ -117,6 +117,16 @@ public class StudyStep {
     @Column(name = "actual_study_minutes")
     private Integer actualStudyMinutes;
 
+    /**
+     * {@code SKIPPED} 가 된 이유. 그 밖의 상태에서는 비어 있다.
+     *
+     * <p>9단계 동적 재조정에서 남은 시간이 부족해 제외된 단계에 {@link SkipReason#TIME_CONSTRAINT}
+     * 를 남긴다. 사용자가 직접 건너뛴 것과 구분하기 위한 값이다.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "skip_reason", length = 30)
+    private SkipReason skipReason;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -196,6 +206,45 @@ public class StudyStep {
 
     public boolean isCompleted() {
         return status == StudyStepStatus.COMPLETED;
+    }
+
+    public boolean isSkipped() {
+        return status == StudyStepStatus.SKIPPED;
+    }
+
+    /**
+     * 동적 재조정으로 배정 시간을 바꾼다.
+     *
+     * <p>{@code PENDING} 단계에만 허용한다. 이미 완료했거나 진행 중인 단계의 시간을 재조정으로
+     * 바꾸면 실제 학습 기록과 어긋난다. 서비스가 대상을 걸러 넘기지만, 여기서도 마지막으로 막는다.
+     *
+     * @throws InvalidStudyStepOrderException {@code PENDING} 이 아닌 단계인 경우
+     */
+    public void reallocate(int allocatedMinutes, LocalDateTime now) {
+        if (!isPending()) {
+            throw new InvalidStudyStepOrderException();
+        }
+        this.allocatedMinutes = allocatedMinutes;
+        this.updatedAt = now;
+    }
+
+    /**
+     * 남은 시간이 부족해 이 단계를 계획에서 제외한다.
+     *
+     * <p>배정 시간을 0으로 만든다. {@code PENDING} 단계 배정 시간의 합이 남은 학습 시간을
+     * 넘지 않아야 하므로, 수행할 수 없게 된 단계는 시간을 반납한다.
+     * {@code originalEstimatedMinutes} 는 그대로 둔다. 나중에 계획 대비 실제를 비교할 근거다.
+     *
+     * @throws InvalidStudyStepOrderException {@code PENDING} 이 아닌 단계인 경우
+     */
+    public void skip(SkipReason reason, LocalDateTime now) {
+        if (!isPending()) {
+            throw new InvalidStudyStepOrderException();
+        }
+        this.status = StudyStepStatus.SKIPPED;
+        this.allocatedMinutes = 0;
+        this.skipReason = reason;
+        this.updatedAt = now;
     }
 
     /**

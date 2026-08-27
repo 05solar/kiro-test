@@ -69,8 +69,19 @@ public final class CurriculumPolicy {
      * <p>중요도별 하한 비율과 절대 하한 중 큰 값이다. 권장 시간을 넘지 않는다.
      */
     public static int minimumMinutes(PlanningTopic topic, int absoluteMinimum) {
-        double ratio = MINIMUM_RATIO.getOrDefault(topic.importance(), 0.0);
-        int byRatio = (int) Math.round(topic.estimatedMinutes() * ratio);
-        return Math.min(topic.estimatedMinutes(), Math.max(absoluteMinimum, byRatio));
+        return minimumMinutes(topic.importance(), topic.estimatedMinutes(), absoluteMinimum);
+    }
+
+    /**
+     * 최초 계획과 동적 재조정이 같은 압축 하한을 쓰도록 중요도·권장 시간으로 직접 계산한다.
+     *
+     * <p>재조정 대상은 엔티티에서 만든 값이라 {@link PlanningTopic} 형태가 아니다.
+     * 그래서 필요한 값만 받아 같은 규칙을 적용한다.
+     */
+    public static int minimumMinutes(TopicImportance importance, int estimatedMinutes, int absoluteMinimum) {
+        // Map.of 는 null 키 조회에서 NPE 를 던진다. 중요도가 없으면 하한 비율 없이 절대 하한만 쓴다.
+        double ratio = importance == null ? 0.0 : MINIMUM_RATIO.getOrDefault(importance, 0.0);
+        int byRatio = (int) Math.round(estimatedMinutes * ratio);
+        return Math.min(estimatedMinutes, Math.max(absoluteMinimum, byRatio));
     }
 }

@@ -11,17 +11,27 @@ import java.util.List;
  *
  * <p>복습 단계도 전체에 포함한다. 사용자가 화면에서 보는 단계 수와 같아야 한다.
  *
- * @param percentage 완료 비율(%). 반올림한 정수다
+ * <p><b>SKIPPED 도 처리된 단계로 센다.</b> 시간 부족으로 제외된 단계는 더 이상 수행 대상이
+ * 아니므로, 진행 흐름상 완료한 것과 같이 "지나간" 단계다. 그래서 진행률은
+ * {@code (완료 + 제외) / 전체} 로 센다. 다만 화면에서 둘을 구분할 수 있도록
+ * {@code completedSteps} 와 {@code skippedSteps} 를 나눠 담는다.
+ *
+ * @param completedSteps 실제로 완료한 단계 수
+ * @param skippedSteps   시간 부족으로 제외된 단계 수
+ * @param percentage     처리된 단계 비율(%). 반올림한 정수다
  */
-public record CurriculumProgressResponse(int completedSteps, int totalSteps, int percentage) {
+public record CurriculumProgressResponse(
+        int completedSteps, int skippedSteps, int totalSteps, int percentage) {
 
     public static CurriculumProgressResponse from(List<StudyStep> steps) {
         int total = steps.size();
         if (total == 0) {
-            return new CurriculumProgressResponse(0, 0, 0);
+            return new CurriculumProgressResponse(0, 0, 0, 0);
         }
         int completed = (int) steps.stream().filter(StudyStep::isCompleted).count();
+        int skipped = (int) steps.stream().filter(StudyStep::isSkipped).count();
+        int processed = completed + skipped;
         return new CurriculumProgressResponse(
-                completed, total, (int) Math.round(completed * 100.0 / total));
+                completed, skipped, total, (int) Math.round(processed * 100.0 / total));
     }
 }

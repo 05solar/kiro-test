@@ -400,25 +400,24 @@ class StudyStepApiIntegrationTest {
     }
 
     @Test
-    @DisplayName("학습을 진행해도 남은 학습 시간을 차감하지 않는다")
-    void doesNotDeductRemainingStudyMinutes() {
+    @DisplayName("완료 응답에 재계산된 남은 시간과 재조정 결과가 담기고 전체 학습 가능 시간은 그대로다")
+    void completeReturnsRecalculatedTimeAndReallocation() {
         String sessionCode = plannedSession(180,
                 aiTopic("프로세스와 스레드", "VERY_HIGH", 50),
                 aiTopic("CPU 스케줄링", "HIGH", 40));
-        Integer beforeRemaining = session(sessionCode).getRemainingStudyMinutes();
-        List<Map<String, Object>> beforeSteps = steps(sessionCode);
-        Object first = beforeSteps.get(0).get("id");
+        Integer availableBefore = session(sessionCode).getAvailableStudyMinutes();
+        Object first = stepId(sessionCode, 0);
 
         start(sessionCode, first);
-        complete(sessionCode, first);
+        ResponseEntity<Map<String, Object>> completed = complete(sessionCode, first);
 
-        assertThat(session(sessionCode).getRemainingStudyMinutes()).isEqualTo(beforeRemaining);
-        // 남은 단계의 배정 시간도 그대로다. 재배분은 9단계의 일이다.
-        List<Map<String, Object>> afterSteps = steps(sessionCode);
-        for (int i = 0; i < beforeSteps.size(); i++) {
-            assertThat(afterSteps.get(i).get("allocatedMinutes"))
-                    .isEqualTo(beforeSteps.get(i).get("allocatedMinutes"));
-        }
+        @SuppressWarnings("unchecked")
+        Map<String, Object> time = (Map<String, Object>) completed.getBody().get("time");
+        assertThat(time.get("remainingStudyMinutes")).isNotNull();
+        assertThat(completed.getBody()).containsKey("reallocation");
+
+        // 전체 학습 가능 시간(availableStudyMinutes)은 진행 중 불변이다.
+        assertThat(session(sessionCode).getAvailableStudyMinutes()).isEqualTo(availableBefore);
     }
 
     @Test
