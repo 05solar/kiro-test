@@ -45,4 +45,12 @@ public interface StudyStepRepository extends JpaRepository<StudyStep, UUID> {
      */
     Optional<StudyStep> findFirstByCurriculumIdAndStatusOrderByStepOrderAsc(
             UUID curriculumId, StudyStepStatus status);
+
+    /**
+     * 세션의 계획에서 특정 Topic 을 학습하는 단계를 찾는다.
+     *
+     * <p>퀴즈 생성 조건 확인에 쓴다. 그 Topic 의 학습을 완료했는지는 이 단계의 상태로 판단한다.
+     * Topic 이 계획에 아예 들어가지 못한 경우(시간 부족으로 선택되지 않음)는 비어 있다.
+     */
+    Optional<StudyStep> findFirstByCurriculumStudySessionIdAndTopicId(UUID sessionId, UUID topicId);
 }
