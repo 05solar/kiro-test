@@ -12,6 +12,7 @@ import com.naeil.study.quiz.client.dto.AiQuizGenerationResult;
 import com.naeil.study.quiz.context.QuizContextExtractor;
 import com.naeil.study.quiz.entity.Quiz;
 import com.naeil.study.quiz.exception.NoQuizSourceContextException;
+import com.naeil.study.quiz.exception.QuizGenerationFailedException;
 import com.naeil.study.quiz.exception.QuizNotFoundException;
 import com.naeil.study.quiz.exception.TopicStudyNotCompletedException;
 import com.naeil.study.quiz.repository.QuizRepository;
@@ -124,7 +125,7 @@ public class QuizGenerationService {
         String sourceContext = extractSourceContext(session, topic);
         AiStudyContext studyContext = loadStudyContext(session);
 
-        AiQuizGenerationResult aiResult = aiQuizClient.generate(new AiQuizGenerationRequest(
+        AiQuizGenerationRequest request = new AiQuizGenerationRequest(
                 session.getSubject(),
                 topic.getTitle(),
                 topic.getSummary(),
@@ -135,9 +136,9 @@ public class QuizGenerationService {
                 topic.isMustStudyMatched(),
                 studyContext,
                 sourceContext,
-                questionsPerTopic));
+                questionsPerTopic);
 
-        List<ValidatedQuizQuestion> validated = responseValidator.validate(aiResult, questionsPerTopic);
+        List<ValidatedQuizQuestion> validated = generateValidated(session, topic, request);
 
         // 전체 검증을 통과한 뒤에만 저장한다. saveAllAndFlush 한 번이 하나의 트랜잭션이라
         // 문제 일부만 남는 상태가 생기지 않는다.
@@ -169,6 +170,27 @@ public class QuizGenerationService {
     private Topic findTopic(StudySession session, UUID topicId) {
         return topicRepository.findByIdAndStudySessionId(topicId, session.getId())
                 .orElseThrow(TopicNotFoundException::new);
+    }
+
+    /**
+     * AI 를 호출하고 응답을 검증한다. 검증에 실패하면 <b>한 번만</b> 다시 요청한다.
+     *
+     * <p>연결 오류·일시적 서버 오류의 재시도는 클라이언트 계층이 담당하지만, "보기 3개",
+     * "문항 수 부족" 같은 형식 위반은 같은 요청을 다시 보내면 대개 정상 응답이 온다
+     * (생성이 확률적이기 때문이다). 두 번째도 실패하면 그대로 실패시킨다 —
+     * 반복 호출은 비용만 늘고, 사용자는 다시 시도할 수 있다.
+     */
+    private List<ValidatedQuizQuestion> generateValidated(
+            StudySession session, Topic topic, AiQuizGenerationRequest request) {
+        AiQuizGenerationResult aiResult = aiQuizClient.generate(request);
+        try {
+            return responseValidator.validate(aiResult, questionsPerTopic);
+        } catch (QuizGenerationFailedException first) {
+            log.warn("quiz response invalid, retrying once: sessionId={}, topicId={}, reason={}",
+                    session.getId(), topic.getId(), first.getReason());
+            AiQuizGenerationResult retried = aiQuizClient.generate(request);
+            return responseValidator.validate(retried, questionsPerTopic);
+        }
     }
 
     /**

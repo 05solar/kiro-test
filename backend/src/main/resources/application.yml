@@ -35,9 +35,15 @@ storage:
     root-path: ${STORAGE_ROOT_PATH:./uploads}
 
 ai:
+  # AI 공급자. anthropic(기본) 또는 gemini. 도메인 코드는 공급자를 모른다.
+  provider: ${AI_PROVIDER:anthropic}
   # API 키는 코드에 두지 않는다. 비어 있으면 분석 요청 시점에만 실패하고, 나머지 기능은 동작한다.
   api-key: ${AI_API_KEY:}
   model: ${AI_MODEL:claude-opus-5}
+  gemini:
+    # provider=gemini 일 때 쓰는 키와 모델. 역시 환경변수로만 받는다.
+    api-key: ${GEMINI_API_KEY:}
+    model: ${GEMINI_MODEL:gemini-3.5-flash-lite}
   # 외부 호출을 무한정 기다리지 않는다. 강의자료가 크면 한 번의 호출도 오래 걸린다.
   timeout-seconds: ${AI_TIMEOUT_SECONDS:180}
   # 연결 오류와 일시적인 서버 오류에 대한 재시도. 응답 형식 오류는 여기서 재시도하지 않는다.
@@ -56,6 +62,17 @@ curriculum:
   review-min-minutes: ${CURRICULUM_REVIEW_MIN_MINUTES:10}
   # 복습 단계에 배정할 수 있는 최대 시간. 남는 시간을 전부 복습에 몰아주지 않는다.
   review-max-minutes: ${CURRICULUM_REVIEW_MAX_MINUTES:45}
+
+quiz:
+  # Topic 하나당 생성할 문제 수. AI가 근거 부족으로 더 적게(최소 3개) 만들 수 있다.
+  questions-per-topic: ${QUIZ_QUESTIONS_PER_TOPIC:5}
+  # AI에 보낼 강의자료 추출 구간의 최대 길이(글자 수). 문서 전체를 다시 보내지 않는다.
+  max-context-characters: ${QUIZ_MAX_CONTEXT_CHARACTERS:20000}
+
+wrong-answer-summary:
+  # 오답 요약에서 Topic 하나당 AI에 보낼 추출 구간의 최대 길이(글자 수).
+  # 여러 Topic 이 한 요청에 담기므로 퀴즈 생성보다 작게 잡는다.
+  max-context-characters-per-topic: ${WRONG_ANSWER_SUMMARY_MAX_CONTEXT_PER_TOPIC:8000}
 
 session:
   # 마지막 접근 후 보관 일수. 조회에 성공할 때마다 expiresAt = now + expiration-days 로 연장된다.

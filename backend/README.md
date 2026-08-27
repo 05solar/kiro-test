@@ -52,6 +52,19 @@ com.naeil.study
 ├── studycontext               학습 맥락 도메인 (사용자 추가 정보)
 │   └── controller / service / repository / entity / dto
 │
+├── quiz                       퀴즈 도메인
+│   ├── controller / service / repository / entity / dto / exception
+│   ├── client                 AI 퀴즈 호출 추상화 + Claude 구현
+│   ├── context                강의자료 관련 구간 추출 (키워드 기반)
+│   ├── prompt                 퀴즈 프롬프트 조립
+│   ├── validation             AI 퀴즈 응답 검증
+│   └── config                 AI 퀴즈 클라이언트 설정
+│
+├── wronganswer                오답 복습 요약 도메인
+│   ├── controller / service / repository / entity / dto / exception
+│   ├── client                 AI 요약 호출 추상화 + 구현
+│   ├── prompt / validation / config
+│
 └── session                    학습 세션 도메인
     ├── controller             REST API
     ├── service                유스케이스 + 세션 코드 생성기
@@ -60,8 +73,6 @@ com.naeil.study
     ├── dto                    요청/응답 record
     └── exception              도메인 예외
 ```
-
-이후 단계에서 `quiz` 패키지가 같은 형태로 추가된다.
 
 ## 실행
 
@@ -109,8 +120,11 @@ DB 접속 정보는 하드코딩하지 않는다. 모두 `application.yml`에서
 | `STORAGE_ROOT_PATH` | `./uploads` | 로컬 Storage 루트 경로 |
 | `MAX_FILE_SIZE` | `20MB` | multipart 개별 파일 제한 |
 | `MAX_REQUEST_SIZE` | `100MB` | multipart 요청 전체 제한 |
-| `AI_API_KEY` | (없음) | 비어 있으면 분석 요청 시점에만 실패한다 |
-| `AI_MODEL` | `claude-opus-5` | 분석에 사용할 모델 |
+| `AI_PROVIDER` | `anthropic` | AI 공급자 (`anthropic` / `gemini`) |
+| `AI_API_KEY` | (없음) | Anthropic 키. 비어 있으면 AI 요청 시점에만 실패한다 |
+| `AI_MODEL` | `claude-opus-5` | Anthropic 모델 |
+| `GEMINI_API_KEY` | (없음) | `AI_PROVIDER=gemini` 일 때 쓰는 키 |
+| `GEMINI_MODEL` | `gemini-3.5-flash-lite` | Gemini 모델 |
 | `AI_TIMEOUT_SECONDS` | `180` | AI 호출 타임아웃 |
 | `AI_MAX_RETRIES` | `2` | 연결 오류·5xx 재시도 |
 | `AI_CHUNK_SIZE` | `8000` | 문서 조각 크기 (글자 수) |
@@ -119,6 +133,9 @@ DB 접속 정보는 하드코딩하지 않는다. 모두 `application.yml`에서
 | `CURRICULUM_MIN_TOPIC_MINUTES` | `5` | 학습 단계 하나의 최소 배정 시간 |
 | `CURRICULUM_REVIEW_MIN_MINUTES` | `10` | 복습 단계를 만드는 최소 잔여 시간 |
 | `CURRICULUM_REVIEW_MAX_MINUTES` | `45` | 복습 단계 최대 시간 |
+| `QUIZ_QUESTIONS_PER_TOPIC` | `5` | Topic 하나당 생성할 문제 수 |
+| `QUIZ_MAX_CONTEXT_CHARACTERS` | `20000` | 퀴즈 생성 시 AI에 보낼 추출 구간 최대 길이 |
+| `WRONG_ANSWER_SUMMARY_MAX_CONTEXT_PER_TOPIC` | `8000` | 오답 요약에서 Topic 하나당 추출 구간 최대 길이 |
 
 기본값은 로컬 개발 편의를 위한 값이다. 배포 환경에서는 반드시 재정의한다.
 
@@ -143,7 +160,13 @@ DB 접속 정보는 하드코딩하지 않는다. 모두 `application.yml`에서
 | POST | `/api/sessions/{sessionCode}/curriculum` | 학습 계획 생성 |
 | GET | `/api/sessions/{sessionCode}/curriculum` | 학습 계획 조회 (진행 상태 포함) |
 | POST | `/api/sessions/{sessionCode}/steps/{stepId}/start` | 학습 단계 시작 |
-| POST | `/api/sessions/{sessionCode}/steps/{stepId}/complete` | 학습 단계 완료 |
+| POST | `/api/sessions/{sessionCode}/steps/{stepId}/complete` | 학습 단계 완료 + 남은 계획 동적 재조정 |
+| POST | `/api/sessions/{sessionCode}/topics/{topicId}/quizzes` | Topic 퀴즈 생성 (멱등) |
+| GET | `/api/sessions/{sessionCode}/topics/{topicId}/quizzes` | Topic 퀴즈 조회 (정답 미노출) |
+| POST | `/api/sessions/{sessionCode}/quizzes/{quizId}/answer` | 답안 제출 + 채점 |
+| GET | `/api/sessions/{sessionCode}/topics/{topicId}/quiz-results` | Topic 점수 집계 |
+| POST | `/api/sessions/{sessionCode}/wrong-answer-summary` | 오답 복습 요약 생성 (캐시) |
+| GET | `/api/sessions/{sessionCode}/wrong-answer-summary` | 오답 복습 요약 조회 |
 
 ## 한글 경로 주의
 
