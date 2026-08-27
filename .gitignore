@@ -1,0 +1,33 @@
+# 빌드 산출물
+build/
+.gradle/
+
+# 업로드된 강의자료 — 사용자 데이터다. 저장소에 올리지 않는다.
+uploads/
+
+# 로컬 환경 설정 — API 키와 DB 접속 정보가 들어간다.
+.env
+.env.*
+*-local.yml
+application-local.yml
+
+# 로그
+*.log
+logs/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+out/
+bin/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
