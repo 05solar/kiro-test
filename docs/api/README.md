@@ -16,6 +16,7 @@ API를 바꾸면 같은 커밋에서 이 폴더의 문서도 고친다.
 | [study-step-api.md](study-step-api.md) | 학습 단계 시작 / 완료 API |
 | [quiz-api.md](quiz-api.md) | 퀴즈 생성 / 조회 / 채점 API |
 | [wrong-answer-summary-api.md](wrong-answer-summary-api.md) | 오답 기반 복습 요약 API |
+| [chat-api.md](chat-api.md) | 학습 챗봇 질문 / 대화 조회 API |
 | [error-codes.md](error-codes.md) | 공통 에러 응답 형식과 코드 목록 |
 
 ## 공통 규약
@@ -49,6 +50,8 @@ API를 바꾸면 같은 커밋에서 이 폴더의 문서도 고친다.
 | GET | `/api/sessions/{sessionCode}/steps/{stepId}` | 만들지 않음 — 계획 조회로 충분 |
 | POST | `/api/sessions/{sessionCode}/topics/{topicId}/quizzes` | 구현 완료 |
 | POST | `/api/sessions/{sessionCode}/topics/{topicId}/quizzes/regenerate` | 구현 완료 |
+| POST | `/api/sessions/{sessionCode}/chat` | 구현 완료 |
+| GET | `/api/sessions/{sessionCode}/chat` | 구현 완료 |
 | GET | `/api/sessions/{sessionCode}/topics/{topicId}/quizzes` | 구현 완료 |
 | GET | `/api/sessions/{sessionCode}/topics/{topicId}/quiz-results` | 구현 완료 |
 | POST | `/api/sessions/{sessionCode}/quizzes/{quizId}/answer` | 구현 완료 |

@@ -93,6 +93,23 @@ quiz:
   # AI에 보낼 강의자료 추출 구간의 최대 길이(글자 수). 문서 전체를 다시 보내지 않는다.
   max-context-characters: ${QUIZ_MAX_CONTEXT_CHARACTERS:20000}
 
+chat:
+  # 챗봇 응답 방식.
+  #   mock    AI 를 부르지 않고 목 응답을 만든다. 과금되지 않는다.
+  #   gemini  실제 AI 를 부른다. ai.provider 설정을 따른다.
+  #
+  # 기본이 mock 인 이유는 챗봇이 가장 자주 눌리는 기능이기 때문이다. 화면을 한 번
+  # 확인하는 동안 질문을 서너 개 던지게 되고, 그때마다 과금된다.
+  # 비워 두면 위의 ai.mode 를 따른다. 챗봇만 따로 켜고 싶을 때 쓴다.
+  ai-mode: ${CHAT_AI_MODE:${ai.mode:mock}}
+  # 프롬프트에 넣을 지난 대화 수. 전부 넣으면 요청이 길어지고 옛 화제가 답을 끌고 간다.
+  history-size: ${CHAT_HISTORY_SIZE:8}
+  # AI 에 보낼 강의자료 구간의 최대 길이(글자 수). 퀴즈보다 작게 잡는다 —
+  # 질문 하나에 답하는 데 자료 전체가 필요하지 않고, 매 질문마다 비용이 든다.
+  max-context-characters: ${CHAT_MAX_CONTEXT_CHARACTERS:6000}
+  # 사용자가 화면 앞에서 기다리는 기능이다. 분석·퀴즈보다 짧게 끊는다.
+  timeout-seconds: ${CHAT_TIMEOUT_SECONDS:45}
+
 wrong-answer-summary:
   # 오답 요약에서 Topic 하나당 AI에 보낼 추출 구간의 최대 길이(글자 수).
   # 여러 Topic 이 한 요청에 담기므로 퀴즈 생성보다 작게 잡는다.

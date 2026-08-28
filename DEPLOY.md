@@ -147,11 +147,13 @@ docker compose exec db pg_dump -U postgres -d naeil_study \
 ```bash
 # 새 버전을 올리기 **전에** 먼저 적용한다. 순서가 바뀌면 기동 중 Schema-validation 으로 죽는다.
 docker compose exec -T db psql -U postgres -d naeil_study < docs/migrations/001-general-knowledge.sql
+docker compose exec -T db psql -U postgres -d naeil_study < docs/migrations/002-study-chat.sql
 ```
 
 | 파일 | 내용 |
 | --- | --- |
 | `001-general-knowledge.sql` | `study_sessions.exam_scope`, `study_sessions.source_type` 추가 |
+| `002-study-chat.sql` | `chat_messages` 테이블 추가 |
 
 마이그레이션 도구(Flyway)는 아직 도입하지 않았다. 파일 수가 늘어나면 그때 옮긴다.
 

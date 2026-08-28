@@ -9,6 +9,7 @@
 | 파일 | 내용 |
 | --- | --- |
 | `001-general-knowledge.sql` | `study_sessions.exam_scope`, `study_sessions.source_type` 추가 |
+| `002-study-chat.sql` | `chat_messages` 테이블 추가 |
 
 ## 순서가 중요하다
 
@@ -23,6 +24,7 @@ SchemaManagementException: Schema-validation: missing column [exam_scope] in tab
 
 ```bash
 docker compose exec -T db psql -U postgres -d naeil_study < docs/migrations/001-general-knowledge.sql
+docker compose exec -T db psql -U postgres -d naeil_study < docs/migrations/002-study-chat.sql
 docker compose up -d --build
 ```
 

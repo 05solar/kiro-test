@@ -19,6 +19,7 @@ import org.springframework.stereotype.Repository;
  *   │          └─ StudyStep
  *   ├─ Curriculum ── StudyStep
  *   ├─ QuizResult
+ *   ├─ ChatMessage
  *   └─ WrongAnswerSummary
  * </pre>
  *
@@ -40,6 +41,7 @@ public class SessionPurgeRepository {
             "delete from WrongAnswerSummary e where e.studySession.id in :ids",
             "delete from Topic e where e.studySession.id in :ids",
             "delete from StudyContext e where e.studySession.id in :ids",
+            "delete from ChatMessage e where e.session.id in :ids",
             "delete from Document e where e.studySession.id in :ids",
             "delete from StudySession e where e.id in :ids"
     );

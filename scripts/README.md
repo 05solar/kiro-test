@@ -5,7 +5,8 @@
 
 | 스크립트 | 확인하는 것 |
 | --- | --- |
-| `gk-verify.sh` | 자료 없이 시험 범위만으로 주제·계획·퀴즈가 만들어지는지 (1단계) |
+| `gk-verify.sh` | 자료 없이 시험 범위만으로 주제·계획·퀴즈가 만들어지는지 |
+| `chat-verify.sh` | 학습 챗봇이 근거를 사실대로 표시하고 대화를 저장하는지 |
 
 ## 실행
 
@@ -15,6 +16,7 @@
 ```bash
 LLM_MODE=mock QUIZ_AI_MODE=mock PUBLIC_PORT=8090 docker compose up -d --build
 bash scripts/gk-verify.sh
+bash scripts/chat-verify.sh
 ```
 
 **`LLM_MODE=mock` 으로 돌린다.** 기능이 이어지는지는 목 데이터로 전부 확인할 수 있고,

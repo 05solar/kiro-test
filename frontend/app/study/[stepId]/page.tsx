@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AppHeader, Countdown, Ghost, PrimaryButton } from "@/app/_components/ui";
+import { StudyChat } from "@/app/_components/study-chat";
 import { type StudyContent } from "@/app/_components/data";
 import { useSessionStore } from "@/app/_components/session-store";
 import { usePlanStore } from "@/app/_components/store";
@@ -174,6 +175,8 @@ function StudyView({
   return (
     <div className="min-h-screen bg-white text-[#222]">
       <AppHeader />
+      {/* 학습 화면은 좌우 칸을 이미 쓰고 있다. 도우미는 떠 있는 버튼으로 둔다. */}
+      <StudyChat variant="floating" />
       <div className="grid min-h-[calc(100vh-68px)] xl:grid-cols-[272px_minmax(0,1fr)_300px]">
         <aside className="order-2 border-t border-[#eee] p-6 xl:order-1 xl:border-r xl:border-t-0 xl:px-6 xl:py-8">
           <div className="mb-[26px]">

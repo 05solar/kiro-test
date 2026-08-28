@@ -219,6 +219,38 @@ export interface QuizResultsResponse {
   results: AnsweredQuizResponse[];
 }
 
+export type ChatRole = "USER" | "ASSISTANT";
+
+export interface ChatRequest {
+  /** 질문. 1000자 이하. 지난 대화는 보내지 않는다 — 서버가 갖고 있다. */
+  message: string;
+}
+
+export interface ChatResponse {
+  answer: string;
+  /** 이 세션이 강의자료에 근거하는지. */
+  grounded: boolean;
+  /**
+   * 이 답변이 실제로 자료에서 확인된 내용인지.
+   *
+   * <p>자료가 있는 세션이라도 질문이 자료 밖이면 false 다. 화면은 이 값으로
+   * "자료에 없어 일반 지식으로 답했다"를 알린다.
+   */
+  answeredFromMaterial: boolean;
+  answeredAt: string;
+}
+
+export interface ChatMessageResponse {
+  role: ChatRole;
+  content: string;
+  createdAt: string;
+}
+
+export interface ChatHistoryResponse {
+  grounded: boolean;
+  messages: ChatMessageResponse[];
+}
+
 /** 백엔드의 공통 에러 응답. */
 export interface ErrorResponse {
   code: string;

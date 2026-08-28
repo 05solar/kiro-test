@@ -16,7 +16,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict h4DUhoF0rFnTG8a0OwlQ2EATEtCOG9zw0FgH7K4xQzf7qDbYFDgT5gURIbQQoSE
+\restrict GVPtcCIZlmnzDxwAQFK3nATCrI0ILbr7HUqDcC5x28KYW4aMScdael4wSVLeNg3
 
 -- Dumped from database version 16.15
 -- Dumped by pg_dump version 16.15
@@ -35,6 +35,20 @@ SET row_security = off;
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
+
+--
+-- Name: chat_messages; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.chat_messages (
+    id uuid NOT NULL,
+    session_id uuid NOT NULL,
+    role character varying(20) NOT NULL,
+    content text NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT chat_messages_role_check CHECK (((role)::text = ANY ((ARRAY['USER'::character varying, 'ASSISTANT'::character varying])::text[])))
+);
+
 
 --
 -- Name: curriculums; Type: TABLE; Schema: public; Owner: -
@@ -220,6 +234,14 @@ CREATE TABLE public.wrong_answer_summaries (
 
 
 --
+-- Name: chat_messages chat_messages_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.chat_messages
+    ADD CONSTRAINT chat_messages_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: curriculums curriculums_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -340,6 +362,13 @@ ALTER TABLE ONLY public.wrong_answer_summaries
 
 
 --
+-- Name: idx_chat_messages_session_id_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_chat_messages_session_id_created_at ON public.chat_messages USING btree (session_id, created_at);
+
+
+--
 -- Name: study_steps fk5li8b4v8980amaxooq97iw62v; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -353,6 +382,14 @@ ALTER TABLE ONLY public.study_steps
 
 ALTER TABLE ONLY public.study_steps
     ADD CONSTRAINT fk7vk6xg06wufe8lw7i4ik237fj FOREIGN KEY (curriculum_id) REFERENCES public.curriculums(id);
+
+
+--
+-- Name: chat_messages fk_chat_messages_session_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.chat_messages
+    ADD CONSTRAINT fk_chat_messages_session_id FOREIGN KEY (session_id) REFERENCES public.study_sessions(id);
 
 
 --
@@ -423,5 +460,5 @@ ALTER TABLE ONLY public.quiz_results
 -- PostgreSQL database dump complete
 --
 
-\unrestrict h4DUhoF0rFnTG8a0OwlQ2EATEtCOG9zw0FgH7K4xQzf7qDbYFDgT5gURIbQQoSE
+\unrestrict GVPtcCIZlmnzDxwAQFK3nATCrI0ILbr7HUqDcC5x28KYW4aMScdael4wSVLeNg3
 

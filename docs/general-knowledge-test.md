@@ -29,6 +29,7 @@
 
 ```bash
 docker compose exec -T db psql -U postgres -d naeil_study < docs/migrations/001-general-knowledge.sql
+docker compose exec -T db psql -U postgres -d naeil_study < docs/migrations/002-study-chat.sql
 docker compose up -d --build
 ```
 

@@ -29,16 +29,13 @@ export function useSession(): SessionView {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  /** 화면이 직접 부르는 다시 읽기. 첫 조회는 아래 effect 가 한다. */
   const load = useCallback(async () => {
-    if (!sessionCode) {
-      setSession(null);
-      setLoading(false);
-      return;
-    }
+    if (!sessionCode) return;
     setLoading(true);
-    setError(null);
     try {
       setSession(await getSession(sessionCode));
+      setError(null);
     } catch (e) {
       // 조회 실패로 화면을 막지 않는다. 표시용 정보일 뿐이다.
       setError(toMessage(e));
@@ -48,8 +45,35 @@ export function useSession(): SessionView {
   }, [sessionCode]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    // 세션 코드가 없으면 읽을 것이 없다. 아래 반환값에서 비어 있는 상태로 내보낸다.
+    if (!sessionCode) return;
+    let active = true;
+    getSession(sessionCode)
+      .then((found) => {
+        if (!active) return;
+        setSession(found);
+        setError(null);
+      })
+      .catch((e) => {
+        if (active) setError(toMessage(e));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [sessionCode]);
 
-  return { loading, error, session, source: toSourceLabel(session), reload: load };
+  // 세션 코드가 없는 상태는 "읽는 중"이 아니라 "읽을 것이 없는" 상태다.
+  // 상태로 들고 있지 않고 여기서 계산한다 — effect 안에서 곧바로 상태를 바꾸면
+  // 바뀌는 것 없이 렌더만 한 번 더 돈다.
+  const hasSession = Boolean(sessionCode);
+  return {
+    loading: hasSession && loading,
+    error,
+    session: hasSession ? session : null,
+    source: hasSession ? toSourceLabel(session) : null,
+    reload: load,
+  };
 }

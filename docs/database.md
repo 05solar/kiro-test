@@ -4,7 +4,15 @@ PostgreSQL. 스키마는 JPA(`ddl-auto`)로 생성한다. 아래 DDL은 실제 P
 
 ## 현재 테이블
 
-현재 테이블은 `study_sessions`, `documents`, `study_contexts`, `topics`, `curriculums`, `study_steps` 여섯 개다. **`users` 테이블은 존재하지 않는다.**
+현재 테이블은 열 개다. **`users` 테이블은 존재하지 않는다.**
+
+```
+study_sessions   documents   study_contexts   topics   curriculums   study_steps
+quizzes   quiz_results   wrong_answer_summaries   chat_messages
+```
+
+아래에는 앞의 여섯 개를 설명한다. 나머지 네 개의 정확한 정의는
+[schema.sql](schema.sql)(개발 DB 에서 `pg_dump` 로 뽑은 것)과 각 API 명세를 본다.
 
 ### study_sessions
 

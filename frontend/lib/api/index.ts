@@ -1,6 +1,8 @@
 import { request } from "./client";
 import type {
   AnalysisResponse,
+  ChatHistoryResponse,
+  ChatResponse,
   CurriculumResponse,
   DocumentResponse,
   ExamResponse,
@@ -115,6 +117,21 @@ export const answerQuiz = (code: string, quizId: string, selectedIndex: number) 
 
 export const getQuizResults = (code: string, topicId: string) =>
   request<QuizResultsResponse>(`${s(code)}/topics/${topicId}/quiz-results`);
+
+/* ── 학습 챗봇 ────────────────────────────────────────── */
+
+/**
+ * 질문하고 답을 받는다. 실제 AI 를 부른다.
+ *
+ * <p>지난 대화를 보내지 않는다. 서버가 갖고 있다 — 화면이 보내오게 두면 없던 발화를
+ * 지어내 프롬프트에 넣을 수 있다.
+ */
+export const askStudyChat = (code: string, message: string, signal?: AbortSignal) =>
+  request<ChatResponse>(`${s(code)}/chat`, { method: "POST", json: { message }, signal });
+
+/** 이 세션에서 나눈 대화 전체. AI 를 부르지 않는다. */
+export const getChatHistory = (code: string) =>
+  request<ChatHistoryResponse>(`${s(code)}/chat`);
 
 export { ApiError, NetworkError, toMessage } from "./client";
 export type * from "./types";

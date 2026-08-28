@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AppHeader, Ghost, PrimaryButton, SecondaryButton, SourceBadge, SourceNotice } from "@/app/_components/ui";
+import { StudyChat } from "@/app/_components/study-chat";
 import { OPTION_TAGS } from "@/app/_components/data";
 import { useSessionStore } from "@/app/_components/session-store";
 import { useCurriculum } from "@/app/_components/use-curriculum";
@@ -168,73 +169,82 @@ function QuizView({
   return (
     <div className="min-h-screen bg-white text-[#222]">
       <AppHeader />
-      <main className="mx-auto max-w-[820px] px-6 pb-[90px] pt-12 sm:px-10">
-        <div className="mb-3.5 flex items-center justify-between">
-          <span className="text-[13px] font-bold text-[#FF7A00]">STEP {stepId} 확인 퀴즈</span>
-          <span className="text-[13px] text-[#888]">
-            {currentIndex + 1} / {questions.length}
-          </span>
-        </div>
-        <div className="mb-2 flex flex-wrap items-center gap-2.5">
-          <span className="text-[13px] text-[#888]">{topicTitle}</span>
-          <SourceBadge source={source} />
-        </div>
-        <SourceNotice source={source} className="mb-4" />
-        <div className="mb-9 h-2 overflow-hidden rounded-full bg-[#FFF3E8]">
-          <div className="h-full rounded-full bg-[#FF7A00] transition-[width] duration-300" style={{ width: `${progress}%` }} />
-        </div>
-
-        <section className="rounded-[20px] border border-[#eee] p-6 sm:p-9">
-          <h1 className="mb-7 text-[22px] leading-[1.5] tracking-[-.5px] sm:text-2xl">{question.question}</h1>
-          <div className="grid gap-3">
-            {question.options.map((option, index) => {
-              const isAnswer = answered && index === result.correctIndex;
-              const isPicked = index === picked;
-              let stateClass = "border-[#eee] bg-white text-[#222] hover:border-[#FFE0C4]";
-              if (isAnswer) stateClass = "border-[#FF7A00] bg-[#FFF3E8] font-bold text-[#E85D00]";
-              else if (answered && isPicked) stateClass = "border-[#eee] bg-[#FAFAFA] text-[#888]";
-              else if (answered) stateClass = "border-[#eee] bg-white text-[#888]";
-              return (
-                <button
-                  key={option}
-                  type="button"
-                  disabled={answered || submitting}
-                  onClick={() => void pick(index)}
-                  className={`flex w-full items-center gap-3.5 rounded-[14px] border-[1.5px] px-5 py-[18px] text-left text-base leading-[1.5] transition-all ${answered || submitting ? "cursor-default" : "cursor-pointer"} ${stateClass}`}
-                >
-                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-[#eee] text-[13px] font-bold">
-                    {OPTION_TAGS[index]}
-                  </span>
-                  <span>{option}</span>
-                </button>
-              );
-            })}
+      {/*
+        넓은 화면에서는 퀴즈 옆에 학습 도우미를 붙인다. 모르는 게 나왔을 때 화면을
+        떠나지 않고 물어볼 수 있어야 한다 — 떠나면 풀던 문제로 돌아오지 않는다.
+        좁은 화면에서는 도우미가 떠 있는 버튼이 되므로 한 칸으로 둔다.
+      */}
+      <main className="mx-auto grid max-w-[820px] gap-6 px-6 pb-[90px] pt-12 sm:px-10 lg:max-w-[1200px] lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div>
+          <div className="mb-3.5 flex items-center justify-between">
+            <span className="text-[13px] font-bold text-[#FF7A00]">STEP {stepId} 확인 퀴즈</span>
+            <span className="text-[13px] text-[#888]">
+              {currentIndex + 1} / {questions.length}
+            </span>
+          </div>
+          <div className="mb-2 flex flex-wrap items-center gap-2.5">
+            <span className="text-[13px] text-[#888]">{topicTitle}</span>
+            <SourceBadge source={source} />
+          </div>
+          <SourceNotice source={source} className="mb-4" />
+          <div className="mb-9 h-2 overflow-hidden rounded-full bg-[#FFF3E8]">
+            <div className="h-full rounded-full bg-[#FF7A00] transition-[width] duration-300" style={{ width: `${progress}%` }} />
           </div>
 
-          {error && (
-            <p role="alert" className="mt-5 rounded-xl border border-[#F5C2C7] bg-[#FDECEE] px-4 py-3 text-[13.5px] text-[#B02A37]">
-              {error}
-            </p>
-          )}
-
-          {answered && (
-            <div className="mt-6 flex flex-col items-start gap-4 border-t border-[#eee] pt-6 sm:flex-row sm:items-center">
-              <Ghost width={44} mood={result.correct ? "smile" : "worried"} className="animate-bob-small shrink-0" />
-              <div className="flex-1 text-[14.5px] leading-[1.7]">
-                {result.correct
-                  ? `정답! ${result.explanation}`
-                  : `아쉬워요. 정답은 ${OPTION_TAGS[result.correctIndex]} — ${result.explanation}`}
-              </div>
-              <PrimaryButton className="shrink-0 px-[26px] py-3.5 text-[15px]" onClick={next}>
-                {currentIndex >= questions.length - 1 ? "결과 보기" : "다음 문제"}
-              </PrimaryButton>
+          <section className="rounded-[20px] border border-[#eee] p-6 sm:p-9">
+            <h1 className="mb-7 text-[22px] leading-[1.5] tracking-[-.5px] sm:text-2xl">{question.question}</h1>
+            <div className="grid gap-3">
+              {question.options.map((option, index) => {
+                const isAnswer = answered && index === result.correctIndex;
+                const isPicked = index === picked;
+                let stateClass = "border-[#eee] bg-white text-[#222] hover:border-[#FFE0C4]";
+                if (isAnswer) stateClass = "border-[#FF7A00] bg-[#FFF3E8] font-bold text-[#E85D00]";
+                else if (answered && isPicked) stateClass = "border-[#eee] bg-[#FAFAFA] text-[#888]";
+                else if (answered) stateClass = "border-[#eee] bg-white text-[#888]";
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    disabled={answered || submitting}
+                    onClick={() => void pick(index)}
+                    className={`flex w-full items-center gap-3.5 rounded-[14px] border-[1.5px] px-5 py-[18px] text-left text-base leading-[1.5] transition-all ${answered || submitting ? "cursor-default" : "cursor-pointer"} ${stateClass}`}
+                  >
+                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-[#eee] text-[13px] font-bold">
+                      {OPTION_TAGS[index]}
+                    </span>
+                    <span>{option}</span>
+                  </button>
+                );
+              })}
             </div>
-          )}
-        </section>
 
-        <p className="mt-5 text-center text-[13px] text-[#888]">
-          맞힌 문제 {correctCount} / {questions.length}
-        </p>
+            {error && (
+              <p role="alert" className="mt-5 rounded-xl border border-[#F5C2C7] bg-[#FDECEE] px-4 py-3 text-[13.5px] text-[#B02A37]">
+                {error}
+              </p>
+            )}
+
+            {answered && (
+              <div className="mt-6 flex flex-col items-start gap-4 border-t border-[#eee] pt-6 sm:flex-row sm:items-center">
+                <Ghost width={44} mood={result.correct ? "smile" : "worried"} className="animate-bob-small shrink-0" />
+                <div className="flex-1 text-[14.5px] leading-[1.7]">
+                  {result.correct
+                    ? `정답! ${result.explanation}`
+                    : `아쉬워요. 정답은 ${OPTION_TAGS[result.correctIndex]} — ${result.explanation}`}
+                </div>
+                <PrimaryButton className="shrink-0 px-[26px] py-3.5 text-[15px]" onClick={next}>
+                  {currentIndex >= questions.length - 1 ? "결과 보기" : "다음 문제"}
+                </PrimaryButton>
+              </div>
+            )}
+          </section>
+
+          <p className="mt-5 text-center text-[13px] text-[#888]">
+            맞힌 문제 {correctCount} / {questions.length}
+          </p>
+        </div>
+
+        <StudyChat />
       </main>
     </div>
   );
