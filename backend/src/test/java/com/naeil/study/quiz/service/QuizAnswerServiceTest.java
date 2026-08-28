@@ -16,6 +16,7 @@ import com.naeil.study.quiz.repository.QuizRepository;
 import com.naeil.study.quiz.repository.QuizResultRepository;
 import com.naeil.study.quiz.service.QuizAnswerService.AnswerResult;
 import com.naeil.study.quiz.service.QuizAnswerService.TopicQuizResults;
+import com.naeil.study.quiz.service.QuizAnswerService.TopicQuizReview;
 import com.naeil.study.session.entity.StudySession;
 import com.naeil.study.session.service.SessionService;
 import com.naeil.study.topic.entity.Topic;
@@ -271,6 +272,88 @@ class QuizAnswerServiceTest {
                     .willReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.results(SESSION_CODE, TOPIC_ID))
+                    .isInstanceOf(TopicNotFoundException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("풀이 내역")
+    class Review {
+
+        private List<Quiz> fiveQuizzes() throws Exception {
+            List<Quiz> quizzes = new ArrayList<>();
+            for (int i = 1; i <= 5; i++) {
+                quizzes.add(quiz(UUID.randomUUID(), i, 0));
+            }
+            return quizzes;
+        }
+
+        private void givenTopic() {
+            given(topicRepository.findByIdAndStudySessionId(TOPIC_ID, SESSION_ID))
+                    .willReturn(Optional.of(topic));
+        }
+
+        @Test
+        @DisplayName("문제 순서대로 답안을 짝지어 돌려준다")
+        void pairsQuizzesWithResults() throws Exception {
+            givenSession();
+            givenTopic();
+            List<Quiz> quizzes = fiveQuizzes();
+            given(quizRepository.findLatestRound(TOPIC_ID)).willReturn(1);
+            given(quizRepository.findAllByTopicIdAndRoundOrderByQuizOrderAsc(TOPIC_ID, 1))
+                    .willReturn(quizzes);
+            given(quizResultRepository.findAllByStudySessionIdAndQuizTopicId(SESSION_ID, TOPIC_ID))
+                    .willReturn(List.of(
+                            QuizResult.create(session, quizzes.get(0), 0, true, NOW),
+                            QuizResult.create(session, quizzes.get(1), 3, false, NOW),
+                            QuizResult.create(session, quizzes.get(2), 0, true, NOW)));
+
+            TopicQuizReview review = service.review(SESSION_CODE, TOPIC_ID);
+
+            assertThat(review.items()).hasSize(5);
+            assertThat(review.answeredQuestions()).isEqualTo(3);
+            assertThat(review.wrongQuestions()).isEqualTo(1);
+            // 안 푼 문제도 자리는 남는다 — 몇 문제 중 몇 개를 풀었는지 보여야 한다
+            assertThat(review.items().get(3).answered()).isFalse();
+            assertThat(review.items().get(4).answered()).isFalse();
+        }
+
+        @Test
+        @DisplayName("안 푼 문제는 틀린 문제로 세지 않는다")
+        void doesNotCountUnansweredAsWrong() throws Exception {
+            givenSession();
+            givenTopic();
+            List<Quiz> quizzes = fiveQuizzes();
+            given(quizRepository.findLatestRound(TOPIC_ID)).willReturn(1);
+            given(quizRepository.findAllByTopicIdAndRoundOrderByQuizOrderAsc(TOPIC_ID, 1))
+                    .willReturn(quizzes);
+            given(quizResultRepository.findAllByStudySessionIdAndQuizTopicId(SESSION_ID, TOPIC_ID))
+                    .willReturn(List.of(QuizResult.create(session, quizzes.get(0), 1, false, NOW)));
+
+            TopicQuizReview review = service.review(SESSION_CODE, TOPIC_ID);
+
+            assertThat(review.wrongQuestions()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("퀴즈가 없는 Topic 은 내역을 볼 수 없다")
+        void rejectsTopicWithoutQuizzes() {
+            givenSession();
+            givenTopic();
+            given(quizRepository.findLatestRound(TOPIC_ID)).willReturn(0);
+
+            assertThatThrownBy(() -> service.review(SESSION_CODE, TOPIC_ID))
+                    .isInstanceOf(QuizNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("다른 세션의 Topic 은 내역을 볼 수 없다")
+        void rejectsTopicOfAnotherSession() {
+            givenSession();
+            given(topicRepository.findByIdAndStudySessionId(TOPIC_ID, SESSION_ID))
+                    .willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.review(SESSION_CODE, TOPIC_ID))
                     .isInstanceOf(TopicNotFoundException.class);
         }
     }

@@ -180,4 +180,71 @@ public class QuizAnswerService {
 
         return new TopicQuizResults(topic, quizzes.size(), ordered);
     }
+
+    /**
+     * 한 문제의 풀이 내역. 문제와 내가 낸 답을 함께 본다.
+     *
+     * @param result 아직 답하지 않았으면 {@code null}
+     */
+    public record QuizReviewItem(Quiz quiz, QuizResult result) {
+
+        public boolean answered() {
+            return result != null;
+        }
+
+        /** 틀린 문제인가. 안 푼 문제는 틀린 것으로 세지 않는다. */
+        public boolean wrong() {
+            return result != null && !result.isCorrect();
+        }
+    }
+
+    /** Topic 한 개의 풀이 내역. 문제 순서대로다. */
+    public record TopicQuizReview(Topic topic, int round, List<QuizReviewItem> items) {
+
+        public int answeredQuestions() {
+            return (int) items.stream().filter(QuizReviewItem::answered).count();
+        }
+
+        public int wrongQuestions() {
+            return (int) items.stream().filter(QuizReviewItem::wrong).count();
+        }
+    }
+
+    /**
+     * Topic 의 풀이 내역을 문제·정답·해설까지 함께 돌려준다.
+     *
+     * <p><b>답한 문제의 정답만 담는다.</b> 아직 풀지 않은 문제는 문제 자체를 빼고
+     * 자리만 남긴다. 채점 응답에서 이미 공개한 정답을 다시 보여 주는 것은 괜찮지만,
+     * 이 경로가 안 푼 문제의 정답을 미리 보는 우회로가 되어서는 안 된다.
+     *
+     * <p>{@link #results} 와 마지막 회차만 본다는 점이 같다. 화면이 방금 푼 것이
+     * 마지막 회차이므로, 내역도 그것을 보여 줘야 한다.
+     *
+     * @throws TopicNotFoundException 없거나 다른 세션의 Topic
+     * @throws QuizNotFoundException  아직 퀴즈를 생성하지 않은 경우
+     */
+    @Transactional
+    public TopicQuizReview review(String sessionCode, UUID topicId) {
+        StudySession session = sessionService.getSessionAndTouch(sessionCode);
+        Topic topic = topicRepository.findByIdAndStudySessionId(topicId, session.getId())
+                .orElseThrow(TopicNotFoundException::new);
+
+        int latestRound = quizRepository.findLatestRound(topic.getId());
+        if (latestRound == 0) {
+            throw new QuizNotFoundException();
+        }
+        List<Quiz> quizzes =
+                quizRepository.findAllByTopicIdAndRoundOrderByQuizOrderAsc(topic.getId(), latestRound);
+
+        Map<UUID, QuizResult> resultByQuizId = quizResultRepository
+                .findAllByStudySessionIdAndQuizTopicId(session.getId(), topic.getId())
+                .stream()
+                .collect(Collectors.toMap(result -> result.getQuiz().getId(), result -> result));
+
+        List<QuizReviewItem> items = quizzes.stream()
+                .map(quiz -> new QuizReviewItem(quiz, resultByQuizId.get(quiz.getId())))
+                .toList();
+
+        return new TopicQuizReview(topic, latestRound, items);
+    }
 }

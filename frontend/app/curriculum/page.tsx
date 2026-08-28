@@ -172,14 +172,33 @@ export default function CurriculumPage() {
           <div className="flex flex-wrap items-center gap-3">
             {/* 넓은 화면에서는 위 막대에 이미 있다. */}
             <SessionCodeCard className="lg:hidden" />
-            {allDone ? (
+            {/*
+              모든 STEP 을 마치면 전체 정리로 갈 길을 연다.
+
+              공부를 끝낸 사람에게 지금 가장 쓸모 있는 것은 다음 STEP 이 아니라, 지금까지
+              한 것을 한 장으로 훑어보는 일이다. 시험 직전에 볼 것이기도 하다.
+            */}
+            {allDone && (
               <PrimaryButton
                 className="px-7 py-[15px] text-[15.5px]"
+                onClick={() => router.push("/review")}
+              >
+                전체 정리 보기
+              </PrimaryButton>
+            )}
+            {allDone ? (
+              <button
+                type="button"
                 disabled={!firstWeak}
                 onClick={() => firstWeak && router.push(`/study/${firstWeak}`)}
+                className={`rounded-xl border px-7 py-[15px] text-[15.5px] font-bold transition-colors ${
+                  firstWeak
+                    ? "cursor-pointer border-[#eee] bg-white text-[#666] hover:border-[#FFE0C4] hover:text-[#E85D00]"
+                    : "cursor-not-allowed border-[#eee] bg-[#fafafa] text-[#bbb]"
+                }`}
               >
                 {firstWeak ? "다시 볼 개념 복습하기" : "학습 완료!"}
-              </PrimaryButton>
+              </button>
             ) : (
               <PrimaryButton
                 className="px-7 py-[15px] text-[15.5px]"

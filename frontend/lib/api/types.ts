@@ -277,3 +277,82 @@ export interface ErrorResponse {
   code: string;
   message: string;
 }
+
+/**
+ * 풀이 내역의 문제 하나.
+ *
+ * <p>정답({@code correctIndex})과 해설은 <b>답한 문제에만</b> 들어 있다.
+ * 안 푼 문제는 둘 다 null 이다 — 내역 화면이 정답 미리보기 통로가 되지 않도록
+ * 서버가 빼고 내려준다.
+ */
+export interface QuizReviewItemResponse {
+  quizId: string;
+  quizOrder: number;
+  question: string;
+  options: string[];
+  difficulty: QuizDifficulty;
+  answered: boolean;
+  selectedIndex: number | null;
+  correct: boolean;
+  correctIndex: number | null;
+  explanation: string | null;
+  answeredAt: string | null;
+}
+
+/** 한 STEP(Topic)의 풀이 내역. */
+export interface QuizReviewResponse {
+  topicId: string;
+  topicTitle: string;
+  /** 마지막 회차. "새로운 퀴즈"를 만들면 올라간다. */
+  round: number;
+  totalQuestions: number;
+  answeredQuestions: number;
+  wrongQuestions: number;
+  items: QuizReviewItemResponse[];
+}
+
+/** 정리 화면의 STEP 하나. 요약과 그 STEP 의 문제들을 함께 담는다. */
+export interface StepReviewResponse {
+  stepId: string;
+  stepOrder: number;
+  title: string;
+  type: StudyStepType;
+  status: StudyStepStatus;
+  allocatedMinutes: number;
+  actualStudyMinutes: number | null;
+  /** 휴식·복습처럼 Topic 이 없는 STEP 이면 null 이다. */
+  topicId: string | null;
+  topicTitle: string | null;
+  summary: string | null;
+  keyPoints: string[];
+  importance: TopicImportance | null;
+  round: number;
+  totalQuestions: number;
+  answeredQuestions: number;
+  wrongQuestions: number;
+  quizzes: QuizReviewItemResponse[];
+}
+
+/**
+ * 세션 전체 정리.
+ *
+ * <p>스텝별 요약 / 푼 문제 전체 / 틀린 문제만 — 세 화면이 이 응답 하나를 나눠 쓴다.
+ * 틀린 문제만 보는 화면도 따로 부르지 않고 correct 가 false 인 것을 골라 쓴다.
+ */
+export interface SessionReviewResponse {
+  sessionCode: string;
+  subject: string | null;
+  examScope: string | null;
+  examAt: string | null;
+  /** 모든 STEP 을 마쳤는가. 건너뛴 STEP 은 남은 것으로 세지 않는다. */
+  completed: boolean;
+  totalSteps: number;
+  completedSteps: number;
+  totalQuestions: number;
+  answeredQuestions: number;
+  correctAnswers: number;
+  wrongAnswers: number;
+  /** 푼 문제 기준 정답률. 안 푼 문제는 분모에서 뺀다. */
+  scorePercentage: number;
+  steps: StepReviewResponse[];
+}

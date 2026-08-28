@@ -11,6 +11,8 @@ import type {
   QuizAnswerResponse,
   QuizListResponse,
   QuizResultsResponse,
+  QuizReviewResponse,
+  SessionReviewResponse,
   SessionResponse,
   StepCompletionResponse,
   StudyStepProgressResponse,
@@ -142,6 +144,26 @@ export const answerQuiz = (code: string, quizId: string, selectedIndex: number) 
 
 export const getQuizResults = (code: string, topicId: string) =>
   request<QuizResultsResponse>(`${s(code)}/topics/${topicId}/quiz-results`);
+
+/**
+ * 한 STEP 의 풀이 내역. 문제·내 답·정답·해설을 함께 받는다.
+ *
+ * <p>{@link getQuizResults} 와 나눠 부른다. 그쪽은 점수만 담아 가볍고, 이쪽은 문제
+ * 본문까지 담는다. 점수만 필요한 화면이 문제 전문을 받아 갈 이유는 없다.
+ */
+export const getQuizReview = (code: string, topicId: string) =>
+  request<QuizReviewResponse>(`${s(code)}/topics/${topicId}/quiz-review`);
+
+/* ── 전체 정리 ────────────────────────────────────────── */
+
+/**
+ * 세션 전체 정리. 스텝별 요약과 푼 문제 전체를 한 번에 받는다.
+ *
+ * <p>AI 를 부르지 않는다 — 분석 때 만들어 둔 요약과 이미 채점한 답안을 모아 줄 뿐이라,
+ * 정리 화면을 몇 번 열어도 과금되지 않는다.
+ */
+export const getSessionReview = (code: string) =>
+  request<SessionReviewResponse>(`${s(code)}/review`);
 
 /* ── 학습 챗봇 ────────────────────────────────────────── */
 

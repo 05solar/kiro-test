@@ -9,7 +9,14 @@ import { useSessionStore } from "@/app/_components/session-store";
 import { usePlanStore } from "@/app/_components/store";
 import { useCurriculum } from "@/app/_components/use-curriculum";
 import { useHydrated } from "@/app/_components/use-hydrated";
-import { completeStep, listTopics, startStep, toMessage, type TopicResponse } from "@/lib/api";
+import {
+  completeStep,
+  getQuizResults,
+  listTopics,
+  startStep,
+  toMessage,
+  type TopicResponse,
+} from "@/lib/api";
 import { toStudyContent } from "@/lib/api/adapt";
 
 export default function StudyPage() {
@@ -51,6 +58,38 @@ export default function StudyPage() {
 
   const topic = topics?.find((item) => item.topicOrder === stepId);
   const content: StudyContent | undefined = topic ? toStudyContent(topic) : undefined;
+
+  /*
+   * 이 STEP 의 퀴즈를 푼 적이 있는지 본다. 내역 버튼을 보여줄지 정하는 데만 쓴다.
+   *
+   * 문제 본문이 아니라 점수 집계를 부른다 — 여기서 필요한 건 "풀었는가"와 "몇 개
+   * 틀렸는가" 두 숫자뿐이고, 학습 화면이 문제 전문까지 받아 갈 이유는 없다.
+   *
+   * 아직 퀴즈를 만들지 않았으면 404 다. 오류가 아니라 "아직 없음"이므로 조용히 넘긴다.
+   */
+  const [quizScore, setQuizScore] = useState<{ answered: number; wrong: number } | null>(null);
+
+  useEffect(() => {
+    if (!sessionCode || !topic) return;
+    let active = true;
+    void getQuizResults(sessionCode, topic.id)
+      .then((results) => {
+        if (!active) return;
+        setQuizScore({
+          answered: results.answeredQuestions,
+          wrong: results.answeredQuestions - results.correctAnswers,
+        });
+      })
+      .catch(() => {
+        if (active) setQuizScore(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [sessionCode, topic]);
+
+  const answeredQuiz = (quizScore?.answered ?? 0) > 0;
+  const wrongCount = quizScore?.wrong ?? 0;
 
   /*
    * 화면을 열면 그 단계를 시작한다.
@@ -126,6 +165,8 @@ export default function StudyPage() {
       stepTitles={new Map((curriculum.raw?.steps ?? []).map((step) => [step.order, step.title]))}
       completedSteps={completedSteps}
       weakSteps={weakSteps}
+      answeredQuiz={answeredQuiz}
+      wrongCount={wrongCount}
       working={working}
       actionError={actionError}
       onFinish={() => void finishAndGoToQuiz()}
@@ -145,6 +186,9 @@ type StudyViewProps = {
   stepTitles: Map<number, string>;
   completedSteps: number[];
   weakSteps: number[];
+  /** 이 STEP 의 퀴즈를 푼 적이 있는가. 내역 버튼을 보여줄지 정한다. */
+  answeredQuiz: boolean;
+  wrongCount: number;
   working: boolean;
   actionError: string | null;
   onFinish: () => void;
@@ -161,6 +205,8 @@ function StudyView({
   stepTitles,
   completedSteps,
   weakSteps,
+  answeredQuiz,
+  wrongCount,
   working,
   actionError,
   onFinish,
@@ -303,6 +349,31 @@ function StudyView({
               {isWeak ? "다시 볼 개념으로 표시됨" : "나중에 다시 볼 개념으로 표시"}
             </button>
           </div>
+
+          {/*
+            이미 푼 STEP 이면 내역으로 갈 길을 둔다.
+
+            퀴즈를 풀고 나면 결과 화면을 한 번 보고 지나가 버려, 무엇을 틀렸는지
+            다시 볼 방법이 없었다. 안 푼 STEP 에는 보여 주지 않는다 — 눌러도 빈
+            화면만 나온다.
+          */}
+          {answeredQuiz && (
+            <button
+              type="button"
+              onClick={() => router.push(`/quiz-review/${stepId}`)}
+              className="mt-5 flex w-full cursor-pointer items-center justify-between rounded-[14px] border border-[#eee] bg-white px-5 py-4 text-left transition-colors hover:border-[#FFE0C4]"
+            >
+              <span>
+                <span className="block text-[14px] font-bold">퀴즈 내역 보기</span>
+                <span className="mt-0.5 block text-[12.5px] text-[#666]">
+                  {wrongCount > 0
+                    ? `틀린 ${wrongCount}문제를 다시 풀어볼 수 있어요`
+                    : "이 STEP 에서 푼 문제와 해설을 다시 봐요"}
+                </span>
+              </span>
+              <span className="shrink-0 text-[13px] font-bold text-[#E85D00]">보기 →</span>
+            </button>
+          )}
         </main>
 
         <aside className="order-3 min-w-0 border-t border-[#eee] p-6 xl:border-l xl:border-t-0 xl:px-6 xl:py-8">

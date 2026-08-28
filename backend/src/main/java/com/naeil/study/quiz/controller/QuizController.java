@@ -2,6 +2,7 @@ package com.naeil.study.quiz.controller;
 
 import com.naeil.study.quiz.dto.QuizListResponse;
 import com.naeil.study.quiz.dto.QuizResultsResponse;
+import com.naeil.study.quiz.dto.QuizReviewResponse;
 import com.naeil.study.quiz.service.QuizAnswerService;
 import com.naeil.study.quiz.service.QuizGenerationService;
 import com.naeil.study.quiz.service.QuizGenerationService.QuizGenerationResult;
@@ -94,5 +95,21 @@ public class QuizController {
     ) {
         return ResponseEntity.ok(
                 QuizResultsResponse.from(quizAnswerService.results(sessionCode, topicId)));
+    }
+
+    /**
+     * Topic 의 풀이 내역을 문제·정답·해설까지 함께 조회한다. 아직 퀴즈가 없으면 404다.
+     *
+     * <p>{@code /quiz-results} 와 나눠 둔 이유는 담는 것이 다르기 때문이다. 그쪽은 점수
+     * 집계라 숫자만 있으면 되고, 이쪽은 "무엇을 틀렸는지" 화면이라 문제 문장이 필요하다.
+     * 점수만 필요한 화면이 문제 본문까지 받아 갈 이유는 없다.
+     */
+    @GetMapping("/quiz-review")
+    public ResponseEntity<QuizReviewResponse> review(
+            @PathVariable String sessionCode,
+            @PathVariable UUID topicId
+    ) {
+        return ResponseEntity.ok(
+                QuizReviewResponse.from(quizAnswerService.review(sessionCode, topicId)));
     }
 }
