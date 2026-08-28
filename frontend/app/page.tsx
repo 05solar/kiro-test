@@ -62,8 +62,17 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-white text-[#222]">
       <AppHeader />
-      <main>
-        <section className="mx-auto grid max-w-[1240px] items-center gap-10 px-6 py-16 md:grid-cols-[1.15fr_.85fr] md:px-10 md:pb-24 md:pt-[88px]">
+      <main className="relative overflow-x-clip">
+        {/*
+          배경 반구 — 중심을 화면 오른쪽 맨끝에 두고 절반만 안으로 들어오게 한다.
+          지름을 화면 높이보다 훨씬 크게 잡아 캐릭터 뒤 배경을 통째로 덮는다.
+          overflow-x-clip 이 없으면 바깥 절반이 가로 스크롤을 만든다.
+        */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute right-0 top-1/2 size-[780px] -translate-y-1/2 translate-x-1/2 rounded-full bg-[#FFF3E8] md:size-[1050px] lg:size-[1250px]"
+        />
+        <section className="relative mx-auto grid max-w-[1240px] items-center gap-10 px-6 py-16 md:grid-cols-[1.15fr_.85fr] md:px-10 md:pb-24 md:pt-[88px]">
           <div>
             <h1 className="font-jua m-0 mb-[22px] text-[48px] leading-[1.14] tracking-[-2px] text-[#222] sm:text-[66px]">
               내일까지<br />해야 하는데<span className="text-[#FF7A00]">.</span>
@@ -133,9 +142,8 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* 말풍선은 항상 캐릭터 머리 위에 둔다. 배경 원은 캐릭터보다 훨씬 크게. */}
+          {/* 말풍선은 항상 캐릭터 머리 위에 둔다. 배경은 화면 오른쪽의 거대한 반구가 담당한다. */}
           <div className="relative flex h-[480px] flex-col items-center justify-center gap-3 md:h-[560px]">
-            <div className="absolute size-[440px] rounded-full bg-[#FFF3E8] sm:size-[540px]" />
             <SpeechBubble tail="bottom-left" className="font-jua relative z-10">
               아직 안 늦었어!
             </SpeechBubble>
