@@ -9,4 +9,7 @@ public interface WrongAnswerSummaryRepository extends JpaRepository<WrongAnswerS
 
     /** 세션의 현재 복습 요약을 조회한다. 세션당 최대 하나다. */
     Optional<WrongAnswerSummary> findByStudySessionId(UUID sessionId);
+
+    /** 세션의 요약을 지운다. 재분석으로 옛 오답 기록이 무효화될 때 쓴다. */
+    void deleteAllByStudySessionId(UUID sessionId);
 }
