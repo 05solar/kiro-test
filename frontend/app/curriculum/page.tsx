@@ -540,7 +540,6 @@ function MapCanvas({ steps, completedStepIds, currentStep, weakSteps, goalReache
           mode={node.mode}
           x={node.x}
           y={node.y}
-          labelAbove={node.index % 2 === 1}
           isDone={completedStepIds.includes(node.id)}
           isCurrent={node.id === currentStep && !goalReached}
           isLocked={node.id > currentStep}
@@ -614,7 +613,6 @@ function StepNode({
   mode,
   x,
   y,
-  labelAbove,
   isDone,
   isCurrent,
   isLocked,
@@ -626,7 +624,6 @@ function StepNode({
   mode: CurriculumStep["mode"];
   x: number;
   y: number;
-  labelAbove: boolean;
   isDone: boolean;
   isCurrent: boolean;
   isLocked: boolean;
@@ -637,8 +634,6 @@ function StepNode({
   const size = isCurrent ? 84 : isDone ? 52 : 48;
   const left = x - size / 2;
   const top = y - size / 2 + PAD_TOP;
-  // 라벨은 위·아래를 번갈아 놓아 촘촘한 구간에서 서로 겹치지 않게 한다.
-  const labelTop = labelAbove ? y - size / 2 - 56 + PAD_TOP : y + size / 2 + 8 + PAD_TOP;
 
   const weakRing = isWeak ? "ring-2 ring-amber-400 ring-offset-2" : "";
   const numberClass = "font-jua flex size-full items-center justify-center leading-none";
@@ -676,20 +671,28 @@ function StepNode({
         </button>
       )}
 
-      {/* 라벨은 평소에 숨긴다. 길에는 숫자와 상자만 보이고, 자세한 제목은 올려다볼 때만. */}
+      {/*
+        호버 툴팁 — 평소엔 숫자와 상자만 보이고, 올리면 흰 말풍선이 노드 "위"에 뜬다.
+        bottom 앵커(translateY -100%)라 제목 길이와 무관하게 항상 노드 위에 온전히 자리잡고,
+        z-50 으로 길·상자·캐릭터보다 위에 그린다. 줄바꿈을 허용해 글자를 자르지 않는다.
+      */}
       <div
-        className={`pointer-events-none absolute z-20 w-[150px] text-center text-[12.5px] opacity-0 transition-opacity duration-150 group-hover:opacity-100 ${
-          isCurrent ? "font-bold text-[#E85D00]" : isDone ? "font-bold text-[#666]" : "text-[#666]"
-        }`}
-        style={{ left: x, top: labelTop, transform: "translate(-50%, 0)" }}
+        className="pointer-events-none absolute z-50 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+        style={{ left: x, top: y - size / 2 - 10 + PAD_TOP, transform: "translate(-50%, -100%)" }}
       >
-        <span className={`inline-block rounded-full px-3 py-[5px] text-[12px] font-bold ${isCurrent ? "bg-[#FF7A00] text-white" : "bg-white/85 text-[#666]"}`}>
-          STEP {stepId}
-        </span>
-        <div className="mt-[5px] flex items-center justify-center gap-1 font-medium text-[#222]">
-          <span className="max-w-[140px] truncate rounded-md bg-white/85 px-1.5 py-0.5">{title}</span>
-          {mode === "skim" && <span className="rounded-full bg-[#F4F4F4] px-1.5 py-0.5 text-[10px] text-[#666]">훑기</span>}
-          {mode === "review" && <span className="rounded-full bg-[#FFF3E8] px-1.5 py-0.5 text-[10px] font-bold text-[#E85D00]">퀴즈</span>}
+        <div className="relative w-max max-w-[260px] rounded-xl border border-[#eee] bg-white px-3.5 py-2.5 text-center shadow-[0_8px_24px_rgba(0,0,0,.14)]">
+          <div className="mb-1 text-[11.5px] font-bold text-[#E85D00]">STEP {stepId}</div>
+          <div className="whitespace-normal break-keep text-[13px] font-bold leading-[1.45] text-[#111]">
+            {title}
+          </div>
+          {(mode === "skim" || mode === "review") && (
+            <div className="mt-1.5 flex justify-center gap-1">
+              {mode === "skim" && <span className="rounded-full bg-[#F4F4F4] px-2 py-0.5 text-[10px] text-[#666]">훑기</span>}
+              {mode === "review" && <span className="rounded-full bg-[#FFF3E8] px-2 py-0.5 text-[10px] font-bold text-[#E85D00]">퀴즈</span>}
+            </div>
+          )}
+          {/* 꼬리 — 말풍선이 노드를 가리키게 한다 */}
+          <span className="absolute left-1/2 top-full size-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b border-r border-[#eee] bg-white" />
         </div>
       </div>
     </div>
