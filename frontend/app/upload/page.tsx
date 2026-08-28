@@ -192,18 +192,22 @@ export default function UploadPage() {
       <AppHeader />
       <main className="mx-auto max-w-[980px] px-6 py-12 md:px-10 md:pb-24 md:pt-14">
         <FlowSteps current={1} />
-        <div className="mb-2.5 text-[13px] font-bold text-[#FF7A00]">STEP 2 / 2</div>
-        <h1 className="font-jua mb-2 text-[28px] tracking-[-1px] sm:text-4xl">공부할 자료를 올려주세요</h1>
-        <p className="mb-6 text-[15px] text-[#666]">
-          강의 자료를 읽고, 시험에 나올 핵심만 골라 플랜으로 만들게요.
-          자료가 없으면 과목명과 시험 범위만으로 만들어 드릴게요.
-        </p>
-
         {/*
-          세션이 막 발급된 직후 처음 닿는 화면이다. 여기서 코드를 보여주지 않으면
-          사용자는 자기 코드를 볼 기회가 없다 — 잃으면 되찾을 방법이 없는 값이다.
+          제목 오른쪽에 세션 코드를 둔다. 세션이 막 발급된 직후 처음 닿는 화면이라
+          여기서 보여주지 않으면 사용자가 자기 코드를 볼 기회가 없다.
+          좁은 화면에서는 wrap 으로 제목 아래에 내려간다.
         */}
-        <SessionCodeCard className="mb-9" />
+        <div className="mb-9 flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="mb-2.5 text-[13px] font-bold text-[#FF7A00]">STEP 2 / 2</div>
+            <h1 className="font-jua mb-2 text-[28px] tracking-[-1px] sm:text-4xl">공부할 자료를 올려주세요</h1>
+            <p className="text-[15px] text-[#666]">
+              강의 자료를 읽고, 시험에 나올 핵심만 골라 플랜으로 만들게요.
+              자료가 없으면 과목명과 시험 범위만으로 만들어 드릴게요.
+            </p>
+          </div>
+          <SessionCodeCard />
+        </div>
 
         <div className="grid items-start gap-6 lg:grid-cols-[1fr_300px]">
           <section className="rounded-[18px] border border-[#eee] p-6 sm:p-[34px]">

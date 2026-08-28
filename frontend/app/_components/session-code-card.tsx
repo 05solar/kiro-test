@@ -43,33 +43,32 @@ export function SessionCodeCard({ className = "" }: { className?: string }) {
   return (
     <section
       aria-label="세션 코드"
-      className={`rounded-[18px] border border-[#FFE0C4] bg-[#FFF3E8] px-5 py-4 ${className}`}
+      className={`shrink-0 rounded-[16px] border border-[#FFE0C4] bg-[#FFF3E8] px-4 py-3 ${className}`}
     >
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-        <div className="min-w-0 flex-1">
-          <div className="mb-1 text-[12.5px] font-bold text-[#E85D00]">내 세션 코드</div>
-          <div className="font-mono text-[24px] font-bold tracking-[3px] text-[#222] sm:text-[27px]">
+      <div className="flex items-center gap-3">
+        <div className="min-w-0">
+          <div className="mb-0.5 text-[11.5px] font-bold text-[#E85D00]">내 세션 코드</div>
+          <div className="font-mono text-[19px] font-bold leading-tight tracking-[2px] text-[#222] sm:text-[21px]">
             {sessionCode}
           </div>
         </div>
         <button
           type="button"
           onClick={() => void copy()}
-          className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-[#FFE0C4] bg-white px-4 py-2.5 text-[13.5px] font-bold text-[#E85D00] transition-colors hover:border-[#FF7A00]"
+          className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-[#FFE0C4] bg-white px-3 py-2 text-[12.5px] font-bold text-[#E85D00] transition-colors hover:border-[#FF7A00]"
         >
           {copied ? (
             <>
-              <CheckMini size={13} />
-              복사했어요
+              <CheckMini size={12} />
+              복사됨
             </>
           ) : (
-            "코드 복사"
+            "복사"
           )}
         </button>
       </div>
-      <p className="mt-3 border-t border-[#FFE0C4] pt-3 text-[12.5px] leading-[1.7] text-[#7A4A16]">
-        <b>이 코드를 적어 두세요.</b> 회원가입이 없어서, 코드를 잃으면 올린 자료도 만든 계획도
-        되찾을 수 없어요. 다른 기기에서도 이 코드로 이어집니다.
+      <p className="mt-2 text-[11.5px] leading-[1.6] text-[#7A4A16]">
+        코드를 통해서 학습을 계속 이어갈 수 있어요
       </p>
     </section>
   );

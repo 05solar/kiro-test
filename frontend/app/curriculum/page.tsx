@@ -168,28 +168,30 @@ export default function CurriculumPage() {
               <p className="mt-1 text-[13px] font-bold text-[#E85D00]">복습 모드 · 퀴즈 위주로 빠르게</p>
             )}
           </div>
-          {allDone ? (
-            <PrimaryButton
-              className="px-7 py-[15px] text-[15.5px]"
-              disabled={!firstWeak}
-              onClick={() => firstWeak && router.push(`/study/${firstWeak}`)}
-            >
-              {firstWeak ? "다시 볼 개념 복습하기" : "학습 완료!"}
-            </PrimaryButton>
-          ) : (
-            <PrimaryButton
-              className="px-7 py-[15px] text-[15.5px]"
-              onClick={() => nextStep && router.push(`/study/${nextStep.id}`)}
-            >
-              {completedCount === 0 ? `STEP ${currentStepId} 시작하기` : `STEP ${currentStepId} 이어서 공부하기`}
-            </PrimaryButton>
-          )}
+          {/* 제목 오른쪽 — 세션 코드와 이어하기 버튼 */}
+          <div className="flex flex-wrap items-center gap-3">
+            <SessionCodeCard />
+            {allDone ? (
+              <PrimaryButton
+                className="px-7 py-[15px] text-[15.5px]"
+                disabled={!firstWeak}
+                onClick={() => firstWeak && router.push(`/study/${firstWeak}`)}
+              >
+                {firstWeak ? "다시 볼 개념 복습하기" : "학습 완료!"}
+              </PrimaryButton>
+            ) : (
+              <PrimaryButton
+                className="px-7 py-[15px] text-[15.5px]"
+                onClick={() => nextStep && router.push(`/study/${nextStep.id}`)}
+              >
+                {completedCount === 0 ? `STEP ${currentStepId} 시작하기` : `STEP ${currentStepId} 이어서 공부하기`}
+              </PrimaryButton>
+            )}
+          </div>
         </div>
 
         <SourceNotice source={source} className="mb-4" />
 
-        {/* 코드를 잃으면 되찾을 수 없다. 계획을 보는 중에도 다시 확인할 수 있어야 한다. */}
-        <SessionCodeCard className="mb-4 max-w-[520px]" />
 
         <div className="mb-4 inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-full border border-[#FFE0C4] bg-[#FFF3E8] px-4 py-2 text-[13px]">
           {hydrated ? (
