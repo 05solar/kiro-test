@@ -29,6 +29,7 @@
 ```
 kiro-project
 ├── backend/          Spring Boot 백엔드 (현재 개발 중)
+├── frontend                   Next.js 프론트엔드
 ├── docs/             기획·API·DB 문서
 ├── README.md         이 파일
 ├── PROCESS.md        전체 개발 진행 절차와 단계별 상태
@@ -57,6 +58,17 @@ kiro-project
 자세한 절차는 [PROCESS.md](PROCESS.md)를 참고한다.
 
 ## 빠르게 실행하기
+
+전체를 한 번에 (도커 필요):
+
+```bash
+cp .env.example .env    # GEMINI_API_KEY 채우기
+docker compose up -d --build
+```
+
+브라우저에서 http://localhost 를 연다. 자세한 내용은 [DEPLOY.md](DEPLOY.md).
+
+백엔드만 따로:
 
 ```bash
 cd backend
