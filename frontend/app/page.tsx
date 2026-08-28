@@ -65,9 +65,6 @@ export default function HomePage() {
       <main>
         <section className="mx-auto grid max-w-[1240px] items-center gap-10 px-6 py-16 md:grid-cols-[1.15fr_.85fr] md:px-10 md:pb-24 md:pt-[88px]">
           <div>
-            <div className="mb-[26px] inline-block rounded-full bg-[#FFF3E8] px-3 py-1.5 text-[12.5px] font-bold text-[#E85D00]">
-              시험 D-1 전용 학습 도우미
-            </div>
             <h1 className="font-jua m-0 mb-[22px] text-[48px] leading-[1.14] tracking-[-2px] text-[#222] sm:text-[66px]">
               내일까지<br />해야 하는데<span className="text-[#FF7A00]">.</span>
             </h1>
@@ -136,9 +133,9 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* 말풍선은 항상 캐릭터 머리 위에 둔다. 배경 원은 캐릭터보다 넉넉히 크게. */}
-          <div className="relative flex h-[400px] flex-col items-center justify-center gap-3 md:h-[460px]">
-            <div className="absolute size-[330px] rounded-full bg-[#FFF3E8] sm:size-[400px]" />
+          {/* 말풍선은 항상 캐릭터 머리 위에 둔다. 배경 원은 캐릭터보다 훨씬 크게. */}
+          <div className="relative flex h-[480px] flex-col items-center justify-center gap-3 md:h-[560px]">
+            <div className="absolute size-[440px] rounded-full bg-[#FFF3E8] sm:size-[540px]" />
             <SpeechBubble tail="bottom-left" className="font-jua relative z-10">
               아직 안 늦었어!
             </SpeechBubble>
