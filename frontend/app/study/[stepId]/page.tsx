@@ -177,8 +177,13 @@ function StudyView({
       <AppHeader />
       {/* 학습 화면은 좌우 칸을 이미 쓰고 있다. 도우미는 떠 있는 버튼으로 둔다. */}
       <StudyChat variant="floating" />
-      <div className="grid min-h-[calc(100vh-68px)] xl:grid-cols-[272px_minmax(0,1fr)_300px]">
-        <aside className="order-2 border-t border-[#eee] p-6 xl:order-1 xl:border-r xl:border-t-0 xl:px-6 xl:py-8">
+      {/*
+        칸 너비를 minmax(0, …) 로 둔다. 고정 폭(272px)만 주면 트랙 크기는 그대로인데
+        내용이 그보다 넓어질 때 칸 밖으로 삐져나와, 구분선을 넘어 옆 칸을 침범한다.
+        min 을 0 으로 열어 줘야 안쪽의 truncate 가 실제로 걸린다.
+      */}
+      <div className="grid min-h-[calc(100vh-68px)] xl:grid-cols-[minmax(0,272px)_minmax(0,1fr)_minmax(0,300px)]">
+        <aside className="order-2 min-w-0 border-t border-[#eee] p-6 xl:order-1 xl:border-r xl:border-t-0 xl:px-6 xl:py-8">
           <div className="mb-[26px]">
             <div className="mb-[11px] flex items-baseline justify-between"><span className="text-[12.5px] font-bold text-[#666]">전체 진행률</span><span className="font-jua text-[19px] text-[#FF7A00]">{progress}%</span></div>
             <div className="h-2 overflow-hidden rounded-full bg-[#FFF3E8]"><div className="h-full rounded-full bg-[#FF7A00] transition-[width]" style={{ width: `${progress}%` }} /></div>
@@ -228,7 +233,7 @@ function StudyView({
           <button type="button" className="mt-[22px] w-full cursor-pointer rounded-[10px] border border-[#eee] bg-white p-3 text-[13px] text-[#666] transition-colors hover:border-[#FFE0C4] hover:text-[#E85D00]" onClick={() => router.push("/curriculum")}>맵으로 돌아가기</button>
         </aside>
 
-        <main className="order-1 max-w-[900px] px-6 py-10 sm:px-14 sm:pb-20 sm:pt-11 xl:order-2">
+        <main className="order-1 min-w-0 max-w-[900px] px-6 py-10 sm:px-14 sm:pb-20 sm:pt-11 xl:order-2">
           <div className="mb-3.5 flex items-center gap-2.5">
             <span className="rounded-full bg-[#FFF3E8] px-[11px] py-[5px] text-xs font-bold text-[#E85D00]">STEP {stepId}</span>
             <span className="text-[13px] text-[#666]">{content.chapter} · 예상 {estimatedMinutes}분</span>
@@ -286,7 +291,7 @@ function StudyView({
           </div>
         </main>
 
-        <aside className="order-3 border-t border-[#eee] p-6 xl:border-l xl:border-t-0 xl:px-6 xl:py-8">
+        <aside className="order-3 min-w-0 border-t border-[#eee] p-6 xl:border-l xl:border-t-0 xl:px-6 xl:py-8">
           <div className="mb-4 rounded-2xl border border-[#FFE0C4] bg-[#FFF3E8] p-[22px] text-center">
             <div className="mb-[9px] text-xs font-bold text-[#E85D00]">시험까지</div>
             <div className="text-[28px]"><Countdown /></div>

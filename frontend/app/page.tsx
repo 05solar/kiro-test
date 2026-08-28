@@ -78,7 +78,9 @@ export default function HomePage() {
               내일까지<br />해야 하는데<span className="text-[#FF7A00]">.</span>
             </h1>
             <p className="mb-[38px] max-w-[500px] text-[17px] leading-[1.65] text-[#666] sm:text-[19px]">
-              시험 자료와 남은 시간을 알려주면 벼락치기 로드맵과 퀴즈를 만들어줄께!
+              시험 자료와 남은 시간을 알려주면<br />
+              <span className="font-bold text-[#FF7A00]">벼락치기 로드맵</span>과{" "}
+              <span className="font-bold text-[#FF7A00]">퀴즈</span>를 만들어줄게!
             </p>
 
             <div className="flex flex-wrap items-center gap-3">

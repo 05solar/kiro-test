@@ -6,6 +6,7 @@ import { AppHeader, CheckIcon, CheckMini, ChevronDown, Ghost, PrimaryButton, Sou
 import { useExamStore, usePlanStore } from "@/app/_components/store";
 import { useCurriculum } from "@/app/_components/use-curriculum";
 import { useSession } from "@/app/_components/use-session";
+import { SessionCodeCard } from "@/app/_components/session-code-card";
 import { useHydrated } from "@/app/_components/use-hydrated";
 import {
   formatMinutes,
@@ -186,6 +187,9 @@ export default function CurriculumPage() {
         </div>
 
         <SourceNotice source={source} className="mb-4" />
+
+        {/* 코드를 잃으면 되찾을 수 없다. 계획을 보는 중에도 다시 확인할 수 있어야 한다. */}
+        <SessionCodeCard className="mb-4 max-w-[520px]" />
 
         <div className="mb-4 inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-full border border-[#FFE0C4] bg-[#FFF3E8] px-4 py-2 text-[13px]">
           {hydrated ? (
