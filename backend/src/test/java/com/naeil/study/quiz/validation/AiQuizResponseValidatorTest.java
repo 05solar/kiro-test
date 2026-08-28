@@ -197,4 +197,111 @@ class AiQuizResponseValidatorTest {
 
         assertThat(validated.get(2).difficulty()).isEqualTo(QuizDifficulty.HARD);
     }
+
+    /*
+     * 프롬프트 누출 정제.
+     *
+     * 시스템 프롬프트가 <lecture_context> 로 자료를 구분하는데, 모델이 그 이름을 문제 본문에
+     * 그대로 쓰는 일이 실제로 있었다. 학생은 그런 태그를 본 적이 없다.
+     */
+
+    @Test
+    @DisplayName("문제 본문의 태그와 출처 머리말을 지운다 — 실제로 나왔던 문장이다")
+    void stripsPromptTagAndSourcePrefix() {
+        AiQuizQuestion leaked = question(
+                "<lecture_context>에 근거할 때, 요구 사항 도출 단계에서 소프트웨어 엔지니어가 "
+                        + "시스템 이해관계자와 협력하여 파악해야 하는 사항으로 옳은 것은?",
+                List.of("A", "B", "C", "D"), 0, "해설", "MEDIUM");
+
+        List<ValidatedQuizQuestion> validated =
+                validator.validate(resultOf(normal(1), normal(2), leaked), MAX_QUESTIONS);
+
+        assertThat(validated.get(2).question()).isEqualTo(
+                "요구 사항 도출 단계에서 소프트웨어 엔지니어가 시스템 이해관계자와 협력하여 "
+                        + "파악해야 하는 사항으로 옳은 것은?");
+    }
+
+    @Test
+    @DisplayName("태그 없이 머리말만 있어도 지운다")
+    void stripsSourcePrefixWithoutTag() {
+        AiQuizQuestion leaked = question(
+                "제공된 강의자료에 따르면, 교착상태의 조건은?",
+                List.of("A", "B", "C", "D"), 0,
+                "위 자료에 근거하여 네 조건이 모두 필요하다.", "MEDIUM");
+
+        List<ValidatedQuizQuestion> validated =
+                validator.validate(resultOf(normal(1), normal(2), leaked), MAX_QUESTIONS);
+
+        assertThat(validated.get(2).question()).isEqualTo("교착상태의 조건은?");
+        assertThat(validated.get(2).explanation()).isEqualTo("네 조건이 모두 필요하다.");
+    }
+
+    @Test
+    @DisplayName("과목명으로 시작하는 정상 문장은 건드리지 않는다")
+    void keepsSubjectNameThatLooksLikePrefix() {
+        // "자료구조에서..." 의 앞 두 글자가 "자료" 라고 지우면 안 된다.
+        AiQuizQuestion normalText = question(
+                "자료구조에서 스택의 특징으로 옳은 것은?",
+                List.of("A", "B", "C", "D"), 0, "해설", "MEDIUM");
+
+        List<ValidatedQuizQuestion> validated =
+                validator.validate(resultOf(normal(1), normal(2), normalText), MAX_QUESTIONS);
+
+        assertThat(validated.get(2).question()).isEqualTo("자료구조에서 스택의 특징으로 옳은 것은?");
+    }
+
+    @Test
+    @DisplayName("문장 중간의 태그는 지우지 않고 '자료'로 바꾼다 — 지우면 문장이 깨진다")
+    void replacesTagInsideSentence() {
+        // DB 에 실제로 남아 있던 문장이다.
+        AiQuizQuestion leaked = question(
+                "소프트웨어 엔지니어가 요구 사항 도출 과정에서 협력하는 대상으로 "
+                        + "<lecture_context>에서 언급된 것은 무엇인가?",
+                List.of("A", "B", "C", "D"), 0, "해설", "MEDIUM");
+
+        List<ValidatedQuizQuestion> validated =
+                validator.validate(resultOf(normal(1), normal(2), leaked), MAX_QUESTIONS);
+
+        assertThat(validated.get(2).question()).isEqualTo(
+                "소프트웨어 엔지니어가 요구 사항 도출 과정에서 협력하는 대상으로 "
+                        + "자료에서 언급된 것은 무엇인가?");
+    }
+
+    @Test
+    @DisplayName("'…를 바탕으로 할 때,' 처럼 한 마디 더 붙은 머리말도 지운다")
+    void stripsPrefixWithTrailingClause() {
+        // 이것도 DB 에 실제로 남아 있던 문장이다.
+        AiQuizQuestion leaked = question(
+                "<lecture_context>를 바탕으로 할 때, 소프트웨어 엔지니어가 다양한 시스템 "
+                        + "이해관계자와 협력하는 주된 이유가 아닌 것은?",
+                List.of("A", "B", "C", "D"), 0, "해설", "MEDIUM");
+
+        List<ValidatedQuizQuestion> validated =
+                validator.validate(resultOf(normal(1), normal(2), leaked), MAX_QUESTIONS);
+
+        assertThat(validated.get(2).question()).isEqualTo(
+                "소프트웨어 엔지니어가 다양한 시스템 이해관계자와 협력하는 주된 이유가 아닌 것은?");
+    }
+
+    @Test
+    @DisplayName("보기에 섞인 태그도 '자료'로 바꾼다")
+    void replacesTagInOptions() {
+        AiQuizQuestion leaked = question("문제",
+                List.of("<lecture_context>에서 설명한 방식", "B", "C", "D"), 0, "해설", "MEDIUM");
+
+        List<ValidatedQuizQuestion> validated =
+                validator.validate(resultOf(normal(1), normal(2), leaked), MAX_QUESTIONS);
+
+        assertThat(validated.get(2).options().get(0)).isEqualTo("자료에서 설명한 방식");
+    }
+
+    @Test
+    @DisplayName("머리말만 있고 묻는 내용이 없으면 실패한다 — 고쳐 쓰지 않는다")
+    void failsWhenNothingRemains() {
+        AiQuizQuestion empty = question("<lecture_context>에 근거할 때,",
+                List.of("A", "B", "C", "D"), 0, "해설", "MEDIUM");
+
+        assertThatThrownBy(() -> validator.validate(resultOf(normal(1), normal(2), empty), MAX_QUESTIONS))
+                .isInstanceOf(QuizGenerationFailedException.class);
+    }
 }

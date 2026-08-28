@@ -146,10 +146,12 @@ backend/src/main/resources/db/migration/
 ├── V1__initial_schema.sql       최초 스키마
 ├── V2__general_knowledge.sql    exam_scope, source_type
 ├── V3__study_chat.sql           chat_messages
-└── V4__chat_message_order.sql   대화 순서 컬럼 (message_order)
+├── V4__chat_message_order.sql   대화 순서 컬럼 (message_order)
+└── V5__strip_prompt_leakage_from_quizzes.sql
+                              저장된 문제에서 프롬프트 누출 정리
 ```
 
-엔티티에 필드를 더했다면 `V5__…sql` 을 같은 커밋에 넣는다. 빠뜨리면 `ddl-auto=validate`
+엔티티에 필드를 더했다면 다음 번호의 마이그레이션을 같은 커밋에 넣는다. 빠뜨리면 `ddl-auto=validate`
 가 기동을 막는데, **그 실패는 내 컴퓨터에서 먼저 난다** — 로컬도 같은 설정이기 때문이다.
 
 ```bash

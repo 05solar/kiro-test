@@ -6,7 +6,9 @@
 backend/src/main/resources/db/migration/
 ├── V1__initial_schema.sql       최초 스키마
 ├── V2__general_knowledge.sql    exam_scope, source_type   (구 001-general-knowledge.sql)
-└── V3__study_chat.sql           chat_messages             (구 002-study-chat.sql)
+├── V3__study_chat.sql           chat_messages             (구 002-study-chat.sql)
+├── V4__chat_message_order.sql   대화 순서 컬럼
+└── V5__strip_prompt_leakage_from_quizzes.sql   저장된 문제의 프롬프트 누출 정리
 ```
 
 여기 남은 `001-*.sql`, `002-*.sql` 은 **기록**이다. 새로 적용할 일이 없다.
