@@ -266,6 +266,20 @@ function StudyView({
             </section>
           )}
 
+          {/*
+            개념 아래에 이 STEP 의 요약을 둔다.
+            분석 단계에서 이미 만들어 둔 값(topic.summary)인데, 지금까지는 복습 모드로
+            접혀 있을 때만 보여 일반 모드에서는 화면에 나오지 않았다.
+
+            접힌 상태에서는 위에 이미 같은 요약이 있으므로 여기서는 그리지 않는다.
+          */}
+          {conceptsOpen && content.summary && (
+            <section className="mb-5 rounded-[18px] border border-[#FFE0C4] bg-[#FFFDFB] px-6 py-6 sm:px-8">
+              <div className="mb-2.5 text-[13px] font-bold text-[#E85D00]">이 STEP 요약</div>
+              <p className="whitespace-pre-line text-[14.5px] leading-[1.8]">{content.summary}</p>
+            </section>
+          )}
+
           {actionError && (
             <p role="alert" className="mb-4 rounded-xl border border-[#F5C2C7] bg-[#FDECEE] px-4 py-3 text-[13.5px] text-[#B02A37]">
               {actionError}
@@ -300,7 +314,7 @@ function StudyView({
             <div className="mb-3 text-[12.5px] font-bold text-[#666]">STEP {stepId} 중요도</div>
             <div className="mb-2.5 flex items-center gap-[9px]"><span className="font-jua text-[22px] text-[#FF7A00]">{content.importanceLabel}</span><span className="text-xs text-[#666]">{content.importanceNote}</span></div>
             <div className="flex gap-[5px]"><div className="h-[7px] flex-1 rounded-full bg-[#FF7A00]" /><div className="h-[7px] flex-1 rounded-full bg-[#FF7A00]" /><div className="h-[7px] flex-1 rounded-full bg-[#FFE0C4]" /><div className="h-[7px] flex-1 rounded-full bg-[#FFE0C4]" /></div>
-            <div className="mt-3.5 border-t border-[#eee] pt-3.5 text-[12.5px] leading-[1.7] text-[#666]">{content.summary}</div>
+            {/* 요약은 본문 쪽으로 옮겼다. 같은 문장이 한 화면에 두 번 보이지 않게 한다. */}
           </div>
           <div className="rounded-2xl border border-[#eee] p-5 text-center">
             <Ghost width={68} mood={completedSteps.includes(stepId) ? "happy" : "default"} className="animate-bob-small mx-auto opacity-90" />
