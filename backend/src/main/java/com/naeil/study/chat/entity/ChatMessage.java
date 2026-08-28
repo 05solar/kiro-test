@@ -36,9 +36,9 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(
         name = "chat_messages",
-        // 조회는 항상 "이 세션의 최근 메시지"다. 세션이 늘어나도 전체를 훑지 않게 한다.
-        indexes = @Index(name = "idx_chat_messages_session_id_created_at",
-                columnList = "session_id, created_at")
+        // 조회는 항상 "이 세션의 대화를 순서대로"다. 세션이 늘어나도 전체를 훑지 않게 한다.
+        indexes = @Index(name = "idx_chat_messages_session_id_message_order",
+                columnList = "session_id, message_order")
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -60,21 +60,37 @@ public class ChatMessage {
     @Column(name = "content", nullable = false, columnDefinition = "TEXT", updatable = false)
     private String content;
 
+    /**
+     * 세션 안에서 몇 번째 발화인지. 1부터 시작한다.
+     *
+     * <p><b>시각으로 순서를 정할 수 없다.</b> 질문과 답변은 한 번에 저장되며 같은
+     * {@code createdAt} 을 갖는다. 시각이 같으면 남는 기준은 무작위로 만들어진 UUID 뿐이라,
+     * 답변이 질문 위에 표시되는 일이 실제로 일어났다. 늘 그런 것도 아니어서 더 나빴다.
+     *
+     * <p>{@code Quiz.round} 와 같은 방식으로 직전 값을 읽어 이어 붙인다.
+     */
+    @Column(name = "message_order", nullable = false, updatable = false)
+    private int messageOrder;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    private ChatMessage(StudySession session, ChatRole role, String content, LocalDateTime now) {
+    private ChatMessage(
+            StudySession session, ChatRole role, String content, int messageOrder, LocalDateTime now) {
         this.session = session;
         this.role = role;
         this.content = content;
+        this.messageOrder = messageOrder;
         this.createdAt = now;
     }
 
-    public static ChatMessage user(StudySession session, String content, LocalDateTime now) {
-        return new ChatMessage(session, ChatRole.USER, content, now);
+    public static ChatMessage user(
+            StudySession session, String content, int messageOrder, LocalDateTime now) {
+        return new ChatMessage(session, ChatRole.USER, content, messageOrder, now);
     }
 
-    public static ChatMessage assistant(StudySession session, String content, LocalDateTime now) {
-        return new ChatMessage(session, ChatRole.ASSISTANT, content, now);
+    public static ChatMessage assistant(
+            StudySession session, String content, int messageOrder, LocalDateTime now) {
+        return new ChatMessage(session, ChatRole.ASSISTANT, content, messageOrder, now);
     }
 }

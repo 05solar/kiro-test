@@ -143,8 +143,8 @@ class ChatControllerTest {
             given(chatService.history(SESSION_CODE)).willReturn(new ChatService.ChatHistory(
                     true,
                     List.of(
-                            ChatMessage.user(session, "프로세스가 뭐야?", NOW.minusMinutes(2)),
-                            ChatMessage.assistant(session, "실행 중인 프로그램입니다.", NOW.minusMinutes(2)))));
+                            ChatMessage.user(session, "프로세스가 뭐야?", 1, NOW.minusMinutes(2)),
+                            ChatMessage.assistant(session, "실행 중인 프로그램입니다.", 2, NOW.minusMinutes(2)))));
 
             mockMvc.perform(get("/api/sessions/{sessionCode}/chat", SESSION_CODE))
                     .andExpect(status().isOk())

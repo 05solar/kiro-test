@@ -145,6 +145,27 @@ class ChatServiceTest {
         }
 
         @Test
+        @DisplayName("순서를 시각이 아니라 번호로 남긴다 — 두 줄은 같은 시각이다")
+        void numbersMessagesInsteadOfRelyingOnTime() {
+            givenSession();
+            givenContext(groundedContext());
+            givenNoHistory();
+            // 이미 두 줄이 쌓여 있다. 이어지는 번호를 받아야 한다.
+            given(chatMessageRepository.findLatestOrder(SESSION_ID)).willReturn(2);
+
+            service.ask(SESSION_CODE, "질문");
+
+            ArgumentCaptor<List<ChatMessage>> captor = ArgumentCaptor.forClass(List.class);
+            verify(chatMessageRepository).saveAll(captor.capture());
+
+            List<ChatMessage> saved = captor.getValue();
+            assertThat(saved.get(0).getMessageOrder()).isEqualTo(3);
+            assertThat(saved.get(1).getMessageOrder()).isEqualTo(4);
+            // 시각이 같다는 것이 이 번호가 필요한 이유다. 시각만으로는 순서를 정할 수 없다.
+            assertThat(saved.get(0).getCreatedAt()).isEqualTo(saved.get(1).getCreatedAt());
+        }
+
+        @Test
         @DisplayName("AI 호출이 실패하면 아무것도 저장하지 않는다")
         void savesNothingWhenAiFails() {
             givenSession();
@@ -244,10 +265,10 @@ class ChatServiceTest {
             givenContext(groundedContext());
             // 리포지터리는 새 것부터 준다.
             given(chatMessageRepository.findRecent(any(UUID.class), any())).willReturn(List.of(
-                    ChatMessage.assistant(session, "두 번째 답", NOW.minusMinutes(1)),
-                    ChatMessage.user(session, "두 번째 질문", NOW.minusMinutes(2)),
-                    ChatMessage.assistant(session, "첫 답", NOW.minusMinutes(3)),
-                    ChatMessage.user(session, "첫 질문", NOW.minusMinutes(4))));
+                    ChatMessage.assistant(session, "두 번째 답", 4, NOW.minusMinutes(1)),
+                    ChatMessage.user(session, "두 번째 질문", 3, NOW.minusMinutes(2)),
+                    ChatMessage.assistant(session, "첫 답", 2, NOW.minusMinutes(3)),
+                    ChatMessage.user(session, "첫 질문", 1, NOW.minusMinutes(4))));
 
             service.ask(SESSION_CODE, "세 번째 질문");
 
@@ -284,7 +305,7 @@ class ChatServiceTest {
         void returnsGroundedEvenWhenEmpty() {
             session.startAnalyzing(StudySourceType.USER_MATERIAL, NOW.minusHours(1));
             givenSession();
-            given(chatMessageRepository.findAllBySessionIdOrderByCreatedAtAscIdAsc(SESSION_ID))
+            given(chatMessageRepository.findAllBySessionIdOrderByMessageOrderAsc(SESSION_ID))
                     .willReturn(List.of());
 
             ChatService.ChatHistory history = service.history(SESSION_CODE);

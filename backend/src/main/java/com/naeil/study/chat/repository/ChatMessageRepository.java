@@ -20,9 +20,19 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, UUID> 
      */
     @Query("select message from ChatMessage message "
             + "where message.session.id = :sessionId "
-            + "order by message.createdAt desc, message.id desc")
+            + "order by message.messageOrder desc")
     List<ChatMessage> findRecent(@Param("sessionId") UUID sessionId, Pageable pageable);
 
     /** 화면에 처음부터 다시 그릴 때 쓴다. 오래된 것부터. */
-    List<ChatMessage> findAllBySessionIdOrderByCreatedAtAscIdAsc(UUID sessionId);
+    List<ChatMessage> findAllBySessionIdOrderByMessageOrderAsc(UUID sessionId);
+
+    /**
+     * 이 세션의 마지막 발화 번호. 대화가 없으면 0.
+     *
+     * <p>시각으로 순서를 정할 수 없어서 필요하다 — 질문과 답변은 한 번에 저장되며 같은
+     * {@code createdAt} 을 갖는다. {@code Quiz.round} 와 같은 방식이다.
+     */
+    @Query("select coalesce(max(message.messageOrder), 0) from ChatMessage message "
+            + "where message.session.id = :sessionId")
+    int findLatestOrder(@Param("sessionId") UUID sessionId);
 }

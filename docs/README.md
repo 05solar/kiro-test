@@ -15,7 +15,8 @@
 | [study-chat-test.md](study-chat-test.md) | 학습 챗봇 검증 기록 |
 | [live-gemini-test.md](live-gemini-test.md) | 실제 Gemini 호출 검증 (1회, 5콜) |
 | [schema.sql](schema.sql) | 운영 DB 초기 스키마 (ddl-auto=validate 용) |
-| [migrations/](migrations/) | 이미 데이터가 있는 DB 에 적용할 스키마 변경분 |
+| [migration-test.md](migration-test.md) | 스키마 마이그레이션 검증 기록 (Flyway 도입) |
+| [migrations/](migrations/) | 옛 수동 마이그레이션 기록 (더 이상 쓰지 않는다) |
 | [live-e2e-report.md](live-e2e-report.md) | 실제 강의자료 라이브 E2E 기록 |
 
 ## 문서를 나누는 기준
@@ -26,7 +27,7 @@ database.md   저장 구조. 스키마가 바뀌면 여기부터 고친다
 backend-anatomy.html  왜 그렇게 구현했는가. 새로 합류한 사람이 먼저 읽는다
 deployment.html       서버에 올릴 때 확인할 것
 schema.sql            새 DB 에 처음 적용하는 스키마. pg_dump 로 뽑는다. 손으로 고치지 않는다
-migrations/   이미 뜬 DB 에 적용할 변경분. 배포 전에 먼저 적용한다
+migrations/   옛 수동 변경분. 지금은 backend/src/main/resources/db/migration/ 이 대신한다
 ../PROCESS.md 개발 순서와 검증 기록
 ../AGENT.md   에이전트 작업 규칙
 ```

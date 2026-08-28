@@ -10,11 +10,27 @@ spring:
     # 이 줄이 기본 프로파일의 import 를 대체하지는 않지만, 파일이 없으면 조용히 넘어간다.
     import: ""
 
+  flyway:
+    # 기본 프로파일과 같다. 여기서 다시 적는 것은 운영에서 이 값을 끄면 안 된다는 표시다.
+    #
+    # FLYWAY_ENABLED=false 로 띄우면 스키마가 적용되지 않은 채 기동을 시도하고,
+    # 바로 뒤의 ddl-auto=validate 에서 죽는다. 끄고 싶어지는 순간은 대개
+    # "마이그레이션이 실패했으니 일단 띄우자"인데, 그때 필요한 것은 끄는 게 아니라
+    # 실패한 이유를 보는 것이다.
+    enabled: ${FLYWAY_ENABLED:true}
+    # flyway.clean 은 스키마를 통째로 지운다. 운영에서 실행될 통로를 아예 막는다.
+    # Flyway 기본값도 true 지만, 이 한 줄이 없으면 누군가 기본값을 바꿨을 때
+    # 되돌릴 수 없는 일이 조용히 가능해진다.
+    clean-disabled: true
+
   jpa:
     hibernate:
       # 운영에서 update 는 위험하다. 컬럼 삭제나 타입 변경은 반영되지 않아
       # 코드와 스키마가 조용히 어긋나고, enum 에 값을 더해도 기존 CHECK 제약은 그대로다.
-      # 스키마 변경은 docs/schema.sql 이나 마이그레이션 도구로 사람이 적용한다.
+      #
+      # 스키마를 만드는 것은 Flyway 이고, 여기서는 그 결과가 엔티티와 맞는지만 본다.
+      # 두 겹으로 두는 이유 — 마이그레이션 파일을 빠뜨렸을 때 Flyway 는 아무 불평 없이
+      # 성공한다. 어긋났다는 것을 알려 주는 것은 이 검증뿐이다.
       ddl-auto: ${JPA_DDL_AUTO:validate}
     show-sql: false
     open-in-view: false

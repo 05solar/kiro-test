@@ -44,8 +44,14 @@ CORS 설정이 필요 없고 백엔드 주소가 밖으로 드러나지 않는�
 db 기동 → pg_isready 통과 → backend 기동 → /actuator/health 통과 → frontend 기동
 ```
 
-스키마는 DB 가 처음 뜰 때 `docs/schema.sql` 이 자동으로 적용된다.
-백엔드는 운영 프로파일에서 `ddl-auto=validate` 라 스키마를 만들지 않는다.
+스키마는 백엔드가 뜨면서 **Flyway 가 스스로 적용한다.** 사람이 먼저 psql 을 칠 일이 없다.
+
+```
+backend 기동 → Flyway 가 밀린 마이그레이션 적용 → Hibernate 가 결과를 검증 → 서비스 시작
+```
+
+순서가 이 안에 들어 있다는 것이 핵심이다. 예전에는 마이그레이션이 배포 **밖에** 있어서,
+새 이미지를 먼저 올리면 컬럼이 없는 채로 기동해 Schema-validation 으로 죽었다.
 
 ## EC2 준비
 
@@ -133,29 +139,67 @@ curl --max-time 3 http://localhost:8080/actuator/health
 
 ## 스키마를 바꿨을 때
 
-엔티티를 고치면 `docs/schema.sql` 을 다시 뽑아야 한다. 안 하면 `validate` 가 기동을 막는다.
+**배포 전에 할 일은 없다.** 마이그레이션 파일만 저장소에 넣어 두면 백엔드가 뜨면서 적용한다.
+
+```
+backend/src/main/resources/db/migration/
+├── V1__initial_schema.sql       최초 스키마
+├── V2__general_knowledge.sql    exam_scope, source_type
+├── V3__study_chat.sql           chat_messages
+└── V4__chat_message_order.sql   대화 순서 컬럼 (message_order)
+```
+
+엔티티에 필드를 더했다면 `V5__…sql` 을 같은 커밋에 넣는다. 빠뜨리면 `ddl-auto=validate`
+가 기동을 막는데, **그 실패는 내 컴퓨터에서 먼저 난다** — 로컬도 같은 설정이기 때문이다.
+
+```bash
+# 로컬에서 확인. 컨테이너를 새로 띄우면 마이그레이션이 다시 돈다.
+docker compose up -d --build backend
+docker compose logs backend | grep -i flyway
+```
+
+### 규칙 세 가지
+
+**1. 이미 적용된 파일을 고치지 않는다.** Flyway 는 각 파일의 체크섬을 이력 표에 남긴다.
+내용이 바뀌면 다음 기동이 `Migration checksum mismatch` 로 멈춘다. 이미 나간 버전을
+고쳐야 하면 새 번호로 파일을 하나 더 만든다.
+
+**2. 멱등하게 쓴다.** `ADD COLUMN IF NOT EXISTS`, `CREATE TABLE IF NOT EXISTS`,
+제약은 `DO $$ ... IF NOT EXISTS ... $$`. Flyway 도입 전에 손으로 맞춰 둔 DB 는 V1 로
+baseline 된 뒤 V2 부터 **다시 실행되기 때문**이다. 멱등하지 않으면 그 서버만 기동에 실패한다.
+
+**3. 되돌리는 마이그레이션은 쓰지 않는다.** 컬럼을 지우는 변경은 데이터를 지우는 변경이다.
+꼭 필요하면 두 번에 나눠 배포한다 — 먼저 코드에서 쓰지 않게 하고, 다음 배포에서 지운다.
+
+### 이미 떠 있는 DB 는 어떻게 되나
+
+Flyway 이력 표(`flyway_schema_history`)가 없는 DB 를 만나면 V1 이 적용된 것으로 표시하고
+V2 부터 이어서 적용한다(`baseline-on-migrate`). 그래서 지금 EC2 에 떠 있는 DB 도,
+손으로 마이그레이션을 적용해 둔 DB 도, 아무것도 하지 않고 새 버전을 올리면 된다.
+
+```bash
+docker compose exec db psql -U postgres -d naeil_study \
+  -c "select version, description, success from flyway_schema_history order by installed_rank;"
+```
+
+### docs/schema.sql 은 이제 참고용이다
+
+현재 스키마의 스냅샷일 뿐, 어디에도 자동 적용되지 않는다. 적용 경로는 Flyway 하나다.
+엔티티를 고쳤으면 갱신해 두면 좋지만, 잊어도 기동에는 영향이 없다.
 
 ```bash
 docker compose exec db pg_dump -U postgres -d naeil_study \
   --schema-only --no-owner --no-privileges > docs/schema.sql
 ```
 
-`schema.sql` 은 **DB 볼륨이 비어 있을 때만** 자동 적용된다.
-이미 데이터가 있는 DB 에는 변경분을 직접 적용해야 한다. 그 변경분은 `docs/migrations/`
-에 순번을 붙여 남긴다.
+### 확인
 
 ```bash
-# 새 버전을 올리기 **전에** 먼저 적용한다. 순서가 바뀌면 기동 중 Schema-validation 으로 죽는다.
-docker compose exec -T db psql -U postgres -d naeil_study < docs/migrations/001-general-knowledge.sql
-docker compose exec -T db psql -U postgres -d naeil_study < docs/migrations/002-study-chat.sql
+bash scripts/migration-verify.sh
 ```
 
-| 파일 | 내용 |
-| --- | --- |
-| `001-general-knowledge.sql` | `study_sessions.exam_scope`, `study_sessions.source_type` 추가 |
-| `002-study-chat.sql` | `chat_messages` 테이블 추가 |
-
-마이그레이션 도구(Flyway)는 아직 도입하지 않았다. 파일 수가 늘어나면 그때 옮긴다.
+빈 DB / 구버전 스키마 / 최신 스키마 / 재기동 네 경우로 실제 컨테이너를 띄워 본다.
+두 번째가 예전에 죽던 경우다.
 
 ## 알려진 제약
 

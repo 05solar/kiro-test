@@ -1,55 +1,13 @@
--- 「내일까지 해야 하는데」 스키마
+-- V1 — 최초 스키마 (1단계 이전 상태)
 --
--- 현재 스키마가 어떤 모양인지 한눈에 보기 위한 파일이다.
+-- 이 파일은 개발 DB 에서 pg_dump --schema-only 로 뽑은 것을 옮겼다.
+-- psql 전용 지시어(\restrict, SET, search_path 설정)는 JDBC 로 실행할 수 없어 걷어냈다.
 --
--- 이 파일은 개발 DB 에서 pg_dump --schema-only 로 뽑았다.
--- 엔티티를 고쳤으면 다시 뽑아 갱신한다. 손으로 편집하지 않는다.
--- **이 파일은 어디에도 자동 적용되지 않는다. 참고용 스냅샷이다.**
--- 스키마를 적용하는 것은 Flyway 다 — backend/src/main/resources/db/migration/
--- 새 DB 도 백엔드가 뜨면서 V1 부터 차례로 만든다. 이 파일을 psql 로 넣을 필요가 없다.
--- flyway_schema_history 는 Flyway 가 만드는 이력 표다. 엔티티에 대응하는 것이 없다.
+-- 이미 테이블이 있는 DB 에는 적용되지 않는다. Flyway 가 baseline 으로 건너뛴다
+-- (spring.flyway.baseline-version=1). 그래서 이 파일은 멱등할 필요가 없다.
 --
--- PostgreSQL database dump
---
-
-\restrict 8YYi9C0HCRVks2agJf1B4mdnjfhOThqnw2E8Wu7Jpy1WYywLsWVf7rtjYoKMdVj
-
--- Dumped from database version 16.15
--- Dumped by pg_dump version 16.15
-
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
-SET client_encoding = 'UTF8';
-SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config('search_path', '', false);
-SET check_function_bodies = false;
-SET xmloption = content;
-SET client_min_messages = warning;
-SET row_security = off;
-
-SET default_tablespace = '';
-
-SET default_table_access_method = heap;
-
---
--- Name: chat_messages; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.chat_messages (
-    id uuid NOT NULL,
-    session_id uuid NOT NULL,
-    role character varying(20) NOT NULL,
-    content text NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    message_order integer NOT NULL,
-    CONSTRAINT chat_messages_role_check CHECK (((role)::text = ANY ((ARRAY['USER'::character varying, 'ASSISTANT'::character varying])::text[])))
-);
-
-
---
--- Name: curriculums; Type: TABLE; Schema: public; Owner: -
---
+-- **이 파일을 고치지 않는다.** 이미 적용된 마이그레이션의 내용을 바꾸면 체크섬이
+-- 어긋나 다음 기동이 실패한다. 스키마를 바꾸려면 새 번호의 파일을 추가한다.
 
 CREATE TABLE public.curriculums (
     id uuid NOT NULL,
@@ -59,7 +17,7 @@ CREATE TABLE public.curriculums (
     total_allocated_minutes integer NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     session_id uuid NOT NULL,
-    CONSTRAINT curriculums_status_check CHECK (((status)::text = ANY (ARRAY[('CREATED'::character varying)::text, ('IN_PROGRESS'::character varying)::text, ('COMPLETED'::character varying)::text])))
+    CONSTRAINT curriculums_status_check CHECK (((status)::text = ANY ((ARRAY['CREATED'::character varying, 'IN_PROGRESS'::character varying, 'COMPLETED'::character varying])::text[])))
 );
 
 
@@ -82,26 +40,8 @@ CREATE TABLE public.documents (
     stored_file_name character varying(100) NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     session_id uuid NOT NULL,
-    CONSTRAINT documents_file_type_check CHECK (((file_type)::text = ANY (ARRAY[('PDF'::character varying)::text, ('DOCX'::character varying)::text, ('TXT'::character varying)::text]))),
-    CONSTRAINT documents_status_check CHECK (((status)::text = ANY (ARRAY[('UPLOADED'::character varying)::text, ('PARSING'::character varying)::text, ('PARSED'::character varying)::text, ('PARSE_FAILED'::character varying)::text])))
-);
-
-
---
--- Name: flyway_schema_history; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.flyway_schema_history (
-    installed_rank integer NOT NULL,
-    version character varying(50),
-    description character varying(200) NOT NULL,
-    type character varying(20) NOT NULL,
-    script character varying(1000) NOT NULL,
-    checksum integer,
-    installed_by character varying(100) NOT NULL,
-    installed_on timestamp without time zone DEFAULT now() NOT NULL,
-    execution_time integer NOT NULL,
-    success boolean NOT NULL
+    CONSTRAINT documents_file_type_check CHECK (((file_type)::text = ANY ((ARRAY['PDF'::character varying, 'DOCX'::character varying, 'TXT'::character varying])::text[]))),
+    CONSTRAINT documents_status_check CHECK (((status)::text = ANY ((ARRAY['UPLOADED'::character varying, 'PARSING'::character varying, 'PARSED'::character varying, 'PARSE_FAILED'::character varying])::text[])))
 );
 
 
@@ -136,7 +76,7 @@ CREATE TABLE public.quizzes (
     source_document_ids jsonb NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     topic_id uuid NOT NULL,
-    CONSTRAINT quizzes_difficulty_check CHECK (((difficulty)::text = ANY (ARRAY[('EASY'::character varying)::text, ('MEDIUM'::character varying)::text, ('HARD'::character varying)::text])))
+    CONSTRAINT quizzes_difficulty_check CHECK (((difficulty)::text = ANY ((ARRAY['EASY'::character varying, 'MEDIUM'::character varying, 'HARD'::character varying])::text[])))
 );
 
 
@@ -173,9 +113,7 @@ CREATE TABLE public.study_sessions (
     status character varying(20) NOT NULL,
     subject character varying(255),
     updated_at timestamp(6) without time zone NOT NULL,
-    exam_scope text,
-    source_type character varying(30),
-    CONSTRAINT study_sessions_status_check CHECK (((status)::text = ANY (ARRAY[('CREATED'::character varying)::text, ('UPLOADING'::character varying)::text, ('ANALYZING'::character varying)::text, ('ANALYSIS_FAILED'::character varying)::text, ('READY'::character varying)::text, ('IN_PROGRESS'::character varying)::text, ('COMPLETED'::character varying)::text, ('EXPIRED'::character varying)::text])))
+    CONSTRAINT study_sessions_status_check CHECK (((status)::text = ANY ((ARRAY['CREATED'::character varying, 'UPLOADING'::character varying, 'ANALYZING'::character varying, 'ANALYSIS_FAILED'::character varying, 'READY'::character varying, 'IN_PROGRESS'::character varying, 'COMPLETED'::character varying, 'EXPIRED'::character varying])::text[])))
 );
 
 
@@ -202,8 +140,8 @@ CREATE TABLE public.study_steps (
     curriculum_id uuid NOT NULL,
     topic_id uuid,
     CONSTRAINT study_steps_skip_reason_check CHECK (((skip_reason)::text = 'TIME_CONSTRAINT'::text)),
-    CONSTRAINT study_steps_status_check CHECK (((status)::text = ANY (ARRAY[('PENDING'::character varying)::text, ('IN_PROGRESS'::character varying)::text, ('COMPLETED'::character varying)::text, ('SKIPPED'::character varying)::text]))),
-    CONSTRAINT study_steps_type_check CHECK (((type)::text = ANY (ARRAY[('STUDY'::character varying)::text, ('REVIEW'::character varying)::text])))
+    CONSTRAINT study_steps_status_check CHECK (((status)::text = ANY ((ARRAY['PENDING'::character varying, 'IN_PROGRESS'::character varying, 'COMPLETED'::character varying, 'SKIPPED'::character varying])::text[]))),
+    CONSTRAINT study_steps_type_check CHECK (((type)::text = ANY ((ARRAY['STUDY'::character varying, 'REVIEW'::character varying])::text[])))
 );
 
 
@@ -227,7 +165,7 @@ CREATE TABLE public.topics (
     updated_at timestamp(6) without time zone NOT NULL,
     weak_area_matched boolean NOT NULL,
     session_id uuid NOT NULL,
-    CONSTRAINT topics_importance_check CHECK (((importance)::text = ANY (ARRAY[('VERY_HIGH'::character varying)::text, ('HIGH'::character varying)::text, ('MEDIUM'::character varying)::text, ('LOW'::character varying)::text])))
+    CONSTRAINT topics_importance_check CHECK (((importance)::text = ANY ((ARRAY['VERY_HIGH'::character varying, 'HIGH'::character varying, 'MEDIUM'::character varying, 'LOW'::character varying])::text[])))
 );
 
 
@@ -249,14 +187,6 @@ CREATE TABLE public.wrong_answer_summaries (
 
 
 --
--- Name: chat_messages chat_messages_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.chat_messages
-    ADD CONSTRAINT chat_messages_pkey PRIMARY KEY (id);
-
-
---
 -- Name: curriculums curriculums_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -270,14 +200,6 @@ ALTER TABLE ONLY public.curriculums
 
 ALTER TABLE ONLY public.documents
     ADD CONSTRAINT documents_pkey PRIMARY KEY (id);
-
-
---
--- Name: flyway_schema_history flyway_schema_history_pk; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.flyway_schema_history
-    ADD CONSTRAINT flyway_schema_history_pk PRIMARY KEY (installed_rank);
 
 
 --
@@ -385,20 +307,6 @@ ALTER TABLE ONLY public.wrong_answer_summaries
 
 
 --
--- Name: flyway_schema_history_s_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX flyway_schema_history_s_idx ON public.flyway_schema_history USING btree (success);
-
-
---
--- Name: idx_chat_messages_session_id_message_order; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_chat_messages_session_id_message_order ON public.chat_messages USING btree (session_id, message_order);
-
-
---
 -- Name: study_steps fk5li8b4v8980amaxooq97iw62v; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -412,14 +320,6 @@ ALTER TABLE ONLY public.study_steps
 
 ALTER TABLE ONLY public.study_steps
     ADD CONSTRAINT fk7vk6xg06wufe8lw7i4ik237fj FOREIGN KEY (curriculum_id) REFERENCES public.curriculums(id);
-
-
---
--- Name: chat_messages fk_chat_messages_session_id; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.chat_messages
-    ADD CONSTRAINT fk_chat_messages_session_id FOREIGN KEY (session_id) REFERENCES public.study_sessions(id);
 
 
 --
@@ -490,5 +390,4 @@ ALTER TABLE ONLY public.quiz_results
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 8YYi9C0HCRVks2agJf1B4mdnjfhOThqnw2E8Wu7Jpy1WYywLsWVf7rtjYoKMdVj
 

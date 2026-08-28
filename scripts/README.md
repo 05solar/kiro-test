@@ -7,6 +7,7 @@
 | --- | --- |
 | `gk-verify.sh` | 자료 없이 시험 범위만으로 주제·계획·퀴즈가 만들어지는지 |
 | `chat-verify.sh` | 학습 챗봇이 근거를 사실대로 표시하고 대화를 저장하는지 |
+| `migration-verify.sh` | DB 가 어떤 상태든 기동이 죽지 않는지 (빈 DB / 구버전 / 최신 / 재기동) |
 | `live-gemini.sh` | **실제 Gemini 를 5회 부른다.** 함부로 돌리지 않는다 |
 
 ## 실행
@@ -18,6 +19,7 @@
 LLM_MODE=mock QUIZ_AI_MODE=mock PUBLIC_PORT=8090 docker compose up -d --build
 bash scripts/gk-verify.sh    # 실제 AI 를 부르지 않는다
 bash scripts/chat-verify.sh
+bash scripts/migration-verify.sh
 ```
 
 **`LLM_MODE=mock` 으로 돌린다.** 기능이 이어지는지는 목 데이터로 전부 확인할 수 있고,

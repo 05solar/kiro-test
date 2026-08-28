@@ -641,3 +641,72 @@ answeredFromMaterial  이 답이 자료에서 나왔나.  질문 단위. 매번 
 - `scripts/chat-verify.sh` — 19건 전부 통과 (`LLM_MODE=mock`)
 - 프론트 `npm test` 56건 / `npx tsc --noEmit` / `npm run build` 통과
 - 실제 Gemini 호출 검증은 무료 사용량을 아끼기 위해 마지막에 최소 횟수만 따로 한다
+
+---
+
+## 추가 4 — 스키마 마이그레이션을 배포 안으로 (완료)
+
+### 무엇이 문제였나
+
+마이그레이션이 배포 **밖에** 있었다. 사람이 `psql` 로 먼저 적용하고 그다음 이미지를
+올려야 했는데, 순서를 바꾸면 컬럼이 없는 채로 기동해 죽었다. 1단계 배포 때 실제로 겪었다.
+
+```
+SchemaManagementException: Schema-validation: missing column [exam_scope]
+dependency failed to start: container naeil-backend-1 is unhealthy
+```
+
+`restart: unless-stopped` 로 재시작을 반복하고 `depends_on: service_healthy` 때문에
+프론트까지 뜨지 않는다. 서비스 전체가 내려간다.
+
+### 설계 판단
+
+**순서를 지키게 만드는 대신, 순서를 없앴다.** Flyway 는 Hibernate 검증보다 먼저,
+같은 기동 안에서 돈다. 사람이 잊을 단계가 사라진다.
+
+| | 전 | 후 |
+| --- | --- | --- |
+| 스키마 적용 | 사람이 `psql` | 백엔드가 기동 중 |
+| 적용 경로 | `docs/schema.sql`(빈 볼륨 전용) + 수동 SQL | `db/migration/V*.sql` 하나 |
+| 로컬 `ddl-auto` | `update` | `validate` |
+
+**로컬도 `validate` 로 바꾼 것이 두 번째 핵심이다.** `update` 는 엔티티에 필드를 더하면
+로컬에서 조용히 컬럼을 만들어 주고, 마이그레이션 파일을 안 쓴 채 배포된다. 그 사실은
+EC2 에서야 드러난다. `validate` 면 같은 실수가 내 컴퓨터에서 드러난다.
+
+**Flyway 와 `validate` 를 둘 다 둔다.** Flyway 는 쓰인 대로 적용할 뿐, 마이그레이션 파일을
+빠뜨렸는지는 모른다. 어긋났다고 알려 주는 것은 `validate` 뿐이다.
+
+### 기존 DB 를 어떻게 다루나
+
+`baseline-on-migrate` + `baseline-version: 1`. 이력 표가 없는 DB 를 만나면 V1 이 적용된
+것으로 표시하고 V2 부터 이어 적용한다. 그래서 V2 이후는 **멱등해야 한다** — 손으로 이미
+적용해 둔 DB 에서는 다시 실행되기 때문이다.
+
+### 진행 순서
+
+1. `flyway-core` + `flyway-database-postgresql` 추가 (Flyway 10 부터 DB 지원이 모듈로 분리)
+2. `V1__initial_schema.sql` — 1단계 이전 스키마(pg_dump 에서 psql 전용 지시어 제거)
+3. `V2`, `V3` — 기존 `docs/migrations/001·002` 를 그대로 옮김
+4. Flyway 설정, 로컬·운영 `ddl-auto=validate`, 테스트는 Flyway 끔(H2)
+5. compose 에서 `docs/schema.sql` initdb 마운트 제거 — 적용 경로를 하나로
+6. 헬스체크 `start_period` 60 → 120초 (작은 인스턴스의 첫 기동에 마이그레이션이 겹친다)
+7. `scripts/migration-verify.sh` — DB 상태 네 가지로 실제 컨테이너를 띄워 확인
+
+### 겪은 문제
+
+| 문제 | 원인 | 조치 |
+| --- | --- | --- |
+| 챗봇 통합 테스트 실패 | **이미 있던 버그.** 질문과 답변이 같은 시각으로 저장돼 정렬 기준이 무작위 UUID 였다. 답변이 질문 위에 뜰 확률이 절반이었고, 앞선 세 번은 우연히 통과했다 | `message_order` 컬럼 추가(`V4`). `Quiz.round` 와 같은 방식 |
+| 검증 스크립트 4건 실패 | 전부 스크립트 문제. `pwd -W \|\| pwd` 로 경로가 두 줄이 돼 씨앗 데이터를 못 넣었다. **그런데도 B0·B1 이 통과했다** — 빈 DB 를 "구버전"이라 부르며 검사하고 있었다 | 경로 수정 + 씨앗 넣기를 `ON_ERROR_STOP=1` 로 바꿔 실패하면 즉시 멈추게 |
+
+두 번째는 "초록불이 아무것도 확인하지 않고 켜질 수 있다"는 사례다.
+`scripts/AGENT.md` 의 "제품보다 스크립트를 먼저 의심한다"가 그대로 들어맞았다.
+
+### 확인
+
+- `./gradlew test` — 904건 통과
+- `scripts/migration-verify.sh` — 13건 통과 (빈 DB / 구버전 / 최신 / 재기동)
+- `scripts/chat-verify.sh` 19건, `scripts/gk-verify.sh` 19건 통과
+- 실제 개발 DB 가 아무 조작 없이 baseline 후 V2~V4 적용됨
+- 기록: `docs/migration-test.md`

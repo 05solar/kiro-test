@@ -87,10 +87,13 @@ public class ChatService {
             throw new ChatFailedException("ai returned an empty answer");
         }
 
+        // 순서를 시각에 맡기지 않는다. 두 줄은 같은 시각으로 저장되므로 시각만으로는
+        // 어느 쪽이 먼저인지 정할 수 없다. 직전 번호를 읽어 이어 붙인다(Quiz.round 와 같은 방식).
         LocalDateTime now = LocalDateTime.now(clock);
+        int lastOrder = chatMessageRepository.findLatestOrder(session.getId());
         chatMessageRepository.saveAll(List.of(
-                ChatMessage.user(session, trimmed, now),
-                ChatMessage.assistant(session, body, now)));
+                ChatMessage.user(session, trimmed, lastOrder + 1, now),
+                ChatMessage.assistant(session, body, lastOrder + 2, now)));
 
         // 질문도 답변도 로그에 남기지 않는다. 사용자가 약점을 그대로 적는 자리다.
         boolean fromMaterial = context.grounded() && Boolean.TRUE.equals(answer.answeredFromMaterial());
@@ -110,7 +113,7 @@ public class ChatService {
         StudySession session = sessionService.getSessionAndTouch(sessionCode);
         return new ChatHistory(
                 session.isGrounded(),
-                chatMessageRepository.findAllBySessionIdOrderByCreatedAtAscIdAsc(session.getId()));
+                chatMessageRepository.findAllBySessionIdOrderByMessageOrderAsc(session.getId()));
     }
 
     /** 대화 기록과, 그 대화가 무엇에 근거하는지. */

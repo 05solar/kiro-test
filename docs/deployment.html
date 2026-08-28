@@ -340,10 +340,11 @@ docker run -e TZ=UTC ... naeil-backend
         <div class="check done">
           <span class="box"></span>
           <div class="body">
-            <div class="t">스키마 파일 <span class="tag fixed">docs/schema.sql</span></div>
+            <div class="t">스키마 마이그레이션 <span class="tag fixed">Flyway</span></div>
             <div class="d">
-              <code>validate</code>는 스키마를 만들지 않는다. 새 DB에 처음 올릴 때 적용할
-              테이블 9개 · 제약 28개를 <code>pg_dump</code>로 뽑아 두었다.
+              백엔드가 뜨면서 <code>db/migration</code>의 밀린 스크립트를 적용한다.
+              Hibernate 검증보다 <b>먼저</b>, 같은 기동 안에서 돈다 &mdash; 사람이 순서를 틀릴
+              단계가 없다. 이력 표가 없는 기존 DB는 V1로 baseline 되고 그다음부터 이어 적용된다.
             </div>
           </div>
         </div>
@@ -389,14 +390,17 @@ docker run -e TZ=UTC ... naeil-backend
             </div>
           </div>
         </div>
-        <div class="check">
+        <div class="check done">
           <span class="box"></span>
           <div class="body">
-            <div class="t">마이그레이션 도구가 없다 <span class="tag todo">Flyway</span></div>
+            <div class="t">마이그레이션이 배포 안으로 들어왔다 <span class="tag fixed">해결</span></div>
             <div class="d">
-              지금은 <code>docs/schema.sql</code>을 사람이 적용한다. 엔티티를 고치면
-              스키마를 다시 뽑아 갱신해야 하고, 그 절차를 잊으면 <code>validate</code>가 기동을 막는다.
-              기동 실패가 조용한 불일치보다 낫지만, 변경이 잦아지면 Flyway를 넣는다.
+              예전에는 <code>docs/schema.sql</code>과 <code>docs/migrations/*.sql</code>을 사람이
+              먼저 적용해야 했다. 두 단계의 순서가 배포 <b>밖에</b> 있어서, 새 이미지를 먼저 올리면
+              컬럼이 없는 채로 기동해 <code>Schema-validation</code>으로 죽었다 &mdash; 실제로 겪었다.
+              이제 Flyway가 같은 기동 안에서 적용하므로 그 순서가 뒤집힐 수 없다.
+              네 가지 DB 상태(빈 DB · 구버전 · 최신 · 재기동)를
+              <code>scripts/migration-verify.sh</code>로 확인한다.
             </div>
           </div>
         </div>
@@ -430,12 +434,11 @@ docker run -e TZ=UTC ... naeil-backend
 
     <ol class="steps" data-anim>
       <li>
-        <div class="h">RDS PostgreSQL을 만들고 스키마를 적용한다</div>
-        <pre>createdb naeil_study
-psql -h &lt;rds-endpoint&gt; -U &lt;user&gt; -d naeil_study -f docs/schema.sql</pre>
+        <div class="h">RDS PostgreSQL을 만든다 &mdash; 빈 DB 로 둔다</div>
+        <pre>createdb naeil_study</pre>
         <div class="n">
-          운영 프로파일은 <code>validate</code>라 스키마를 자동으로 만들지 않는다.
-          이 단계를 건너뛰면 애플리케이션이 기동에 실패한다 &mdash; 조용히 잘못된 스키마로 도는 것보다 낫다.
+          스키마를 넣지 않는다. 백엔드가 처음 뜨면서 Flyway 가 <code>V1</code>부터 차례로 만든다.
+          이미 테이블이 있는 DB 라면 <code>V1</code>이 적용된 것으로 표시하고 그다음부터 이어 적용한다.
         </div>
       </li>
       <li>
@@ -567,8 +570,8 @@ PUT  /api/sessions/{code}/exam    → availableStudyMinutes: 600
         <div class="card">
           <h4>재배포 전에</h4>
           <ul class="clean">
-            <li>엔티티를 고쳤다면 <code>docs/schema.sql</code>을 다시 뽑았는가</li>
-            <li>스키마를 RDS에 적용했는가 &mdash; 안 하면 기동 실패</li>
+            <li>엔티티를 고쳤다면 <code>db/migration</code>에 다음 번호의 마이그레이션을 넣었는가</li>
+            <li>이미 나간 마이그레이션 파일을 고치지는 않았는가 &mdash; 체크섬이 어긋나면 기동 실패</li>
             <li>업로드 볼륨이 그대로 붙어 있는가</li>
           </ul>
         </div>

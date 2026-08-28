@@ -1,39 +1,49 @@
 # docs/migrations
 
-이미 데이터가 있는 DB 에 적용할 스키마 변경분.
+**이 폴더는 더 이상 쓰지 않는다.** 마이그레이션은 애플리케이션이 스스로 적용한다.
 
-`docs/schema.sql` 은 **새 DB 에 처음 적용하는** 전체 스키마다(볼륨이 비어 있을 때만
-자동 적용된다). 이미 뜬 DB 에는 아무 영향이 없으므로, 컬럼이 늘거나 제약이 바뀌면
-그 변경분을 여기에 순번을 붙여 남긴다.
+```
+backend/src/main/resources/db/migration/
+├── V1__initial_schema.sql       최초 스키마
+├── V2__general_knowledge.sql    exam_scope, source_type   (구 001-general-knowledge.sql)
+└── V3__study_chat.sql           chat_messages             (구 002-study-chat.sql)
+```
 
-| 파일 | 내용 |
-| --- | --- |
-| `001-general-knowledge.sql` | `study_sessions.exam_scope`, `study_sessions.source_type` 추가 |
-| `002-study-chat.sql` | `chat_messages` 테이블 추가 |
+여기 남은 `001-*.sql`, `002-*.sql` 은 **기록**이다. 새로 적용할 일이 없다.
+내용은 각각 V2, V3 으로 그대로 옮겼다.
 
-## 순서가 중요하다
+## 왜 옮겼나
 
-운영 프로파일은 `ddl-auto=validate` 다. 새 이미지를 먼저 올리면 컬럼이 없어서
-기동 중 죽는다. 실제로 그렇게 실패했다.
+예전 방식은 이랬다.
+
+```
+1. psql 로 마이그레이션 적용        ← 사람이
+2. 새 이미지 배포                   ← 사람이
+```
+
+두 단계의 **순서가 배포 밖에 있었다.** 2번을 먼저 하면 컬럼이 없는 채로 기동해
+`Schema-validation: missing column` 으로 죽는다. 실제로 겪었다.
 
 ```
 SchemaManagementException: Schema-validation: missing column [exam_scope] in table [study_sessions]
+dependency failed to start: container naeil-backend-1 is unhealthy
 ```
 
-**마이그레이션을 먼저, 배포를 나중에.**
+Flyway 는 Hibernate 검증보다 먼저, **같은 기동 안에서** 돌기 때문에 이 순서가 뒤집힐 수 없다.
+사람이 잊을 단계 자체가 사라진다.
 
-```bash
-docker compose exec -T db psql -U postgres -d naeil_study < docs/migrations/001-general-knowledge.sql
-docker compose exec -T db psql -U postgres -d naeil_study < docs/migrations/002-study-chat.sql
-docker compose up -d --build
-```
+## 새로 마이그레이션을 쓸 때
 
-## 작성 규칙
+`backend/src/main/resources/db/migration/` 에 다음 번호로 만든다.
+규칙과 확인 방법은 [DEPLOY.md](../../DEPLOY.md#스키마를-바꿨을-때) 에 있다.
 
-- `ADD COLUMN IF NOT EXISTS` 처럼 **여러 번 돌려도 같은 결과**가 되게 쓴다.
-  적용 이력을 기록하는 도구가 아직 없어서, 어디까지 적용했는지 확실하지 않을 때가 있다.
-- 기존 행을 어떻게 채울지 같이 적는다. 새 컬럼을 NULL 로 두는 것이 맞는 경우
-  (예: "아직 분석하지 않음")와 값을 채워야 하는 경우를 구분한다.
-- 왜 이 컬럼이 필요한지 주석으로 남긴다. SQL 만 보면 나중에 지워도 되는지 알 수 없다.
+요점만 옮기면,
 
-마이그레이션 도구(Flyway)는 아직 도입하지 않았다. 파일 수가 늘어나면 그때 옮긴다.
+- 이미 적용된 파일은 고치지 않는다 (체크섬이 어긋나면 기동이 멈춘다)
+- 멱등하게 쓴다 (`IF NOT EXISTS`) — baseline 된 DB 에서는 V2 부터 다시 실행된다
+- 컬럼을 지우는 변경은 두 번에 나눠 배포한다
+
+## 이 폴더를 지우지 않은 이유
+
+이미 이 파일들을 손으로 적용해 둔 환경이 있고, 그 환경에서 "내가 뭘 적용했더라"를
+확인할 곳이 필요하다. 지우면 그 흔적이 사라진다.

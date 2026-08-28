@@ -410,11 +410,33 @@ study_sessions.status  READY   → IN_PROGRESS
 
 ## 스키마 관리 방식
 
-| 환경 | ddl-auto | 비고 |
-| --- | --- | --- |
-| 로컬 개발 | `update` | 기본값 |
-| 테스트 | `create-drop` | H2 인메모리 |
-| 운영 | `validate` | 마이그레이션 도구 도입 후 전환 (TODO) |
+**스키마를 만드는 것은 Flyway 다.** 애플리케이션이 뜨면서
+`backend/src/main/resources/db/migration/` 의 밀린 스크립트를 적용한다.
 
-MVP 단계에서는 스키마가 자주 바뀌므로 `update`를 쓴다.
-스키마가 안정되면 Flyway 도입을 검토한다.
+| 환경 | Flyway | ddl-auto | 비고 |
+| --- | --- | --- | --- |
+| 로컬 개발 | 켬 | `validate` | 운영과 같은 경로. 마이그레이션을 빠뜨리면 여기서 먼저 드러난다 |
+| 테스트 | 끔 | `create-drop` | H2. 마이그레이션 스크립트는 PostgreSQL 문법이라 돌지 않는다 |
+| 운영 | 켬 | `validate` | Flyway 가 적용하고, Hibernate 가 결과를 검증한다 |
+
+### 왜 두 겹인가
+
+Flyway 는 "쓰인 대로" 적용할 뿐, 그 결과가 엔티티와 맞는지는 모른다. 마이그레이션 파일을
+빠뜨리면 Flyway 는 아무 불평 없이 성공한다. 어긋났다는 것을 알려 주는 것은 `validate` 뿐이다.
+
+```
+Flyway    스키마를 만든다        빠뜨린 변경은 모른다
+validate  엔티티와 맞는지 본다    고칠 줄은 모른다
+```
+
+### 로컬도 validate 인 이유
+
+예전에는 로컬이 `update` 였다. 엔티티에 필드를 더하면 Hibernate 가 조용히 컬럼을 만들어
+주므로 개발은 편했지만, 마이그레이션 파일을 안 쓴 채로 배포되고 그 사실은 **EC2 에서야**
+드러났다. 지금은 같은 실수가 내 컴퓨터에서, 그 자리에서 드러난다.
+
+### 기존 DB 는 어떻게 되나
+
+이력 표(`flyway_schema_history`)가 없는 DB 를 만나면 `V1` 이 적용된 것으로 표시하고
+그다음부터 이어 적용한다(`baseline-on-migrate`). 그래서 Flyway 도입 전에 만들어 둔 DB 도
+그대로 쓸 수 있다. 자세한 절차와 규칙은 [DEPLOY.md](../DEPLOY.md#스키마를-바꿨을-때).
