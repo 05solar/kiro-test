@@ -163,11 +163,11 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-50 flex h-[68px] items-center gap-7 border-b border-[#eee] bg-white/90 px-4 backdrop-blur-lg sm:px-8">
-      <button type="button" className="shrink-0 cursor-pointer border-0 bg-transparent p-0" onClick={() => navigate("/")} aria-label="랜딩 페이지로 이동">
+      <button type="button" className="shrink-0 cursor-pointer border-0 bg-transparent p-0" onClick={() => navigate("/")} aria-label="처음으로">
         <Logo />
       </button>
       <nav className="hidden items-center gap-1 lg:flex" aria-label="주요 페이지">
-        <NavButton onClick={() => navigate("/")}>랜딩</NavButton>
+        <NavButton onClick={() => navigate("/")}>처음으로</NavButton>
         <NavButton onClick={() => navigate("/exam-info")}>시험 정보</NavButton>
         <NavButton onClick={() => navigate("/curriculum")}>플랜 맵</NavButton>
         <NavButton onClick={() => navigate("/study/3")}>학습</NavButton>
@@ -217,14 +217,22 @@ export function PrimaryButton({ children, onClick, className = "", type = "butto
   );
 }
 
-export function SecondaryButton({ children, onClick, className = "" }: {
+export function SecondaryButton({
+  children,
+  onClick,
+  className = "",
+  "aria-expanded": ariaExpanded,
+}: {
   children: React.ReactNode;
   onClick?: () => void;
   className?: string;
+  /** 눌러서 무언가를 펼치는 버튼일 때. 스크린리더가 상태를 읽는다. */
+  "aria-expanded"?: boolean;
 }) {
   return (
     <button
       type="button"
+      aria-expanded={ariaExpanded}
       className={`cursor-pointer rounded-xl border border-[#eee] bg-white px-6 py-4 text-[15px] text-[#888] transition-colors hover:border-[#FFE0C4] hover:text-[#E85D00] ${className}`}
       onClick={onClick}
     >
@@ -238,5 +246,53 @@ export function CheckIcon() {
     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M5 13l5 5L19 7" stroke="#E85D00" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
+  );
+}
+
+/**
+ * 캐릭터 말풍선.
+ *
+ * 기존에는 페이지마다 다른 크기와 모양으로 흩어져 있었고, 글씨가 작아 배경에 묻혔다.
+ * 꼬리를 그려 누가 말하는지 분명히 하고, 본문보다 크게 잡아 먼저 읽히게 한다.
+ *
+ * @param tail 꼬리가 붙는 방향. 캐릭터가 있는 쪽을 가리킨다.
+ */
+export function SpeechBubble({
+  children,
+  tail = "bottom-left",
+  className = "",
+}: {
+  children: React.ReactNode;
+  tail?: "bottom-left" | "bottom-right" | "left";
+  className?: string;
+}) {
+  const tailPosition =
+    tail === "left"
+      ? "left-[-9px] top-1/2 -translate-y-1/2"
+      : tail === "bottom-right"
+        ? "right-6 bottom-[-9px]"
+        : "left-6 bottom-[-9px]";
+
+  return (
+    <div
+      className={`relative inline-block rounded-[18px] border-2 border-[#FFD3A8] bg-white px-[22px] py-4 text-[19px] font-bold leading-[1.5] tracking-[-.3px] text-[#222] shadow-[0_6px_20px_rgba(255,122,0,.16)] sm:text-[21px] ${className}`}
+    >
+      {children}
+      {/* 테두리와 배경을 각각 찍어 꼬리에도 선이 이어지게 한다. */}
+      <span
+        aria-hidden="true"
+        className={`absolute size-[18px] rotate-45 border-b-2 border-r-2 border-[#FFD3A8] bg-white ${tailPosition}`}
+        style={tail === "left" ? { transform: "rotate(135deg)" } : undefined}
+      />
+    </div>
+  );
+}
+
+/** 필수 입력 표시. 라벨 옆에 붙인다. */
+export function RequiredMark() {
+  return (
+    <span className="ml-1 text-[#E03131]" aria-hidden="true">
+      *
+    </span>
   );
 }

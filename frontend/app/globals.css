@@ -107,3 +107,17 @@ textarea {
   background: var(--brand-border);
   color: var(--foreground);
 }
+
+/* 필수 입력을 비운 채 넘기려 할 때. 테두리만으로도 어느 칸인지 바로 보이게 한다. */
+.form-input-error,
+.form-input-error:focus {
+  border-color: #E03131;
+  box-shadow: 0 0 0 3px rgba(224, 49, 49, 0.1);
+}
+
+/* 예시 문구는 실제 입력값과 확실히 구분되어야 한다.
+   기본값을 미리 채워 두면 사용자가 자기 값으로 착각한 채 넘어간다. */
+.form-input::placeholder,
+textarea.form-input::placeholder {
+  color: #B5B5B5;
+}

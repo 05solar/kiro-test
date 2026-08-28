@@ -1,9 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FlowSteps } from "@/app/_components/flow-steps";
-import { AppHeader, Countdown, Ghost, PrimaryButton } from "@/app/_components/ui";
+import { AppHeader, Countdown, Ghost, PrimaryButton, RequiredMark, SpeechBubble } from "@/app/_components/ui";
 import { usePlanStore, useExamStore, type PrepState } from "@/app/_components/store";
 import { useSessionStore } from "@/app/_components/session-store";
 import { useHydrated } from "@/app/_components/use-hydrated";
@@ -16,13 +16,9 @@ const LEVELS: { label: string; value: PrepState }[] = [
   { label: "복습만 필요해요", value: "review" },
 ];
 
-const DEFAULTS = {
-  subject: "자료구조",
-  examDate: "2026-08-28",
-  examTime: "09:00",
-  range: "3장 스택 ~ 7장 그래프",
-  prepState: "none" as PrepState,
-};
+/** 입력하지 않으면 넘어갈 수 없는 칸. 배열 순서가 곧 검사 순서이자 스크롤 순서다. */
+const REQUIRED_FIELDS = ["subject", "examDate", "examTime"] as const;
+type RequiredField = (typeof REQUIRED_FIELDS)[number];
 
 export default function ExamInfoPage() {
   const router = useRouter();
@@ -37,22 +33,39 @@ export default function ExamInfoPage() {
 
   const completedStepCount = usePlanStore((state) => state.completedSteps.length);
 
-  const [subject, setSubject] = useState(DEFAULTS.subject);
-  const [examDate, setExamDate] = useState(DEFAULTS.examDate);
-  const [examTime, setExamTime] = useState(DEFAULTS.examTime);
-  const [range, setRange] = useState(DEFAULTS.range);
-  const [prepState, setPrepState] = useState<PrepState>(DEFAULTS.prepState);
+  /*
+   * 빈 값으로 시작한다.
+   *
+   * 예전에는 "자료구조", "2026-08-28" 같은 값이 미리 채워져 있었다. 사용자가 자기 값으로
+   * 착각한 채 넘어가면 엉뚱한 시험 시각으로 계획이 만들어진다. 예시는 placeholder 로만 보여준다.
+   */
+  const [subject, setSubject] = useState("");
+  const [examDate, setExamDate] = useState("");
+  const [examTime, setExamTime] = useState("");
+  const [range, setRange] = useState("");
+  const [prepState, setPrepState] = useState<PrepState>("none");
+
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [invalid, setInvalid] = useState<Set<RequiredField>>(new Set());
 
   const sessionCode = useSessionStore((state) => state.sessionCode);
   const setSessionCode = useSessionStore((state) => state.setSessionCode);
 
+  const subjectRef = useRef<HTMLInputElement>(null);
+  const examDateRef = useRef<HTMLInputElement>(null);
+  const examTimeRef = useRef<HTMLInputElement>(null);
+  const fieldRefs: Record<RequiredField, React.RefObject<HTMLInputElement | null>> = {
+    subject: subjectRef,
+    examDate: examDateRef,
+    examTime: examTimeRef,
+  };
+
   // 하이드레이션 이후에만 저장된 값으로 프리필(SSR 마크업과 first render 일치 보장).
+  // 앞서 입력한 값을 되살리는 것이지, 기본값을 넣는 것이 아니다.
   useEffect(() => {
     if (!hydrated) return;
-    // 저장된 값 프리필. 헬퍼 함수 경유로 호출해 effect 본문의 직접 setState를 피한다.
     const prefill = () => {
       if (storedSubject) setSubject(storedSubject);
       if (storedExamDate) setExamDate(storedExamDate);
@@ -63,18 +76,49 @@ export default function ExamInfoPage() {
     prefill();
   }, [hydrated, storedSubject, storedExamDate, storedExamTime, storedRange, storedPrepState]);
 
+  const values: Record<RequiredField, string> = { subject, examDate, examTime };
+
+  /**
+   * 비어 있는 필수 칸을 표시하고 첫 번째 칸으로 데려간다.
+   *
+   * 오류 문구만 띄우면 사용자가 어느 칸인지 직접 찾아 스크롤해야 한다.
+   *
+   * @return 전부 채워져 있으면 true
+   */
+  const validate = (): boolean => {
+    const missing = REQUIRED_FIELDS.filter((field) => !values[field].trim());
+    setInvalid(new Set(missing));
+    if (!missing.length) return true;
+
+    const first = missing[0];
+    fieldRefs[first].current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    // 스크롤이 끝난 뒤 포커스를 준다. 바로 주면 브라우저가 스크롤 위치를 덮어쓴다.
+    window.setTimeout(() => fieldRefs[first].current?.focus({ preventScroll: true }), 350);
+    return false;
+  };
+
+  /** 값을 고치면 그 칸의 오류 표시를 지운다. 고쳤는데 빨간 테두리가 남아 있으면 안 된다. */
+  const clearInvalid = (field: RequiredField) =>
+    setInvalid((current) => {
+      if (!current.has(field)) return current;
+      const next = new Set(current);
+      next.delete(field);
+      return next;
+    });
+
+  const inputClass = (field: RequiredField) =>
+    `form-input ${invalid.has(field) ? "form-input-error" : ""}`;
+
   /**
    * 세션을 만들고 시험 정보를 서버에 저장한 뒤 다음 화면으로 간다.
    *
    * 로컬 스토어에도 남기지만 그건 화면 프리필용이다. 남은 학습 시간의 기준은
    * 서버가 정한다 — min(입력한 시간, 지금부터 시험까지 남은 실제 시간).
-   * 양쪽이 각자 계산하면 화면과 서버의 값이 어긋난다.
    */
   const commitAndContinue = async () => {
     setSubmitting(true);
     setError(null);
     try {
-      // 세션이 없으면 새로 만든다. 이미 있으면 그 세션의 시험 정보를 고친다.
       const code = sessionCode ?? (await createSession()).sessionCode;
       if (code !== sessionCode) setSessionCode(code);
 
@@ -95,8 +139,9 @@ export default function ExamInfoPage() {
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
+    if (!validate()) return;
+
     // 기존 진행 상황이 있으면 초기화 여부를 먼저 확인시킨다.
-    // (커리큘럼 페이지의 planSignature 비교로 실제 초기화가 일어나므로, 여기서는 저장 전 안내만 담당)
     if (hydrated && completedStepCount > 0) {
       setShowResetConfirm(true);
       return;
@@ -111,27 +156,77 @@ export default function ExamInfoPage() {
         <FlowSteps current={0} />
         <div className="mb-2.5 text-[13px] font-bold text-[#FF7A00]">STEP 1 / 2</div>
         <h1 className="font-jua mb-2 text-4xl tracking-[-1px]">시험 정보를 알려주세요</h1>
-        <p className="mb-9 text-[15px] text-[#888]">남은 시간은 자동으로 계산됩니다.</p>
+        <p className="mb-9 text-[15px] text-[#888]">
+          남은 시간은 자동으로 계산됩니다. <span className="font-bold text-[#E03131]">*</span> 는 필수 입력이에요.
+        </p>
         <div className="grid items-start gap-6 lg:grid-cols-[1fr_340px]">
-          <form className="rounded-[18px] border border-[#eee] p-6 sm:p-[34px]" onSubmit={handleSubmit}>
+          <form className="rounded-[18px] border border-[#eee] p-6 sm:p-[34px]" onSubmit={handleSubmit} noValidate>
             <div className="grid gap-6">
               <label className="block">
-                <span className="mb-[9px] block text-[13.5px] font-bold">과목명</span>
-                <input name="subject" value={subject} onChange={(event) => setSubject(event.target.value)} className="form-input" />
+                <span className="mb-[9px] block text-[13.5px] font-bold">
+                  과목명<RequiredMark />
+                </span>
+                <input
+                  ref={subjectRef}
+                  name="subject"
+                  value={subject}
+                  placeholder="ex ) 자료구조"
+                  aria-required="true"
+                  aria-invalid={invalid.has("subject")}
+                  onChange={(event) => {
+                    setSubject(event.target.value);
+                    clearInvalid("subject");
+                  }}
+                  className={inputClass("subject")}
+                />
               </label>
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block">
-                  <span className="mb-[9px] block text-[13.5px] font-bold">시험 날짜</span>
-                  <input name="examDate" type="date" value={examDate} onChange={(event) => setExamDate(event.target.value)} className="form-input" />
+                  <span className="mb-[9px] block text-[13.5px] font-bold">
+                    시험 날짜<RequiredMark />
+                  </span>
+                  <input
+                    ref={examDateRef}
+                    name="examDate"
+                    type="date"
+                    value={examDate}
+                    aria-required="true"
+                    aria-invalid={invalid.has("examDate")}
+                    onChange={(event) => {
+                      setExamDate(event.target.value);
+                      clearInvalid("examDate");
+                    }}
+                    className={inputClass("examDate")}
+                  />
                 </label>
                 <label className="block">
-                  <span className="mb-[9px] block text-[13.5px] font-bold">시험 시간</span>
-                  <input name="examTime" type="time" value={examTime} onChange={(event) => setExamTime(event.target.value)} className="form-input" />
+                  <span className="mb-[9px] block text-[13.5px] font-bold">
+                    시험 시간<RequiredMark />
+                  </span>
+                  <input
+                    ref={examTimeRef}
+                    name="examTime"
+                    type="time"
+                    value={examTime}
+                    aria-required="true"
+                    aria-invalid={invalid.has("examTime")}
+                    onChange={(event) => {
+                      setExamTime(event.target.value);
+                      clearInvalid("examTime");
+                    }}
+                    className={inputClass("examTime")}
+                  />
                 </label>
               </div>
               <label className="block">
                 <span className="mb-[9px] block text-[13.5px] font-bold">시험 범위</span>
-                <input name="range" value={range} onChange={(event) => setRange(event.target.value)} className="form-input" />
+                <input
+                  name="range"
+                  value={range}
+                  placeholder="ex ) 3장 스택 ~ 7장 그래프"
+                  onChange={(event) => setRange(event.target.value)}
+                  className="form-input"
+                />
                 <span className="mt-2 block text-[12.5px] text-[#888]">교재 목차나 강의 슬라이드 제목을 그대로 붙여도 됩니다.</span>
               </label>
               <fieldset>
@@ -149,7 +244,19 @@ export default function ExamInfoPage() {
                   ))}
                 </div>
               </fieldset>
-              <PrimaryButton type="submit" className="mt-1.5 w-full py-[17px] text-[16.5px]">벼락치기 플랜 만들기</PrimaryButton>
+              {invalid.size > 0 && (
+                <p role="alert" className="text-[13.5px] font-bold text-[#E03131]">
+                  표시된 칸을 입력해 주세요.
+                </p>
+              )}
+              {error && (
+                <p role="alert" className="rounded-xl border border-[#F5C2C7] bg-[#FDECEE] px-4 py-3 text-[13.5px] text-[#B02A37]">
+                  {error}
+                </p>
+              )}
+              <PrimaryButton type="submit" disabled={submitting} className="mt-1.5 w-full py-[17px] text-[16.5px]">
+                {submitting ? "저장하는 중…" : "벼락치기 플랜 만들기"}
+              </PrimaryButton>
             </div>
           </form>
           <aside className="grid gap-4">
@@ -160,9 +267,12 @@ export default function ExamInfoPage() {
                 휴식·수면 시간을 빼고 <b className="text-[#222]">실제 공부 가능 시간</b>만 플랜에 반영합니다.
               </div>
             </div>
-            <div className="flex items-center gap-3.5 rounded-[18px] border border-[#eee] px-[22px] py-5">
-              <Ghost width={46} mood="worried" className="animate-bob-small shrink-0" />
-              <p className="text-[13.5px] leading-[1.65]">범위가 넓네… 그래도 <b className="text-[#E85D00]">중요한 것부터</b> 순서대로 짜볼게.</p>
+            <div className="grid justify-items-center gap-3 rounded-[18px] border border-[#eee] px-5 py-6">
+              <SpeechBubble tail="bottom-left" className="text-center">
+                범위가 넓네…<br />
+                그래도 <span className="text-[#E85D00]">중요한 것부터</span> 짜볼게!
+              </SpeechBubble>
+              <Ghost width={72} mood="worried" className="animate-bob-small" />
             </div>
           </aside>
         </div>
