@@ -104,7 +104,17 @@ docker run -d --name naeil-postgres \
 
 ## 환경변수
 
-DB 접속 정보는 하드코딩하지 않는다. 모두 `application.yml`에서 환경변수로 주입받는다.
+API 키와 DB 접속 정보는 하드코딩하지 않는다. `application.yml` 에서 환경변수로 주입받는다.
+
+로컬 개발에서는 `backend/.env` 에 넣으면 된다. Spring Boot 가 `spring.config.import` 로 읽는다.
+
+```bash
+cp .env.example .env
+# .env 에 GEMINI_API_KEY 를 채운다
+./gradlew bootRun
+```
+
+`.env` 는 `.gitignore` 에 있어 저장소에 올라가지 않는다. 배포 환경에서는 파일 대신 환경변수를 쓴다.
 
 | 변수 | 기본값 | 설명 |
 | --- | --- | --- |
@@ -120,10 +130,10 @@ DB 접속 정보는 하드코딩하지 않는다. 모두 `application.yml`에서
 | `STORAGE_ROOT_PATH` | `./uploads` | 로컬 Storage 루트 경로 |
 | `MAX_FILE_SIZE` | `20MB` | multipart 개별 파일 제한 |
 | `MAX_REQUEST_SIZE` | `100MB` | multipart 요청 전체 제한 |
-| `AI_PROVIDER` | `anthropic` | AI 공급자 (`anthropic` / `gemini`) |
+| `AI_PROVIDER` | `gemini` | AI 공급자 (`gemini` / `anthropic`) |
 | `AI_API_KEY` | (없음) | Anthropic 키. 비어 있으면 AI 요청 시점에만 실패한다 |
 | `AI_MODEL` | `claude-opus-5` | Anthropic 모델 |
-| `GEMINI_API_KEY` | (없음) | `AI_PROVIDER=gemini` 일 때 쓰는 키 |
+| `GEMINI_API_KEY` | (없음) | **`.env` 에 넣는다.** 비어 있으면 AI 요청 시점에만 실패한다 |
 | `GEMINI_MODEL` | `gemini-3.5-flash-lite` | Gemini 모델 |
 | `AI_TIMEOUT_SECONDS` | `180` | AI 호출 타임아웃 |
 | `AI_MAX_RETRIES` | `2` | 연결 오류·5xx 재시도 |
