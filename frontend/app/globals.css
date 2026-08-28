@@ -10,6 +10,8 @@
   --brand-border: #ffe0c4;
   --line: #eeeeee;
   --muted: #666666;
+  /* 좁은 화면 아래쪽 이동 막대의 높이. 본문 여백과 떠 있는 버튼 위치가 이 값을 따른다. */
+  --bottom-nav-h: 56px;
 }
 
 @theme inline {
@@ -111,6 +113,26 @@ body {
   color: var(--foreground);
   font-family: "Noto Sans KR", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+
+  /*
+   * 좁은 화면의 아래쪽 이동 막대가 본문 마지막 줄을 가린다.
+   * 그만큼을 여기서 한 번에 비운다 — 페이지마다 따로 넣으면 빠뜨리는 곳이 생긴다.
+   * 홈 인디케이터가 있는 기기를 위해 safe-area 도 더한다.
+   */
+  padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 1024px) {
+  /* 넓은 화면에는 아래 막대가 없다. 위쪽 nav 가 그 일을 한다. */
+  body {
+    padding-bottom: 0;
+  }
+}
+
+/* 좁은 화면에서 가로로 밀리는 일을 막는다. 지도처럼 넓은 요소는 각자 스크롤한다. */
+html,
+body {
+  overflow-x: hidden;
 }
 
 button,

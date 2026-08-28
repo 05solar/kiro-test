@@ -177,32 +177,68 @@ export function Countdown({ compact = false }: { compact?: boolean }) {
   return <span className={cls}>{formatCountdown(diff, compact)}</span>;
 }
 
+/**
+ * 화면 위쪽 막대와, 좁은 화면의 아래쪽 이동 막대.
+ *
+ * <p>좁은 화면에서는 이동 버튼을 <b>아래</b>에 둔다. 한 손으로 들고 쓰는 화면에서
+ * 위쪽 끝은 엄지가 닿지 않는다. 위쪽에는 로고와 남은 시간만 남긴다.
+ *
+ * <p>아래 막대는 화면에 고정되므로 본문 마지막 줄을 가린다. 그만큼의 여백은
+ * {@code globals.css} 의 body 규칙이 만든다 — 페이지마다 따로 넣으면 빠뜨리는 곳이 생긴다.
+ */
 export function AppHeader() {
   const router = useRouter();
   const navigate = (path: string) => router.push(path);
 
+  const links: { label: string; path: string }[] = [
+    { label: "처음으로", path: "/" },
+    { label: "시험 정보", path: "/exam-info" },
+    { label: "플랜 맵", path: "/curriculum" },
+    { label: "학습", path: "/study/3" },
+    { label: "퀴즈", path: "/quiz/3" },
+  ];
+
   return (
-    <header className="sticky top-0 z-50 flex h-[68px] items-center gap-7 border-b border-[#eee] bg-white/90 px-4 backdrop-blur-lg sm:px-8">
-      <button type="button" className="shrink-0 cursor-pointer border-0 bg-transparent p-0" onClick={() => navigate("/")} aria-label="처음으로">
-        <Logo />
-      </button>
-      <nav className="hidden items-center gap-1 lg:flex" aria-label="주요 페이지">
-        <NavButton onClick={() => navigate("/")}>처음으로</NavButton>
-        <NavButton onClick={() => navigate("/exam-info")}>시험 정보</NavButton>
-        <NavButton onClick={() => navigate("/curriculum")}>플랜 맵</NavButton>
-        <NavButton onClick={() => navigate("/study/3")}>학습</NavButton>
-        <NavButton onClick={() => navigate("/quiz/3")}>퀴즈</NavButton>
+    <>
+      <header className="sticky top-0 z-50 flex h-[62px] items-center gap-7 border-b border-[#eee] bg-white/90 px-4 backdrop-blur-lg sm:h-[68px] sm:px-8">
+        <button type="button" className="shrink-0 cursor-pointer border-0 bg-transparent p-0" onClick={() => navigate("/")} aria-label="처음으로">
+          <Logo />
+        </button>
+        <nav className="hidden items-center gap-1 lg:flex" aria-label="주요 페이지">
+          {links.map((link) => (
+            <NavButton key={link.path} onClick={() => navigate(link.path)}>
+              {link.label}
+            </NavButton>
+          ))}
+        </nav>
+        <div className="flex-1" />
+        <div className="flex items-center gap-2 rounded-full border border-[#FFE0C4] bg-[#FFF3E8] px-3 py-1.5 sm:gap-2.5 sm:px-4 sm:py-2">
+          <span className="relative inline-flex size-2" aria-hidden="true">
+            <span className="absolute inset-0 animate-pulse-ring rounded-full bg-[#FF7A00]" />
+            <span className="absolute inset-0 rounded-full bg-[#FF7A00]" />
+          </span>
+          <span className="hidden text-xs text-[#666] sm:inline">시험까지</span>
+          <span className="text-[13px] font-bold sm:text-[15px]"><Countdown compact /></span>
+        </div>
+      </header>
+
+      {/* 좁은 화면 — 아래쪽 이동 막대. 넓은 화면에서는 위쪽 nav 가 그 일을 한다. */}
+      <nav
+        aria-label="주요 페이지"
+        className="fixed inset-x-0 bottom-0 z-50 flex h-[var(--bottom-nav-h)] items-stretch border-t border-[#eee] bg-white/95 backdrop-blur-lg lg:hidden"
+      >
+        {links.map((link) => (
+          <button
+            key={link.path}
+            type="button"
+            onClick={() => navigate(link.path)}
+            className="flex flex-1 cursor-pointer items-center justify-center border-0 bg-transparent px-1 text-[12px] font-medium text-[#666] transition-colors active:bg-[#FFF3E8] active:text-[#E85D00]"
+          >
+            {link.label}
+          </button>
+        ))}
       </nav>
-      <div className="flex-1" />
-      <div className="flex items-center gap-2.5 rounded-full border border-[#FFE0C4] bg-[#FFF3E8] px-3 py-2 sm:px-4">
-        <span className="relative inline-flex size-2" aria-hidden="true">
-          <span className="absolute inset-0 animate-pulse-ring rounded-full bg-[#FF7A00]" />
-          <span className="absolute inset-0 rounded-full bg-[#FF7A00]" />
-        </span>
-        <span className="hidden text-xs text-[#666] sm:inline">시험까지</span>
-        <span className="text-sm font-bold sm:text-[15px]"><Countdown compact /></span>
-      </div>
-    </header>
+    </>
   );
 }
 
@@ -278,6 +314,75 @@ export function CheckMini({ size = 12, color = "#E85D00" }: { size?: number; col
   );
 }
 
+/*
+ * 아이콘은 전부 직접 그린다.
+ *
+ * 이모지는 글꼴에 따라 모양도 크기도 제각각이고, 어떤 환경에서는 아예 네모로 뜬다.
+ * 색을 맞출 수도 없다. 화면에 쓰는 기호는 이 파일의 SVG 로만 둔다.
+ */
+
+/** 말풍선. 학습 도우미를 여는 버튼에 쓴다. */
+export function ChatIcon({ size = 22, color = "currentColor" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0">
+      <path
+        d="M21 11.5c0 4.14-4.03 7.5-9 7.5-1.02 0-2-.14-2.9-.4L4 20.5l1.2-3.35C3.83 15.82 3 13.76 3 11.5 3 7.36 7.03 4 12 4s9 3.36 9 7.5Z"
+        stroke={color}
+        strokeWidth="1.9"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** 닫기. 텍스트 ✕ 대신 쓴다. */
+export function CloseIcon({ size = 18, color = "currentColor" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0">
+      <path d="M6 6l12 12M18 6L6 18" stroke={color} strokeWidth="2.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** 아래를 가리키는 꺾쇠. 텍스트 ⌄ 대신 쓴다. */
+export function ChevronDown({ size = 14, color = "currentColor" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0">
+      <path d="M6 9l6 6 6-6" stroke={color} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** 문서. 자료 기반 표시에 쓴다. */
+export function DocIcon({ size = 13, color = "currentColor" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0">
+      <path
+        d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"
+        stroke={color}
+        strokeWidth="1.9"
+        strokeLinejoin="round"
+      />
+      <path d="M14 3v5h5" stroke={color} strokeWidth="1.9" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** 전구. 일반 지식 기반 표시에 쓴다. */
+export function BulbIcon({ size = 13, color = "currentColor" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0">
+      <path
+        d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.4.3.5.7.5 1.1h6c0-.4.1-.8.5-1.1A6 6 0 0 0 12 3Z"
+        stroke={color}
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 /**
  * 캐릭터 말풍선.
  *
@@ -342,7 +447,7 @@ export function SourceBadge({ source }: { source: SourceLabel | null }) {
         source.grounded ? "bg-[#FFF3E8] text-[#E85D00]" : "bg-[#EEF2FF] text-[#4C51BF]"
       }`}
     >
-      <span aria-hidden="true">{source.grounded ? "📚" : "💡"}</span>
+      {source.grounded ? <DocIcon /> : <BulbIcon />}
       {source.label}
     </span>
   );

@@ -192,7 +192,7 @@ export default function UploadPage() {
       <main className="mx-auto max-w-[980px] px-6 py-12 md:px-10 md:pb-24 md:pt-14">
         <FlowSteps current={1} />
         <div className="mb-2.5 text-[13px] font-bold text-[#FF7A00]">STEP 2 / 2</div>
-        <h1 className="font-jua mb-2 text-4xl tracking-[-1px]">공부할 자료를 올려주세요</h1>
+        <h1 className="font-jua mb-2 text-[28px] tracking-[-1px] sm:text-4xl">공부할 자료를 올려주세요</h1>
         <p className="mb-9 text-[15px] text-[#666]">
           강의 자료를 읽고, 시험에 나올 핵심만 골라 플랜으로 만들게요.
           자료가 없으면 과목명과 시험 범위만으로 만들어 드릴게요.

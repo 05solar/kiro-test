@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AppHeader, CheckIcon, CheckMini, Ghost, PrimaryButton, SourceBadge, SourceNotice } from "@/app/_components/ui";
+import { AppHeader, CheckIcon, CheckMini, ChevronDown, Ghost, PrimaryButton, SourceBadge, SourceNotice } from "@/app/_components/ui";
 import { useExamStore, usePlanStore } from "@/app/_components/store";
 import { useCurriculum } from "@/app/_components/use-curriculum";
 import { useSession } from "@/app/_components/use-session";
@@ -161,7 +161,7 @@ export default function CurriculumPage() {
               </span>
               <SourceBadge source={source} />
             </div>
-            <h1 className="font-jua mb-[7px] text-4xl tracking-[-1px]">오늘 밤 벼락치기 맵</h1>
+            <h1 className="font-jua mb-[7px] text-[28px] tracking-[-1px] sm:text-4xl">오늘 밤 벼락치기 맵</h1>
             <p className="text-[15px] text-[#666]">STEP {totalSteps}개 · 상자 {rewardAfter.length}개</p>
             {prepState === "review" && (
               <p className="mt-1 text-[13px] font-bold text-[#E85D00]">복습 모드 · 퀴즈 위주로 빠르게</p>
@@ -211,7 +211,14 @@ export default function CurriculumPage() {
         {plan.cutStepIds.length > 0 && <CutBanner cutStepIds={plan.cutStepIds} />}
 
         <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="overflow-x-auto rounded-[22px] border border-[#eee] bg-[linear-gradient(#FFFDFB,#FFF9F3)]">
+          {/*
+            맵은 900px 고정이다. 좁은 화면에서는 가로로 밀어서 본다.
+            화면 폭에 맞춰 줄이면 STEP 이름이 읽히지 않는 크기가 된다.
+            대신 밀 수 있다는 것을 알려 준다 — 모르면 왼쪽 끝만 보고 만다.
+          */}
+          <div>
+            <p className="mb-2 text-[12.5px] text-[#888] xl:hidden">맵을 좌우로 밀어서 볼 수 있어요.</p>
+            <div className="overflow-x-auto rounded-[22px] border border-[#eee] bg-[linear-gradient(#FFFDFB,#FFF9F3)]">
             <MapCanvas
               steps={orderedSteps.map((step) => ({
                 id: step.id,
@@ -225,6 +232,7 @@ export default function CurriculumPage() {
               rewardAfter={rewardAfter}
               onNavigateStep={(stepId) => router.push(`/study/${stepId}`)}
             />
+            </div>
           </div>
 
           <aside className="grid gap-4">
@@ -312,7 +320,9 @@ export default function CurriculumPage() {
                     className="flex w-full items-center justify-between text-[12.5px] font-bold text-[#666] transition-colors hover:text-[#E85D00]"
                   >
                     <span>제외된 STEP {cutSteps.length}개 보기</span>
-                    <span className={`transition-transform duration-300 ${showCut ? "rotate-180" : ""}`} aria-hidden="true">⌄</span>
+                    <span className={`flex transition-transform duration-300 ${showCut ? "rotate-180" : ""}`}>
+                      <ChevronDown />
+                    </span>
                   </button>
                   <div className={`grid gap-2 overflow-hidden transition-all duration-500 ${showCut ? "mt-3 max-h-96 opacity-100" : "max-h-0 opacity-0"}`}>
                     {cutSteps.map((step) => (

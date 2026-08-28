@@ -234,7 +234,7 @@ function StudyView({
             <span className="text-[13px] text-[#666]">{content.chapter} · 예상 {estimatedMinutes}분</span>
             {quizFirst && <span className="rounded-full bg-amber-50 px-2 py-1 text-[11px] font-bold text-amber-700">복습 모드</span>}
           </div>
-          <h1 className="font-jua mb-[34px] text-[40px] tracking-[-1.2px]">{content.title}</h1>
+          <h1 className="font-jua mb-6 text-[27px] leading-[1.3] tracking-[-1.2px] sm:mb-[34px] sm:text-[40px]">{content.title}</h1>
 
           {quizFirst && !conceptsOpen && (
             <section className="mb-5 rounded-[18px] border border-[#FFE0C4] bg-[#FFFDFB] px-6 py-5 sm:px-8">
@@ -261,10 +261,6 @@ function StudyView({
             </section>
           )}
 
-          <section className="mb-7 rounded-[18px] border border-[#FFE0C4] bg-[#FFF3E8] px-7 py-6">
-            <div className="mb-2.5 text-[13px] font-bold text-[#E85D00]">시험에 이렇게 나옵니다</div>
-            <p className="text-[14.5px] leading-[1.75]">{content.examTip}</p>
-          </section>
           {actionError && (
             <p role="alert" className="mb-4 rounded-xl border border-[#F5C2C7] bg-[#FDECEE] px-4 py-3 text-[13.5px] text-[#B02A37]">
               {actionError}

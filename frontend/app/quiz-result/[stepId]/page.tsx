@@ -134,7 +134,7 @@ export default function QuizResultPage() {
               <span className="text-[13px] font-bold text-[#E85D00]">STEP {stepId} 퀴즈 결과</span>
               <SourceBadge source={source} />
             </div>
-            <div className="font-jua mb-2 text-[38px] tracking-[-1.2px]">
+            <div className="font-jua mb-2 text-[28px] tracking-[-1.2px] sm:text-[38px]">
               {score} / {total} 정답 · {percentage}% ·{" "}
               <span className={passed ? "text-[#E85D00]" : "text-[#666]"}>{passed ? "통과" : "재도전"}</span>
             </div>

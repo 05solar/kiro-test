@@ -1,26 +1,36 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Ghost } from "@/app/_components/ui";
+import { ChatIcon, CloseIcon, Ghost } from "@/app/_components/ui";
 import { useStudyChat, type StudyChatView } from "@/app/_components/use-study-chat";
 
 /**
  * 학습 챗봇.
  *
- * <p>넓은 화면에서는 퀴즈 옆에 붙은 사이드바로, 좁은 화면에서는 떠 있는 말풍선 버튼과
- * 아래에서 올라오는 시트로 나타난다. <b>둘은 같은 대화를 본다.</b> 상태를 각각 갖게 하면
+ * <p>넓은 화면에서는 퀴즈 옆에 붙은 사이드바로, 좁은 화면에서는 떠 있는 둥근 버튼과
+ * 화면 가운데 모달로 나타난다. <b>둘은 같은 대화를 본다.</b> 상태를 각각 갖게 하면
  * 창 크기를 바꾸는 순간 한쪽 대화가 사라진 것처럼 보인다.
  *
  * <p>열기만 해서는 AI 를 부르지 않는다. 보내기를 누른 순간에만 부른다.
  */
 export function StudyChat({ variant = "sidebar" }: { variant?: "sidebar" | "floating" }) {
-  const [openAsSheet, setOpenAsSheet] = useState(false);
+  const [open, setOpen] = useState(false);
   const chat = useStudyChat(true);
 
   // 이미 오른쪽 칸을 쓰고 있는 화면(학습 화면)에서는 사이드바를 붙일 자리가 없다.
   // 그때는 어느 너비에서든 떠 있는 버튼으로 둔다.
   const floatingOnly = variant === "floating";
   const hideOnWide = floatingOnly ? "" : " lg:hidden";
+
+  // 열려 있는 동안 Esc 로 닫는다. 모달을 여는 화면의 최소 예의다.
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open]);
 
   return (
     <>
@@ -31,33 +41,42 @@ export function StudyChat({ variant = "sidebar" }: { variant?: "sidebar" | "floa
         </aside>
       )}
 
-      {!openAsSheet && (
+      {/*
+        떠 있는 둥근 버튼.
+        아래쪽 이동 막대 위에 앉힌다 — 겹치면 둘 다 누르기 어려워진다.
+      */}
+      {!open && (
         <button
           type="button"
-          onClick={() => setOpenAsSheet(true)}
+          onClick={() => setOpen(true)}
           aria-label="학습 도우미에게 질문하기"
-          className={`fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full border-0 bg-[#FF7A00] px-5 py-3.5 text-[14.5px] font-bold text-white shadow-[0_10px_24px_rgba(255,122,0,.4)] transition-colors hover:bg-[#E85D00]${hideOnWide}`}
+          className={`fixed right-4 z-40 flex size-14 items-center justify-center rounded-full border-0 bg-[#FF7A00] text-white shadow-[0_8px_22px_rgba(255,122,0,.45)] transition-colors hover:bg-[#E85D00] bottom-[calc(var(--bottom-nav-h)+16px+env(safe-area-inset-bottom,0px))] lg:bottom-6${hideOnWide}`}
         >
-          <span aria-hidden="true">💬</span>
-          모르는 게 있어요
+          <ChatIcon size={24} />
         </button>
       )}
 
-      {/* 아래에서 올라오는 시트 */}
-      {openAsSheet && (
+      {/*
+        가운데 모달.
+        예전에는 아래에서 올라오는 시트였고, 그 위를 덮는 오버레이가 <button> 이었다.
+        내용 없는 큰 버튼은 브라우저 기본 스타일과 탭 하이라이트가 얹혀 검게 번졌다.
+        오버레이는 div 로 두고, 닫기는 배경 클릭과 Esc 로 받는다.
+      */}
+      {open && (
         <div
-          className={`fixed inset-0 z-50 flex flex-col justify-end${hideOnWide}`}
-          role="dialog"
-          aria-modal="true"
+          className={`fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4${hideOnWide}`}
+          role="presentation"
+          onClick={() => setOpen(false)}
         >
-          <button
-            type="button"
-            aria-label="닫기"
-            onClick={() => setOpenAsSheet(false)}
-            className="flex-1 cursor-default border-0 bg-black/40"
-          />
-          <div className="flex h-[78vh] flex-col overflow-hidden rounded-t-[22px] bg-white shadow-[0_-8px_30px_rgba(0,0,0,.18)] sm:mx-auto sm:w-full sm:max-w-[520px] sm:rounded-t-[22px]">
-            <ChatPanel chat={chat} onClose={() => setOpenAsSheet(false)} />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="학습 도우미"
+            // 안쪽을 눌렀을 때 배경의 닫기까지 번지지 않게 한다.
+            onClick={(event) => event.stopPropagation()}
+            className="flex h-[min(78vh,620px)] w-full max-w-[480px] flex-col overflow-hidden rounded-[20px] bg-white shadow-[0_20px_50px_rgba(0,0,0,.28)]"
+          >
+            <ChatPanel chat={chat} onClose={() => setOpen(false)} />
           </div>
         </div>
       )}
@@ -98,9 +117,9 @@ function ChatPanel({ chat, onClose }: { chat: StudyChatView; onClose?: () => voi
             type="button"
             onClick={onClose}
             aria-label="닫기"
-            className="cursor-pointer rounded-lg border-0 bg-transparent px-2 py-1 text-[18px] text-[#888]"
+            className="cursor-pointer rounded-lg border-0 bg-transparent p-2 text-[#666] transition-colors hover:bg-[#F6F6F6]"
           >
-            ✕
+            <CloseIcon />
           </button>
         )}
       </header>
