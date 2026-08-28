@@ -7,12 +7,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * 전역 예외 처리기.
@@ -97,6 +99,31 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMaxUploadSize(MaxUploadSizeExceededException e) {
         log.info("upload size exceeded at container level: {}", e.getMessage());
         ErrorCode errorCode = ErrorCode.FILE_SIZE_EXCEEDED;
+        return ResponseEntity.status(errorCode.getStatus()).body(ErrorResponse.of(errorCode));
+    }
+
+    /**
+     * 매핑되지 않은 주소.
+     *
+     * <p>이 처리가 없으면 오타 난 주소나 스캐너의 탐색 요청이 전부 500으로 나간다.
+     * 서버가 고장 난 것이 아니라 그런 주소가 없는 것이므로 404가 맞다.
+     *
+     * <p>500으로 두면 모니터링이 오탐으로 시끄러워져, 정작 진짜 장애를 놓친다.
+     * 로그도 error 가 아니라 debug 로 남긴다. 존재하지 않는 주소를 찾는 요청은
+     * 인터넷에 붙는 순간부터 끊임없이 들어온다.
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFound(NoResourceFoundException e) {
+        log.debug("no handler for path: {}", e.getResourcePath());
+        ErrorCode errorCode = ErrorCode.ENDPOINT_NOT_FOUND;
+        return ResponseEntity.status(errorCode.getStatus()).body(ErrorResponse.of(errorCode));
+    }
+
+    /** 주소는 있는데 메서드가 다른 경우. 역시 서버 오류가 아니다. */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMethodNotSupported(HttpRequestMethodNotSupportedException e) {
+        log.debug("method not supported: {}", e.getMessage());
+        ErrorCode errorCode = ErrorCode.METHOD_NOT_ALLOWED;
         return ResponseEntity.status(errorCode.getStatus()).body(ErrorResponse.of(errorCode));
     }
 

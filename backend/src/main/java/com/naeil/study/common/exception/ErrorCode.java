@@ -52,6 +52,9 @@ public enum ErrorCode {
     STORED_FILE_NOT_FOUND(HttpStatus.UNPROCESSABLE_ENTITY, "저장된 파일을 찾을 수 없습니다. 파일을 다시 업로드해 주세요."),
     FILE_STORAGE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 저장 중 오류가 발생했습니다."),
 
+    ENDPOINT_NOT_FOUND(HttpStatus.NOT_FOUND, "요청하신 주소를 찾을 수 없습니다."),
+    METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "이 주소에서 지원하지 않는 요청 방식입니다."),
+
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
 
     private final HttpStatus status;
