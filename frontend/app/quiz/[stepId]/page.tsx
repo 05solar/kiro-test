@@ -215,7 +215,7 @@ function QuizView({
 
           {answered && (
             <div className="mt-6 flex flex-col items-start gap-4 border-t border-[#eee] pt-6 sm:flex-row sm:items-center">
-              <Ghost width={44} mood={result.correct ? "smile" : "sad"} className="animate-bob-small shrink-0" />
+              <Ghost width={60} mood={result.correct ? "smile" : "sad"} className="animate-bob-small shrink-0" />
               <div className="flex-1 text-[14.5px] leading-[1.7]">
                 {result.correct
                   ? `정답! ${result.explanation}`
@@ -261,7 +261,7 @@ function QuizLoading({ generating = false }: { generating?: boolean }) {
 
         {generating && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-            <Ghost width={104} mood="progress" className="animate-bob" />
+            <Ghost width={140} mood="progress" className="animate-bob" />
             <p className="rounded-full border border-[#FFE0C4] bg-white/90 px-5 py-2 text-sm font-bold text-[#E85D00] shadow-[0_6px_18px_rgba(255,122,0,.15)]">
               자료를 보고 문제를 만드는 중… 30초쯤 걸려요
             </p>
@@ -278,7 +278,7 @@ function QuizError({ stepId, message, onRetry }: { stepId: number; message: stri
     <div className="min-h-screen bg-white text-[#222]">
       <AppHeader />
       <main className="mx-auto max-w-[720px] px-6 py-24 text-center">
-        <Ghost width={70} mood="worried" className="animate-bob-small mx-auto mb-5" />
+        <Ghost width={92} mood="sad" className="animate-bob-small mx-auto mb-5" />
         <h1 className="font-jua mb-3 text-3xl">퀴즈를 준비하지 못했어요</h1>
         <p className="mb-8 text-[14.5px] leading-7 text-[#888]">{message}</p>
         <div className="flex flex-wrap justify-center gap-3">
@@ -296,7 +296,7 @@ function EmptyQuiz({ stepId }: { stepId: number }) {
     <div className="min-h-screen bg-white text-[#222]">
       <AppHeader />
       <main className="mx-auto max-w-[720px] px-6 py-24 text-center">
-        <Ghost width={70} mood="worried" className="animate-bob-small mx-auto mb-5" />
+        <Ghost width={92} className="animate-bob-small mx-auto mb-5" />
         <h1 className="font-jua mb-3 text-3xl">이 STEP은 퀴즈가 없어요</h1>
         <p className="mb-8 text-[14.5px] leading-7 text-[#888]">복습 단계이거나 아직 학습을 마치지 않은 단계입니다.</p>
         <PrimaryButton onClick={() => router.push(`/study/${stepId}`)}>학습 화면으로 돌아가기</PrimaryButton>

@@ -95,7 +95,7 @@ export default function QuizResultPage() {
       <div className="min-h-screen bg-white text-[#222]">
         <AppHeader />
         <main className="mx-auto max-w-[720px] px-6 py-24 text-center">
-          <Ghost width={70} mood="sad" className="animate-bob-small mx-auto mb-5" />
+          <Ghost width={92} mood="sad" className="animate-bob-small mx-auto mb-5" />
           <h1 className="font-jua mb-3 text-3xl">결과를 불러오지 못했어요</h1>
           <p className="mb-8 text-[14.5px] leading-7 text-[#888]">{error}</p>
           <PrimaryButton onClick={() => router.push("/curriculum")}>커리큘럼으로 돌아가기</PrimaryButton>
@@ -124,7 +124,7 @@ export default function QuizResultPage() {
       <AppHeader />
       <main className="mx-auto max-w-[900px] px-6 pb-24 pt-[52px] sm:px-10">
         <section className="mb-6 flex flex-col items-center gap-6 rounded-[22px] border border-[#FFE0C4] bg-[#FFF3E8] p-7 text-center sm:flex-row sm:gap-8 sm:p-9 sm:text-left">
-          <Ghost width={104} mood={passed ? "happy" : "sad"} className="animate-bob shrink-0 drop-shadow-[0_12px_18px_rgba(255,122,0,.22)]" />
+          <Ghost width={128} mood={passed ? "happy" : "sad"} className="animate-bob shrink-0 drop-shadow-[0_12px_18px_rgba(255,122,0,.22)]" />
           <div>
             {passed && <div className="mb-2 inline-block rounded-full bg-[#FF7A00] px-3 py-1 text-xs font-bold text-white">STEP {stepId} 완료!</div>}
             <div className="mb-[9px] text-[13px] font-bold text-[#E85D00]">STEP {stepId} 퀴즈 결과</div>
@@ -203,7 +203,7 @@ function ResultLoading() {
     <div className="min-h-screen bg-white text-[#222]">
       <AppHeader />
       <main className="mx-auto flex max-w-[900px] items-center justify-center px-10 py-24">
-        <Ghost width={80} mood="plain" className="animate-bob" />
+        <Ghost width={116} mood="progress" className="animate-bob" />
         <span className="ml-4 text-sm text-[#888]">결과 불러오는 중…</span>
       </main>
     </div>

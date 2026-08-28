@@ -103,7 +103,7 @@ export default function StudyPage() {
       <div className="min-h-screen bg-white text-[#222]">
         <AppHeader />
         <main className="mx-auto flex max-w-[720px] flex-col items-center px-6 py-24 text-center">
-          <Ghost width={78} mood="worried" className="animate-bob-small mb-6" />
+          <Ghost width={96} mood="sad" className="animate-bob-small mb-6" />
           <div className="mb-3 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700">STEP {stepId} 제외</div>
           <h1 className="font-jua mb-3 text-3xl">이 STEP은 플랜에서 제외됐어요</h1>
           <p className="mb-8 text-[14.5px] leading-7 text-[#888]">남은 시간에 맞춰 우선순위가 높은 개념부터 학습하도록 조정했어요.</p>
@@ -299,7 +299,7 @@ function StudyView({
             <div className="mt-3.5 border-t border-[#eee] pt-3.5 text-[12.5px] leading-[1.7] text-[#888]">{content.summary}</div>
           </div>
           <div className="rounded-2xl border border-[#eee] p-5 text-center">
-            <Ghost width={52} mood={completedSteps.includes(stepId) ? "happy" : "neutral"} className="animate-bob-small mx-auto opacity-90" />
+            <Ghost width={68} mood={completedSteps.includes(stepId) ? "happy" : "default"} className="animate-bob-small mx-auto opacity-90" />
             <p className="mt-2.5 text-[13px] leading-[1.65]">{content.characterComment}</p>
           </div>
         </aside>

@@ -8,6 +8,7 @@ import { useSessionStore } from "@/app/_components/session-store";
 import { useExamStore } from "@/app/_components/store";
 import { useHydrated } from "@/app/_components/use-hydrated";
 import {
+  deleteDocument,
   listDocuments,
   parseDocuments,
   toMessage,
@@ -88,6 +89,21 @@ export default function UploadPage() {
       active = false;
     };
   }, [sessionCode]);
+
+  /** 올린 자료를 지운다. 목록은 서버 기준으로 다시 읽는다. */
+  const removeDocument = async (documentId: string) => {
+    if (!sessionCode || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await deleteDocument(sessionCode, documentId);
+      setDocuments(await listDocuments(sessionCode));
+    } catch (e) {
+      setError(toMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const selectFiles = async (fileList: FileList | null) => {
     const files = Array.from(fileList ?? []);
@@ -232,6 +248,17 @@ export default function UploadPage() {
                       {doc.characterCount ? ` · ${doc.characterCount.toLocaleString()}자` : ""}
                     </div>
                   </div>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void removeDocument(doc.id)}
+                    aria-label={`${doc.originalFileName} 삭제`}
+                    className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-transparent text-[#c9a888] transition-colors hover:border-[#F5C2C7] hover:bg-[#FDECEE] hover:text-[#B02A37] disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M5 5l14 14M19 5 5 19" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
+                    </svg>
+                  </button>
                 </div>
               ))}
             </div>
@@ -328,7 +355,7 @@ export default function UploadPage() {
                 목차가 있는 자료면 더 정확해!<br />
                 <span className="text-[#E85D00]">여러 개를 한 번에</span> 올려도 돼.
               </SpeechBubble>
-              <Ghost width={72} mood="plain" className="animate-bob-small" />
+              <Ghost width={96} className="animate-bob-small" />
             </div>
             <div className="rounded-[18px] border border-[#eee] p-5">
               <h2 className="mb-3 text-[13.5px] font-bold">분석할 내용</h2>

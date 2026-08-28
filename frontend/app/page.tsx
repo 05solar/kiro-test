@@ -136,14 +136,14 @@ export default function HomePage() {
             )}
           </div>
 
-          <div className="relative flex h-[340px] items-center justify-center md:h-[380px]">
-            <div className="absolute size-[260px] rounded-full bg-[#FFF3E8] sm:size-[300px]" />
-            <SpeechBubble tail="bottom-left" className="font-jua absolute right-0 top-2 z-10">
+          {/* 말풍선은 항상 캐릭터 머리 위에 둔다. 배경 원은 캐릭터보다 넉넉히 크게. */}
+          <div className="relative flex h-[400px] flex-col items-center justify-center gap-3 md:h-[460px]">
+            <div className="absolute size-[330px] rounded-full bg-[#FFF3E8] sm:size-[400px]" />
+            <SpeechBubble tail="bottom-left" className="font-jua relative z-10">
               아직 안 늦었어!
             </SpeechBubble>
             <Ghost
-              width={190}
-              mood="plain"
+              width={250}
               className="animate-bob relative drop-shadow-[0_14px_22px_rgba(255,122,0,.25)]"
             />
           </div>

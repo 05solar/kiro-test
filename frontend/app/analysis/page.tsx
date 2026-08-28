@@ -147,7 +147,7 @@ export default function AnalysisPage() {
         <FlowSteps current={2} />
         <section className="rounded-[22px] border border-[#FFE0C4] bg-[linear-gradient(180deg,#FFFDFB,#FFF3E8)] px-6 py-12 text-center sm:px-12">
           <div className="relative mx-auto mb-7 w-fit">
-            <Ghost width={132} mood={mood} className={running ? "animate-bob" : undefined} />
+            <Ghost width={168} mood={mood} className={running ? "animate-bob" : undefined} />
           </div>
           <div className="mb-2.5 text-[13px] font-bold text-[#E85D00]">AI 자료 분석</div>
           <h1 className="font-jua mb-3 text-[34px] tracking-[-1px] sm:text-[40px]">{heading}</h1>

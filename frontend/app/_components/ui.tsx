@@ -303,13 +303,13 @@ export function SpeechBubble({
 
   return (
     <div
-      className={`relative inline-block rounded-[18px] border-2 border-[#FFD3A8] bg-white px-[22px] py-4 text-[19px] font-bold leading-[1.5] tracking-[-.3px] text-[#222] shadow-[0_6px_20px_rgba(255,122,0,.16)] sm:text-[21px] ${className}`}
+      className={`relative inline-block rounded-[16px] border-2 border-[#FFD3A8] bg-white px-4 py-2.5 text-[14.5px] font-bold leading-[1.5] tracking-[-.2px] text-[#222] shadow-[0_5px_16px_rgba(255,122,0,.15)] sm:text-[15.5px] ${className}`}
     >
       {children}
       {/* 테두리와 배경을 각각 찍어 꼬리에도 선이 이어지게 한다. */}
       <span
         aria-hidden="true"
-        className={`absolute size-[18px] rotate-45 border-b-2 border-r-2 border-[#FFD3A8] bg-white ${tailPosition}`}
+        className={`absolute size-[13px] rotate-45 border-b-2 border-r-2 border-[#FFD3A8] bg-white ${tailPosition}`}
         style={tail === "left" ? { transform: "rotate(135deg)" } : undefined}
       />
     </div>

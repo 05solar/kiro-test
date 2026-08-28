@@ -265,7 +265,7 @@ export default function ExamInfoPage() {
                 범위가 넓네…<br />
                 그래도 <span className="text-[#E85D00]">중요한 것부터</span> 짜볼게!
               </SpeechBubble>
-              <Ghost width={72} mood="worried" className="animate-bob-small" />
+              <Ghost width={96} className="animate-bob-small" />
             </div>
           </aside>
         </div>

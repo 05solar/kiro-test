@@ -591,7 +591,7 @@ function MapCanvas({ steps, completedStepIds, currentStep, weakSteps, goalReache
             <div className="font-jua whitespace-nowrap rounded-[12px_12px_12px_3px] border border-[#FFE0C4] bg-white px-[13px] py-2 text-[13.5px] shadow-[0_4px_12px_rgba(0,0,0,.07)]">
               {characterMessage}
             </div>
-            <Ghost width={62} mood={goalReached ? "happy" : "default"} className="animate-bob drop-shadow-[0_8px_12px_rgba(255,122,0,.3)]" />
+            <Ghost width={78} mood={goalReached ? "happy" : "default"} className="animate-bob drop-shadow-[0_8px_12px_rgba(255,122,0,.3)]" />
           </div>
         </div>
       )}
@@ -627,17 +627,18 @@ function StepNode({
   isWeak: boolean;
   onNavigate: () => void;
 }) {
-  const size = isCurrent ? 84 : isDone ? 70 : 66;
+  // 지금 할 STEP 만 크게. 나머지는 길 위의 이정표 정도로 작게 둔다.
+  const size = isCurrent ? 84 : isDone ? 52 : 48;
   const left = x - size / 2;
   const top = y - size / 2 + PAD_TOP;
   // 라벨은 위·아래를 번갈아 놓아 촘촘한 구간에서 서로 겹치지 않게 한다.
-  const labelTop = labelAbove ? y - size / 2 - 58 + PAD_TOP : y + size / 2 + 10 + PAD_TOP;
+  const labelTop = labelAbove ? y - size / 2 - 56 + PAD_TOP : y + size / 2 + 8 + PAD_TOP;
 
   const weakRing = isWeak ? "ring-2 ring-amber-400 ring-offset-2" : "";
   const numberClass = "font-jua flex size-full items-center justify-center leading-none";
 
   return (
-    <div>
+    <div className="group">
       {isCurrent ? (
         <div className="absolute" style={{ left, top, width: size, height: size }}>
           <div className="absolute inset-[-10px] animate-pulse-ring rounded-full bg-[#FF7A00]" />
@@ -658,7 +659,7 @@ function StepNode({
           className={`absolute rounded-full ${weakRing} ${
             isDone
               ? "clay-done cursor-pointer"
-              : `clay-circle text-[21px] ${isLocked ? "cursor-default text-[#b9b9b9]" : "cursor-pointer text-[#8a6a4d]"}`
+              : `clay-circle text-[17px] ${isLocked ? "cursor-default text-[#b9b9b9]" : "cursor-pointer text-[#8a6a4d]"}`
           }`}
         >
           {isDone ? (
@@ -669,8 +670,9 @@ function StepNode({
         </button>
       )}
 
+      {/* 라벨은 평소에 숨긴다. 길에는 숫자와 상자만 보이고, 자세한 제목은 올려다볼 때만. */}
       <div
-        className={`absolute z-20 w-[150px] text-center text-[12.5px] ${
+        className={`pointer-events-none absolute z-20 w-[150px] text-center text-[12.5px] opacity-0 transition-opacity duration-150 group-hover:opacity-100 ${
           isCurrent ? "font-bold text-[#E85D00]" : isDone ? "font-bold text-[#888]" : "text-[#888]"
         }`}
         style={{ left: x, top: labelTop, transform: "translate(-50%, 0)" }}
