@@ -12,6 +12,9 @@ import java.util.List;
  *
  * @param sourceContext Topic 출처 문서에서 추출한 관련 텍스트
  * @param questionCount 생성할 문제 수 (설정값)
+ * @param previousQuestions 이전 회차에 낸 문제의 <b>문장만</b>. 첫 회차면 비어 있다.
+ *                          보기·정답·해설은 넣지 않는다 — 중복 판단에 필요 없고,
+ *                          회차가 쌓일수록 프롬프트만 길어진다.
  */
 public record AiQuizGenerationRequest(
         String subject,
@@ -24,6 +27,12 @@ public record AiQuizGenerationRequest(
         boolean mustStudyMatched,
         AiStudyContext studyContext,
         String sourceContext,
-        int questionCount
+        int questionCount,
+        List<String> previousQuestions
 ) {
+
+    /** 새 회차인지. 이전 문제가 있으면 프롬프트에 중복 방지 조건을 넣는다. */
+    public boolean hasPrevious() {
+        return previousQuestions != null && !previousQuestions.isEmpty();
+    }
 }

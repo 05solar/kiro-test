@@ -48,6 +48,7 @@ API를 바꾸면 같은 커밋에서 이 폴더의 문서도 고친다.
 | POST | `/api/sessions/{sessionCode}/steps/{stepId}/complete` | 구현 완료 |
 | GET | `/api/sessions/{sessionCode}/steps/{stepId}` | 만들지 않음 — 계획 조회로 충분 |
 | POST | `/api/sessions/{sessionCode}/topics/{topicId}/quizzes` | 구현 완료 |
+| POST | `/api/sessions/{sessionCode}/topics/{topicId}/quizzes/regenerate` | 구현 완료 |
 | GET | `/api/sessions/{sessionCode}/topics/{topicId}/quizzes` | 구현 완료 |
 | GET | `/api/sessions/{sessionCode}/topics/{topicId}/quiz-results` | 구현 완료 |
 | POST | `/api/sessions/{sessionCode}/quizzes/{quizId}/answer` | 구현 완료 |

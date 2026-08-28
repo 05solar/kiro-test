@@ -51,6 +51,8 @@ services:
       # AI 키. 저장소 루트 .env 에서 읽는다. 이미지에 넣지 않는다.
       GEMINI_API_KEY: ${GEMINI_API_KEY:?GEMINI_API_KEY 를 .env 에 넣어 주세요}
       AI_PROVIDER: ${AI_PROVIDER:-gemini}
+      # 배포에서는 실제 AI 로 문제를 만든다. 기본값 mock 은 개발용이다.
+      QUIZ_AI_MODE: ${QUIZ_AI_MODE:-gemini}
       APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Seoul}
       TZ: ${APP_TIMEZONE:-Asia/Seoul}
       STORAGE_ROOT_PATH: /app/uploads

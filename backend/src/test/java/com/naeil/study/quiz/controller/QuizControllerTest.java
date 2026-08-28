@@ -64,7 +64,7 @@ class QuizControllerTest {
         topic = Topic.create(session, "CPU 스케줄링", "요약", List.of("Round Robin"),
                 TopicImportance.HIGH, 40, false, false, false, false, List.of(), 1, NOW);
         setId(Topic.class, topic, TOPIC_ID);
-        quiz = Quiz.create(topic, 1, "Round Robin 의 특징은?", List.of("A", "B", "C", "D"),
+        quiz = Quiz.create(topic, 1, 1, "Round Robin 의 특징은?", List.of("A", "B", "C", "D"),
                 2, "해설이다", QuizDifficulty.MEDIUM, List.of(), NOW);
         setId(Quiz.class, quiz, QUIZ_ID);
     }

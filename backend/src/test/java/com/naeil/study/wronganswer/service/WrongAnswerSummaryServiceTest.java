@@ -135,7 +135,7 @@ class WrongAnswerSummaryServiceTest {
     }
 
     private Quiz quiz(Topic topic, int order, int correctIndex) throws Exception {
-        Quiz quiz = Quiz.create(topic, order, topic.getTitle() + " 문제 " + order,
+        Quiz quiz = Quiz.create(topic, 1, order, topic.getTitle() + " 문제 " + order,
                 List.of("보기A", "보기B", "보기C", "보기D"), correctIndex, "해설",
                 QuizDifficulty.MEDIUM, topic.getSourceDocumentIds(), NOW.minusHours(1));
         setId(Quiz.class, quiz, UUID.randomUUID());

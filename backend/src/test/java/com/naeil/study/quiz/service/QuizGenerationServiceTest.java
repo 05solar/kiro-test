@@ -45,6 +45,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -146,7 +147,7 @@ class QuizGenerationServiceTest {
 
     private void givenGenerationReady() throws Exception {
         givenSessionAndTopic();
-        given(quizRepository.findAllByTopicIdOrderByQuizOrderAsc(TOPIC_ID)).willReturn(List.of());
+        given(quizRepository.findLatestRound(TOPIC_ID)).willReturn(0);
         given(studyStepRepository.findFirstByCurriculumStudySessionIdAndTopicId(SESSION_ID, TOPIC_ID))
                 .willReturn(Optional.of(completedStep()));
         given(documentRepository.findAllByStudySessionIdAndStatusOrderByCreatedAtAsc(
@@ -216,9 +217,10 @@ class QuizGenerationServiceTest {
     @DisplayName("이미 퀴즈가 있으면 AI를 부르지 않고 기존 것을 돌려준다")
     void returnsExistingWithoutAiCall() {
         givenSessionAndTopic();
-        Quiz existing = Quiz.create(topic, 1, "기존 문제", List.of("A", "B", "C", "D"),
+        Quiz existing = Quiz.create(topic, 1, 1, "기존 문제", List.of("A", "B", "C", "D"),
                 0, "해설", QuizDifficulty.MEDIUM, List.of(DOCUMENT_ID), NOW.minusMinutes(30));
-        given(quizRepository.findAllByTopicIdOrderByQuizOrderAsc(TOPIC_ID))
+        given(quizRepository.findLatestRound(TOPIC_ID)).willReturn(1);
+        given(quizRepository.findAllByTopicIdAndRoundOrderByQuizOrderAsc(TOPIC_ID, 1))
                 .willReturn(List.of(existing));
 
         QuizGenerationResult result = service.generate(SESSION_CODE, TOPIC_ID);
@@ -245,7 +247,7 @@ class QuizGenerationServiceTest {
     @DisplayName("학습 단계를 완료하지 않았으면 생성할 수 없다")
     void rejectsWhenStudyNotCompleted() {
         givenSessionAndTopic();
-        given(quizRepository.findAllByTopicIdOrderByQuizOrderAsc(TOPIC_ID)).willReturn(List.of());
+        given(quizRepository.findLatestRound(TOPIC_ID)).willReturn(0);
         StudyStep inProgress = StudyStep.study(curriculum, topic, 1, "CPU 스케줄링",
                 40, 40, false, List.of(), NOW.minusHours(1));
         inProgress.start(NOW.minusMinutes(30));
@@ -261,7 +263,7 @@ class QuizGenerationServiceTest {
     @DisplayName("계획에 들어가지 못한 Topic 도 학습 미완료로 본다")
     void rejectsTopicNotInCurriculum() {
         givenSessionAndTopic();
-        given(quizRepository.findAllByTopicIdOrderByQuizOrderAsc(TOPIC_ID)).willReturn(List.of());
+        given(quizRepository.findLatestRound(TOPIC_ID)).willReturn(0);
         given(studyStepRepository.findFirstByCurriculumStudySessionIdAndTopicId(SESSION_ID, TOPIC_ID))
                 .willReturn(Optional.empty());
 
@@ -273,7 +275,7 @@ class QuizGenerationServiceTest {
     @DisplayName("근거로 쓸 강의자료 텍스트가 없으면 생성할 수 없다")
     void rejectsWithoutSourceContext() {
         givenSessionAndTopic();
-        given(quizRepository.findAllByTopicIdOrderByQuizOrderAsc(TOPIC_ID)).willReturn(List.of());
+        given(quizRepository.findLatestRound(TOPIC_ID)).willReturn(0);
         given(studyStepRepository.findFirstByCurriculumStudySessionIdAndTopicId(SESSION_ID, TOPIC_ID))
                 .willReturn(Optional.of(completedStep()));
         given(documentRepository.findAllByStudySessionIdAndStatusOrderByCreatedAtAsc(
@@ -300,7 +302,7 @@ class QuizGenerationServiceTest {
     @DisplayName("조회는 아직 퀴즈가 없으면 404다")
     void findRejectsWhenNoQuizzes() {
         givenSessionAndTopic();
-        given(quizRepository.findAllByTopicIdOrderByQuizOrderAsc(TOPIC_ID)).willReturn(List.of());
+        given(quizRepository.findLatestRound(TOPIC_ID)).willReturn(0);
 
         assertThatThrownBy(() -> service.find(SESSION_CODE, TOPIC_ID))
                 .isInstanceOf(QuizNotFoundException.class);
@@ -320,5 +322,84 @@ class QuizGenerationServiceTest {
         verify(quizRepository).saveAllAndFlush(captor.capture());
         assertThat(captor.getValue()).hasSize(5);
         assertThat(captor.getValue().get(4).getQuizOrder()).isEqualTo(5);
+    }
+
+    /**
+     * "새로운 퀴즈 만들기" 검증.
+     *
+     * <p>여기서도 실제 AI 를 부르지 않는다. 이 기능은 사용자가 여러 번 누르게 되는
+     * 종류라 특히 자동 테스트에서 부르면 안 된다.
+     */
+    @Nested
+    @DisplayName("새로운 퀴즈 만들기")
+    class Regenerate {
+
+        @SuppressWarnings("unchecked")
+        private ArgumentCaptor<List<Quiz>> captureSaved() {
+            ArgumentCaptor<List<Quiz>> captor = ArgumentCaptor.forClass(List.class);
+            verify(quizRepository).saveAllAndFlush(captor.capture());
+            return captor;
+        }
+
+        private void givenExistingRound(int round, List<String> previousQuestions) throws Exception {
+            givenGenerationReady();
+            given(quizRepository.findLatestRound(TOPIC_ID)).willReturn(round);
+            given(quizRepository.findQuestionsByTopicId(TOPIC_ID)).willReturn(previousQuestions);
+            given(quizRepository.saveAllAndFlush(anyList()))
+                    .willAnswer(invocation -> invocation.getArgument(0));
+        }
+
+        @Test
+        @DisplayName("기존 문제를 지우지 않고 다음 회차로 쌓는다")
+        void createsNextRound() throws Exception {
+            givenExistingRound(1, List.of("1회차 문제 A", "1회차 문제 B"));
+
+            QuizGenerationResult result = service.regenerate(SESSION_CODE, TOPIC_ID);
+
+            assertThat(result.created()).isTrue();
+            // 2회차로 저장된다. 1회차 문제와 답안 기록은 그대로 남는다.
+            assertThat(captureSaved().getValue())
+                    .allSatisfy(quiz -> assertThat(quiz.getRound()).isEqualTo(2));
+        }
+
+        @Test
+        @DisplayName("이전 문제 문장을 AI 요청에 함께 보낸다")
+        void sendsPreviousQuestions() throws Exception {
+            givenExistingRound(1, List.of("이미 낸 문제"));
+
+            service.regenerate(SESSION_CODE, TOPIC_ID);
+
+            AiQuizGenerationRequest sent = aiQuizClient.requests().getLast();
+            assertThat(sent.previousQuestions()).containsExactly("이미 낸 문제");
+            assertThat(sent.hasPrevious()).isTrue();
+        }
+
+        @Test
+        @DisplayName("보기·정답·해설은 보내지 않는다 — 중복 판단에 필요 없다")
+        void sendsOnlyQuestionText() throws Exception {
+            givenExistingRound(1, List.of("이미 낸 문제"));
+
+            service.regenerate(SESSION_CODE, TOPIC_ID);
+
+            // 리포지터리에서 문제 문장만 가져온다. 회차가 쌓일수록 프롬프트가 길어지는 것을 막는다.
+            verify(quizRepository).findQuestionsByTopicId(TOPIC_ID);
+            assertThat(aiQuizClient.requests().getLast().previousQuestions())
+                    .allSatisfy(question -> assertThat(question).doesNotContain("보기", "해설"));
+        }
+
+        @Test
+        @DisplayName("한 번도 만들지 않았으면 첫 회차를 만든다")
+        void createsFirstRoundWhenNone() throws Exception {
+            givenGenerationReady();
+            given(quizRepository.saveAllAndFlush(anyList()))
+                    .willAnswer(invocation -> invocation.getArgument(0));
+
+            service.regenerate(SESSION_CODE, TOPIC_ID);
+
+            // 이전 문제가 없으니 중복 방지 지시도 넣지 않는다.
+            assertThat(aiQuizClient.requests().getLast().hasPrevious()).isFalse();
+            assertThat(captureSaved().getValue())
+                    .allSatisfy(quiz -> assertThat(quiz.getRound()).isEqualTo(1));
+        }
     }
 }

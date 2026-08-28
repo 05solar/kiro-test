@@ -53,6 +53,29 @@ public class QuizController {
                 .body(QuizListResponse.of(result.topic(), result.quizzes()));
     }
 
+    /**
+     * 같은 학습 범위로 <b>새 회차</b>의 문제를 만든다.
+     *
+     * <p>기존 문제를 지우거나 고치지 않는다. 회차를 하나 올려 새로 쌓고, 이전 회차의
+     * 문제 문장을 AI 에 함께 보내 중복을 피한다.
+     *
+     * <p>"오답 다시 풀기"와 다른 기능이다. 그쪽은 이미 낸 문제를 다시 보는 것이고,
+     * 이쪽은 같은 범위에서 다른 문제를 만든다.
+     *
+     * <p>경로를 {@code /api/quizzes/regenerate} 대신 세션 아래에 둔 이유는
+     * 다른 모든 엔드포인트와 같은 소유권 검사를 지나게 하기 위해서다. 이 서비스에는
+     * 회원이 없고 8자리 코드가 유일한 접근 키라, 세션 밖의 경로는 소유자를 확인할 방법이 없다.
+     */
+    @PostMapping("/quizzes/regenerate")
+    public ResponseEntity<QuizListResponse> regenerate(
+            @PathVariable String sessionCode,
+            @PathVariable UUID topicId
+    ) {
+        QuizGenerationResult result = quizGenerationService.regenerate(sessionCode, topicId);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(QuizListResponse.of(result.topic(), result.quizzes()));
+    }
+
     /** Topic 의 퀴즈를 조회한다. 아직 생성하지 않았으면 404다. */
     @GetMapping("/quizzes")
     public ResponseEntity<QuizListResponse> find(

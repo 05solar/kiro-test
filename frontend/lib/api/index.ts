@@ -92,6 +92,20 @@ export const generateQuizzes = (code: string, topicId: string, signal?: AbortSig
 export const getQuizzes = (code: string, topicId: string) =>
   request<QuizListResponse>(`${s(code)}/topics/${topicId}/quizzes`);
 
+/**
+ * 같은 범위로 <b>새 회차</b>의 문제를 만든다. 실제 AI 를 부른다.
+ *
+ * <p>"오답 다시 풀기"와 다른 기능이다. 그쪽은 이미 낸 문제를 다시 보는 것이고,
+ * 이쪽은 같은 범위에서 다른 문제를 만든다. 기존 문제와 답안 기록은 그대로 남는다.
+ *
+ * <p>서버가 같은 Topic 의 중복 생성을 막는다. 진행 중이면 409 를 돌려준다.
+ */
+export const regenerateQuizzes = (code: string, topicId: string, signal?: AbortSignal) =>
+  request<QuizListResponse>(`${s(code)}/topics/${topicId}/quizzes/regenerate`, {
+    method: "POST",
+    signal,
+  });
+
 export const answerQuiz = (code: string, quizId: string, selectedIndex: number) =>
   request<QuizAnswerResponse>(`${s(code)}/quizzes/${quizId}/answer`, {
     method: "POST",

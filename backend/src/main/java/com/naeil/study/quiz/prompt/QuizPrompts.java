@@ -96,6 +96,7 @@ public final class QuizPrompts {
                 <lecture_context>
                 %s
                 </lecture_context>
+                %s
                 """.formatted(
                 request.questionCount(),
                 request.subject(),
@@ -104,7 +105,43 @@ public final class QuizPrompts {
                 String.join(", ", request.keyPoints()),
                 formatMatches(request),
                 formatStudyContext(request.studyContext()),
-                request.sourceContext());
+                request.sourceContext(),
+                formatPreviousQuestions(request));
+    }
+
+    /**
+     * 이전 회차에 낸 문제와 중복 금지 조건.
+     *
+     * <p>첫 회차에는 넣지 않는다. 쓸데없이 프롬프트를 늘리고, 없는 제약을 지어내게 만든다.
+     *
+     * <p>문제 <b>문장만</b> 보낸다. 보기·정답·해설은 중복 판단에 필요 없고,
+     * 회차가 쌓일수록 토큰만 늘어난다.
+     *
+     * <p>"단어나 숫자만 바꾼 문제도 중복"이라고 못박는다. 이걸 빼면 같은 문제의
+     * 변수만 바꿔 내놓는 경우가 흔하다.
+     */
+    private static String formatPreviousQuestions(AiQuizGenerationRequest request) {
+        if (!request.hasPrevious()) {
+            return "";
+        }
+        String list = request.previousQuestions().stream()
+                .map(question -> "- " + question)
+                .collect(java.util.stream.Collectors.joining("\n"));
+        return """
+
+                # PREVIOUSLY ASKED QUESTIONS
+                아래는 같은 학습 범위에서 <b>이미 출제한</b> 문제다.
+
+                <previous_questions>
+                %s
+                </previous_questions>
+
+                # 이번 회차의 추가 조건
+                - 위 문제와 같거나 매우 비슷한 문제를 만들지 않는다.
+                - 단어·숫자·이름만 바꾼 문제도 중복으로 본다.
+                - 같은 개념을 물어도 다른 문장, 다른 예시, 다른 질문 방식을 쓴다.
+                - 학습 범위는 그대로 유지한다. 새 문제를 만들려고 자료 밖으로 나가지 않는다.
+                """.formatted(list);
     }
 
     /** Topic 에 표시된 학습 맥락 일치 여부. 출제 방향 힌트로만 쓴다. */

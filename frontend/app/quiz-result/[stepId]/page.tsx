@@ -8,6 +8,7 @@ import { useCurriculum } from "@/app/_components/use-curriculum";
 import {
   getQuizResults,
   getQuizzes,
+  regenerateQuizzes,
   toMessage,
   type QuizListResponse,
   type QuizResultsResponse,
@@ -35,6 +36,32 @@ export default function QuizResultPage() {
   const [results, setResults] = useState<QuizResultsResponse | null>(null);
   const [quizzes, setQuizzes] = useState<QuizListResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
+
+  /**
+   * 같은 범위로 새 문제를 만든다.
+   *
+   * <p>실제 AI 를 부르므로 요청 중에는 버튼을 막는다. 두 번 눌리면 그만큼 과금된다.
+   * 서버도 같은 Topic 의 중복 생성을 막지만, 눌린 뒤에 막는 것보다 안 눌리게 하는 편이 낫다.
+   *
+   * <p>화면에 들어오는 것만으로는 절대 부르지 않는다. 사용자가 누를 때만 부른다.
+   */
+  const startNewQuiz = async () => {
+    if (!sessionCode || !topicId || generating) return;
+    setGenerating(true);
+    setGenerateError(null);
+    try {
+      await regenerateQuizzes(sessionCode, topicId);
+      router.push(`/quiz/${stepId}`);
+    } catch (e) {
+      setGenerateError(toMessage(e));
+      setGenerating(false);
+    }
+    // 성공하면 화면을 옮기므로 generating 을 되돌리지 않는다.
+    // 되돌리면 이동 직전에 버튼이 잠깐 다시 눌리는 상태가 된다.
+  };
 
   useEffect(() => {
     if (!Number.isInteger(stepId)) router.replace("/curriculum");
@@ -146,10 +173,26 @@ export default function QuizResultPage() {
           </section>
         </div>
 
+        {generateError && (
+          <p role="alert" className="mb-4 rounded-xl border border-[#F5C2C7] bg-[#FDECEE] px-4 py-3 text-[13.5px] text-[#B02A37]">
+            {generateError}
+          </p>
+        )}
+
         <div className="flex flex-wrap gap-3">
-          <PrimaryButton onClick={() => router.push("/curriculum")}>커리큘럼으로 돌아가기</PrimaryButton>
+          {/*
+            같은 범위로 다른 문제를 만든다. 이미 낸 문제를 다시 보는 것이 아니다.
+            실제 AI 를 부르므로 요청 중에는 막는다.
+          */}
+          <PrimaryButton disabled={generating} onClick={() => void startNewQuiz()}>
+            {generating ? "새 문제를 만드는 중…" : "새로운 퀴즈 풀기"}
+          </PrimaryButton>
+          <SecondaryButton onClick={() => router.push("/curriculum")}>커리큘럼으로 돌아가기</SecondaryButton>
           <SecondaryButton onClick={() => router.push(`/study/${stepId}`)}>학습 내용 다시 보기</SecondaryButton>
         </div>
+        <p className="mt-3 text-[12.5px] leading-[1.7] text-[#888]">
+          같은 학습 범위에서 <b>이번과 다른 문제</b>를 새로 만듭니다. 지금까지 푼 기록은 그대로 남아요.
+        </p>
       </main>
     </div>
   );

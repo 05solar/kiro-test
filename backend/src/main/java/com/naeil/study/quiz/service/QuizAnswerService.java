@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -149,13 +150,26 @@ public class QuizAnswerService {
         Topic topic = topicRepository.findByIdAndStudySessionId(topicId, session.getId())
                 .orElseThrow(TopicNotFoundException::new);
 
-        List<Quiz> quizzes = quizRepository.findAllByTopicIdOrderByQuizOrderAsc(topic.getId());
-        if (quizzes.isEmpty()) {
+        /*
+         * 마지막 회차만 센다.
+         *
+         * 사용자가 "새로운 퀴즈"를 만들면 같은 Topic 에 회차가 쌓인다. 전부 합치면
+         * 2회차를 다 풀어도 "10문제 중 5문제"로 보이고 완료 판정도 나지 않는다.
+         * 화면이 방금 푼 것은 마지막 회차다.
+         */
+        int latestRound = quizRepository.findLatestRound(topic.getId());
+        if (latestRound == 0) {
             throw new QuizNotFoundException();
         }
+        List<Quiz> quizzes =
+                quizRepository.findAllByTopicIdAndRoundOrderByQuizOrderAsc(topic.getId(), latestRound);
 
+        Set<UUID> quizIdsInRound = quizzes.stream().map(Quiz::getId).collect(Collectors.toSet());
         List<QuizResult> results = quizResultRepository
-                .findAllByStudySessionIdAndQuizTopicId(session.getId(), topic.getId());
+                .findAllByStudySessionIdAndQuizTopicId(session.getId(), topic.getId())
+                .stream()
+                .filter(result -> quizIdsInRound.contains(result.getQuiz().getId()))
+                .toList();
         // 응답을 문제 순서대로 내보내기 위해 quizOrder 로 정렬한다
         Map<UUID, Integer> orderByQuizId = quizzes.stream()
                 .collect(Collectors.toMap(Quiz::getId, Quiz::getQuizOrder));

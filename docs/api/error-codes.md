@@ -44,6 +44,7 @@
 | `EXAM_ALREADY_STARTED` | 409 | 시험 시간이 지나 새로운 학습을 시작할 수 없습니다. | 시험 시각이 지난 뒤 새 단계 시작 |
 | `TOPIC_STUDY_NOT_COMPLETED` | 409 | 해당 주제의 학습을 먼저 완료해 주세요. | 학습 단계 완료 전(계획 미포함·SKIPPED 포함) 퀴즈 생성 요청 |
 | `QUIZ_NOT_COMPLETED` | 409 | 아직 풀지 않은 퀴즈가 있습니다. 모든 문제를 푼 뒤 다시 시도해 주세요. | 퀴즈를 다 풀기 전에 오답 요약 요청 |
+| `QUIZ_GENERATION_IN_PROGRESS` | 409 | 새로운 퀴즈를 만들고 있습니다. 잠시만 기다려 주세요. | 같은 Topic 의 새 회차 생성이 진행 중 |
 | `DOCUMENT_PARSE_FAILED` | 422 | 문서 내용을 읽는 중 오류가 발생했습니다. | 파일 손상, 암호 걸린 PDF, 디코딩 실패 |
 | `CURRICULUM_GENERATION_FAILED` | 422 | 현재 남은 시간으로 학습 계획을 생성할 수 없습니다. | 남은 시간이 최소 학습시간 미만이거나 제약을 만족하는 계획이 없음 |
 | `NO_EXTRACTABLE_TEXT` | 422 | 문서에서 학습에 사용할 텍스트를 추출할 수 없습니다. | 텍스트 레이어가 없는 PDF 등 |

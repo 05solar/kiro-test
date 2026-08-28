@@ -43,6 +43,7 @@ public enum ErrorCode {
     INVALID_QUIZ_OPTION(HttpStatus.BAD_REQUEST, "보기 번호가 올바르지 않습니다."),
     NO_QUIZ_SOURCE_CONTEXT(HttpStatus.BAD_REQUEST, "퀴즈를 만들 강의자료 내용을 찾을 수 없습니다."),
     QUIZ_NOT_COMPLETED(HttpStatus.CONFLICT, "아직 풀지 않은 퀴즈가 있습니다. 모든 문제를 푼 뒤 다시 시도해 주세요."),
+    QUIZ_GENERATION_IN_PROGRESS(HttpStatus.CONFLICT, "새로운 퀴즈를 만들고 있습니다. 잠시만 기다려 주세요."),
     WRONG_ANSWER_SUMMARY_NOT_FOUND(HttpStatus.NOT_FOUND, "오답 복습 요약을 찾을 수 없습니다."),
     WRONG_ANSWER_SUMMARY_GENERATION_FAILED(HttpStatus.BAD_GATEWAY, "복습 요약 생성에 실패했습니다. 다시 시도해 주세요."),
     DOCUMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 강의자료를 찾을 수 없습니다."),

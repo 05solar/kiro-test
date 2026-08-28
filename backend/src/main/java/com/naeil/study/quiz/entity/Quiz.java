@@ -36,8 +36,11 @@ import org.hibernate.type.SqlTypes;
 @Entity
 @Table(
         name = "quizzes",
+        // 회차가 들어가야 한다. (topic_id, quiz_order) 만으로 잠그면 2회차의 1번 문제가
+        // 1회차의 1번과 부딪혀 저장되지 않는다. 순서는 회차 안에서만 유일하다.
         uniqueConstraints = @UniqueConstraint(
-                name = "uk_quizzes_topic_id_quiz_order", columnNames = {"topic_id", "quiz_order"})
+                name = "uk_quizzes_topic_id_round_quiz_order",
+                columnNames = {"topic_id", "round", "quiz_order"})
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -56,6 +59,17 @@ public class Quiz {
     private Topic topic;
 
     /** Topic 안에서의 문제 순서. 1부터 시작한다. 조회 순서를 안정적으로 만든다. */
+    /**
+     * 같은 Topic 에서 몇 번째로 만든 문제 묶음인지. 1부터 시작한다.
+     *
+     * <p>사용자가 "새로운 퀴즈"를 요청하면 기존 문제를 고치지 않고 다음 회차를 새로 만든다.
+     * 지난 회차의 문제와 답안 기록이 그대로 남아야 무엇을 이미 풀었는지 알 수 있고,
+     * 다음 회차를 만들 때 중복을 피할 근거도 된다.
+     */
+    @Column(name = "round", nullable = false)
+    private int round;
+
+    /** 묶음 안에서의 출제 순서. 회차가 다르면 같은 순서 값이 다시 나온다. */
     @Column(name = "quiz_order", nullable = false)
     private int quizOrder;
 
@@ -92,6 +106,7 @@ public class Quiz {
 
     private Quiz(
             Topic topic,
+            int round,
             int quizOrder,
             String question,
             List<String> options,
@@ -102,6 +117,7 @@ public class Quiz {
             LocalDateTime now
     ) {
         this.topic = topic;
+        this.round = round;
         this.quizOrder = quizOrder;
         this.question = question;
         this.options = options;
@@ -121,6 +137,7 @@ public class Quiz {
      */
     public static Quiz create(
             Topic topic,
+            int round,
             int quizOrder,
             String question,
             List<String> options,
@@ -136,7 +153,7 @@ public class Quiz {
         if (correctIndex < 0 || correctIndex >= OPTION_COUNT) {
             throw new IllegalArgumentException("correctIndex out of range: " + correctIndex);
         }
-        return new Quiz(topic, quizOrder, question, List.copyOf(options), correctIndex,
+        return new Quiz(topic, round, quizOrder, question, List.copyOf(options), correctIndex,
                 explanation, difficulty, List.copyOf(sourceDocumentIds), now);
     }
 

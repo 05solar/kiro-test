@@ -5,6 +5,8 @@
 --
 --   psql -h <rds-endpoint> -U <user> -d naeil_study -f docs/schema.sql
 --
+-- docker compose 는 DB 볼륨이 비어 있을 때 이 파일을 자동으로 적용한다.
+--
 -- 이 파일은 개발 DB 에서 pg_dump --schema-only 로 뽑았다.
 -- 엔티티를 고쳤으면 다시 뽑아 갱신한다. 손으로 편집하지 않는다.
 -- 마이그레이션 도구(Flyway)는 아직 도입하지 않았다.
@@ -13,7 +15,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict GMulXVNypzr8Y0d6dYH2dAYywsHTOVaPPkZbDiZDfa1f9rl7Dtll6YEanIdfceU
+\restrict WxqCG2P9Kb2azXQ8j7pQ4VrW9lmDCk7Cu0QHp2NNDQBWd72GiwJfnbHjB8pPfaB
 
 -- Dumped from database version 16.15
 -- Dumped by pg_dump version 16.15
@@ -100,6 +102,7 @@ CREATE TABLE public.quizzes (
     options jsonb NOT NULL,
     question text NOT NULL,
     quiz_order integer NOT NULL,
+    round integer NOT NULL,
     source_document_ids jsonb NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     topic_id uuid NOT NULL,
@@ -294,11 +297,11 @@ ALTER TABLE ONLY public.quiz_results
 
 
 --
--- Name: quizzes uk_quizzes_topic_id_quiz_order; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: quizzes uk_quizzes_topic_id_round_quiz_order; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.quizzes
-    ADD CONSTRAINT uk_quizzes_topic_id_quiz_order UNIQUE (topic_id, quiz_order);
+    ADD CONSTRAINT uk_quizzes_topic_id_round_quiz_order UNIQUE (topic_id, round, quiz_order);
 
 
 --
@@ -417,5 +420,5 @@ ALTER TABLE ONLY public.quiz_results
 -- PostgreSQL database dump complete
 --
 
-\unrestrict GMulXVNypzr8Y0d6dYH2dAYywsHTOVaPPkZbDiZDfa1f9rl7Dtll6YEanIdfceU
+\unrestrict WxqCG2P9Kb2azXQ8j7pQ4VrW9lmDCk7Cu0QHp2NNDQBWd72GiwJfnbHjB8pPfaB
 

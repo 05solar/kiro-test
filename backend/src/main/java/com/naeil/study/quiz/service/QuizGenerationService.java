@@ -13,6 +13,7 @@ import com.naeil.study.quiz.context.QuizContextExtractor;
 import com.naeil.study.quiz.entity.Quiz;
 import com.naeil.study.quiz.exception.NoQuizSourceContextException;
 import com.naeil.study.quiz.exception.QuizGenerationFailedException;
+import com.naeil.study.quiz.exception.QuizGenerationInProgressException;
 import com.naeil.study.quiz.exception.QuizNotFoundException;
 import com.naeil.study.quiz.exception.TopicStudyNotCompletedException;
 import com.naeil.study.quiz.repository.QuizRepository;
@@ -62,6 +63,17 @@ public class QuizGenerationService {
     private final AiQuizResponseValidator responseValidator;
     private final Clock clock;
     private final int questionsPerTopic;
+
+    /**
+     * 지금 새 회차를 만들고 있는 Topic.
+     *
+     * <p>버튼을 두 번 누르거나 응답을 기다리다 새로고침하면 AI 가 두 번 불린다.
+     * 그만큼 과금되고 회차도 둘로 갈린다. 진행 중이면 두 번째 요청을 거절한다.
+     *
+     * <p>인스턴스 안에서만 유효하다. 여러 대로 늘리면 각자 자기 것만 알기 때문에
+     * 그때는 DB 나 캐시를 쓰는 잠금으로 바꿔야 한다. 지금은 단일 인스턴스 전제다.
+     */
+    private final java.util.Set<UUID> inFlight = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     public QuizGenerationService(
             SessionService sessionService,
@@ -115,10 +127,59 @@ public class QuizGenerationService {
         StudySession session = sessionService.getSessionAndTouch(sessionCode);
         Topic topic = findTopic(session, topicId);
 
-        List<Quiz> existing = quizRepository.findAllByTopicIdOrderByQuizOrderAsc(topic.getId());
-        if (!existing.isEmpty()) {
-            return new QuizGenerationResult(topic, existing, false);
+        int latestRound = quizRepository.findLatestRound(topic.getId());
+        if (latestRound > 0) {
+            // 이미 만든 회차가 있으면 AI 를 부르지 않는다. 새 문제를 원하면 regenerate 를 쓴다.
+            return new QuizGenerationResult(
+                    topic,
+                    quizRepository.findAllByTopicIdAndRoundOrderByQuizOrderAsc(topic.getId(), latestRound),
+                    false);
         }
+        return createRound(session, topic, 1, List.of());
+    }
+
+    /**
+     * 같은 학습 범위로 <b>새 회차</b>의 문제를 만든다.
+     *
+     * <p>기존 문제를 고치거나 지우지 않는다. 회차를 하나 올려 새로 쌓는다.
+     * 지난 회차의 문제와 답안 기록이 남아 있어야 무엇을 이미 풀었는지 알 수 있고,
+     * 다음 회차에서 중복을 피할 근거도 된다.
+     *
+     * <p>"오답 다시 풀기"와 다른 기능이다. 그쪽은 이미 낸 문제를 다시 보는 것이고,
+     * 이쪽은 같은 범위에서 <b>다른 문제</b>를 만든다.
+     *
+     * <p><b>중복 호출을 막는다.</b> 버튼을 두 번 누르거나 새로고침해도 AI 가 두 번 불리면
+     * 그만큼 과금되고 회차도 둘로 갈린다. 같은 Topic 에 대해 생성이 진행 중이면
+     * 새로 부르지 않고 거절한다.
+     *
+     * @throws QuizGenerationInProgressException 같은 Topic 의 생성이 이미 진행 중
+     */
+    public QuizGenerationResult regenerate(String sessionCode, UUID topicId) {
+        StudySession session = sessionService.getSessionAndTouch(sessionCode);
+        Topic topic = findTopic(session, topicId);
+
+        int latestRound = quizRepository.findLatestRound(topic.getId());
+        if (latestRound == 0) {
+            // 아직 한 번도 만들지 않았다. 새 회차가 아니라 첫 회차를 만든다.
+            return createRound(session, topic, 1, List.of());
+        }
+
+        // 이전 회차에 낸 문제 문장만 가져온다. 보기·정답·해설은 중복 판단에 필요 없다.
+        List<String> previousQuestions = quizRepository.findQuestionsByTopicId(topic.getId());
+
+        if (!inFlight.add(topic.getId())) {
+            throw new QuizGenerationInProgressException();
+        }
+        try {
+            return createRound(session, topic, latestRound + 1, previousQuestions);
+        } finally {
+            inFlight.remove(topic.getId());
+        }
+    }
+
+    /** 회차 하나를 만들어 저장한다. 첫 회차와 새 회차가 같은 경로를 지나게 한다. */
+    private QuizGenerationResult createRound(
+            StudySession session, Topic topic, int round, List<String> previousQuestions) {
 
         ensureStudyCompleted(session, topic);
 
@@ -136,17 +197,19 @@ public class QuizGenerationService {
                 topic.isMustStudyMatched(),
                 studyContext,
                 sourceContext,
-                questionsPerTopic);
+                questionsPerTopic,
+                previousQuestions);
 
         List<ValidatedQuizQuestion> validated = generateValidated(session, topic, request);
 
         // 전체 검증을 통과한 뒤에만 저장한다. saveAllAndFlush 한 번이 하나의 트랜잭션이라
         // 문제 일부만 남는 상태가 생기지 않는다.
         LocalDateTime now = LocalDateTime.now(clock);
-        List<Quiz> quizzes = quizRepository.saveAllAndFlush(toQuizzes(topic, validated, now));
+        List<Quiz> quizzes = quizRepository.saveAllAndFlush(toQuizzes(topic, round, validated, now));
 
-        log.info("quizzes generated: sessionId={}, topicId={}, count={}, contextChars={}",
-                session.getId(), topic.getId(), quizzes.size(), sourceContext.length());
+        log.info("quizzes generated: sessionId={}, topicId={}, round={}, count={}, previous={}, contextChars={}",
+                session.getId(), topic.getId(), round, quizzes.size(),
+                previousQuestions.size(), sourceContext.length());
         return new QuizGenerationResult(topic, quizzes, true);
     }
 
@@ -160,11 +223,15 @@ public class QuizGenerationService {
         StudySession session = sessionService.getSessionAndTouch(sessionCode);
         Topic topic = findTopic(session, topicId);
 
-        List<Quiz> quizzes = quizRepository.findAllByTopicIdOrderByQuizOrderAsc(topic.getId());
-        if (quizzes.isEmpty()) {
+        // 화면이 보는 것은 언제나 마지막 회차다. 지난 회차는 기록으로만 남는다.
+        int latestRound = quizRepository.findLatestRound(topic.getId());
+        if (latestRound == 0) {
             throw new QuizNotFoundException();
         }
-        return new QuizGenerationResult(topic, quizzes, false);
+        return new QuizGenerationResult(
+                topic,
+                quizRepository.findAllByTopicIdAndRoundOrderByQuizOrderAsc(topic.getId(), latestRound),
+                false);
     }
 
     private Topic findTopic(StudySession session, UUID topicId) {
@@ -246,11 +313,13 @@ public class QuizGenerationService {
                 .orElse(AiStudyContext.empty());
     }
 
-    private List<Quiz> toQuizzes(Topic topic, List<ValidatedQuizQuestion> validated, LocalDateTime now) {
+    private List<Quiz> toQuizzes(
+            Topic topic, int round, List<ValidatedQuizQuestion> validated, LocalDateTime now) {
         List<Quiz> quizzes = new ArrayList<>(validated.size());
         for (ValidatedQuizQuestion question : validated) {
             quizzes.add(Quiz.create(
                     topic,
+                    round,
                     question.order(),
                     question.question(),
                     question.options(),

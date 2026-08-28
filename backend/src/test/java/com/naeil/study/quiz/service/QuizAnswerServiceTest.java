@@ -89,7 +89,7 @@ class QuizAnswerServiceTest {
     }
 
     private Quiz quiz(UUID id, int order, int correctIndex) throws Exception {
-        Quiz created = Quiz.create(topic, order, "문제 " + order, List.of("A", "B", "C", "D"),
+        Quiz created = Quiz.create(topic, 1, order, "문제 " + order, List.of("A", "B", "C", "D"),
                 correctIndex, "해설", QuizDifficulty.MEDIUM, List.of(), NOW.minusMinutes(30));
         setId(Quiz.class, created, id);
         return created;
@@ -208,7 +208,8 @@ class QuizAnswerServiceTest {
             givenSession();
             givenTopic();
             List<Quiz> quizzes = fiveQuizzes();
-            given(quizRepository.findAllByTopicIdOrderByQuizOrderAsc(TOPIC_ID)).willReturn(quizzes);
+            given(quizRepository.findLatestRound(TOPIC_ID)).willReturn(1);
+            given(quizRepository.findAllByTopicIdAndRoundOrderByQuizOrderAsc(TOPIC_ID, 1)).willReturn(quizzes);
             List<QuizResult> results = List.of(
                     QuizResult.create(session, quizzes.get(0), 0, true, NOW),
                     QuizResult.create(session, quizzes.get(1), 0, true, NOW),
@@ -233,7 +234,8 @@ class QuizAnswerServiceTest {
             givenSession();
             givenTopic();
             List<Quiz> quizzes = fiveQuizzes();
-            given(quizRepository.findAllByTopicIdOrderByQuizOrderAsc(TOPIC_ID)).willReturn(quizzes);
+            given(quizRepository.findLatestRound(TOPIC_ID)).willReturn(1);
+            given(quizRepository.findAllByTopicIdAndRoundOrderByQuizOrderAsc(TOPIC_ID, 1)).willReturn(quizzes);
             List<QuizResult> results = List.of(
                     QuizResult.create(session, quizzes.get(0), 0, true, NOW),
                     QuizResult.create(session, quizzes.get(1), 1, false, NOW),
@@ -255,7 +257,7 @@ class QuizAnswerServiceTest {
         void rejectsTopicWithoutQuizzes() {
             givenSession();
             givenTopic();
-            given(quizRepository.findAllByTopicIdOrderByQuizOrderAsc(TOPIC_ID)).willReturn(List.of());
+            given(quizRepository.findLatestRound(TOPIC_ID)).willReturn(0);
 
             assertThatThrownBy(() -> service.results(SESSION_CODE, TOPIC_ID))
                     .isInstanceOf(QuizNotFoundException.class);
