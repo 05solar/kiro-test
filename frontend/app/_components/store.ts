@@ -32,6 +32,8 @@ type ExamState = ExamInfoInput & {
    */
   planSignature: string;
   setExamInfo: (info: ExamInfoInput) => void;
+  /** 처음부터 다시 시작할 때. 입력값과 스냅샷을 전부 비운다. */
+  reset: () => void;
 };
 
 function computeAvailableMinutes(examDate: string, examTime: string): number | null {
@@ -66,6 +68,19 @@ export const useExamStore = create<ExamState>()(
           availableMinutes: computeAvailableMinutes(info.examDate, info.examTime),
           planSignature: computePlanSignature(info),
         }),
+      reset: () =>
+        set({
+          subject: "",
+          range: "",
+          examDate: "",
+          examTime: "",
+          prepState: "none",
+          plannedAt: null,
+          availableMinutes: null,
+          planSignature: computePlanSignature({
+            subject: "", range: "", examDate: "", examTime: "", prepState: "none",
+          }),
+        }),
     }),
     {
       name: "exam-info",
@@ -95,6 +110,8 @@ type PlanState = {
   resetProgress: (firstStepId: number, nextSignature: string) => void;
   /** cut되어 사라진 STEP id를 weakSteps에서 제거한다. */
   pruneWeakSteps: (aliveStepIds: number[]) => void;
+  /** 처음부터 다시 시작할 때. 진행 상태를 전부 비운다(weakSteps 포함). */
+  reset: () => void;
 };
 
 export const usePlanStore = create<PlanState>()(
@@ -136,6 +153,8 @@ export const usePlanStore = create<PlanState>()(
         set((state) => ({
           weakSteps: state.weakSteps.filter((id) => aliveStepIds.includes(id)),
         })),
+      reset: () =>
+        set({ currentStep: 1, completedSteps: [], weakSteps: [], planSignature: null }),
     }),
     {
       name: "plan-progress",

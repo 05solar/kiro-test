@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CheckMini } from "@/app/_components/ui";
 import { useSessionStore } from "@/app/_components/session-store";
@@ -57,7 +58,15 @@ function useSessionCode() {
  */
 export function SessionCodePill() {
   const { code, copied, copy } = useSessionCode();
-  if (!code) return null;
+  const pathname = usePathname();
+
+  /*
+   * 랜딩에서는 그리지 않는다.
+   *
+   * 그 화면은 "새로 시작"과 "이어하기"를 고르는 자리다. 위 막대에 코드가 떠 있으면
+   * 이미 어떤 세션에 들어와 있는 것처럼 보여, 새로 시작하려는 사람을 헷갈리게 한다.
+   */
+  if (!code || pathname === "/") return null;
 
   return (
     <button
@@ -76,47 +85,47 @@ export function SessionCodePill() {
   );
 }
 
-export function SessionCodeCard({ className = "" }: { className?: string }) {
-  const hydrated = useHydrated();
-  const sessionCode = useSessionStore((state) => state.sessionCode);
-  const [copied, setCopied] = useState(false);
-
-  // 복사 표시는 잠깐만 띄운다. 계속 남아 있으면 다음에 눌렀는지 알 수 없다.
-  useEffect(() => {
-    if (!copied) return;
-    const id = window.setTimeout(() => setCopied(false), 2000);
-    return () => window.clearTimeout(id);
-  }, [copied]);
-
-  // 서버 렌더와 첫 그림을 맞춘다. 코드는 브라우저에만 있다.
-  if (!hydrated || !sessionCode) return null;
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(sessionCode);
-      setCopied(true);
-    } catch {
-      // 클립보드를 막아 둔 브라우저가 있다. 코드는 눈에 보이므로 받아 적으면 된다.
-      setCopied(false);
-    }
-  };
+/**
+ * 본문에 놓는 세션 코드 칸.
+ *
+ * @param wide 넓게 그린다. 분석 화면처럼 기다리는 동안 눈에 들어와야 하는 자리에 쓴다.
+ */
+export function SessionCodeCard({
+  className = "",
+  wide = false,
+}: {
+  className?: string;
+  wide?: boolean;
+}) {
+  const { code, copied, copy } = useSessionCode();
+  if (!code) return null;
 
   return (
     <section
       aria-label="세션 코드"
-      className={`shrink-0 rounded-[16px] border border-[#FFE0C4] bg-[#FFF3E8] px-4 py-3 ${className}`}
+      className={`shrink-0 rounded-[16px] border border-[#FFE0C4] bg-[#FFF3E8] ${
+        wide ? "px-6 py-5" : "px-4 py-3"
+      } ${className}`}
     >
-      <div className="flex items-center gap-3">
+      <div className={`flex items-center gap-3 ${wide ? "justify-center" : ""}`}>
         <div className="min-w-0">
-          <div className="mb-0.5 text-[11.5px] font-bold text-[#E85D00]">내 세션 코드</div>
-          <div className="font-mono text-[19px] font-bold leading-tight tracking-[2px] text-[#222] sm:text-[21px]">
-            {sessionCode}
+          <div className={`mb-0.5 font-bold text-[#E85D00] ${wide ? "text-[12.5px]" : "text-[11.5px]"}`}>
+            내 세션 코드
+          </div>
+          <div
+            className={`font-mono font-bold leading-tight tracking-[2px] text-[#222] ${
+              wide ? "text-[26px] sm:text-[30px]" : "text-[19px] sm:text-[21px]"
+            }`}
+          >
+            {code}
           </div>
         </div>
         <button
           type="button"
           onClick={() => void copy()}
-          className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-[#FFE0C4] bg-white px-3 py-2 text-[12.5px] font-bold text-[#E85D00] transition-colors hover:border-[#FF7A00]"
+          className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-[#FFE0C4] bg-white font-bold text-[#E85D00] transition-colors hover:border-[#FF7A00] ${
+            wide ? "px-4 py-2.5 text-[13.5px]" : "px-3 py-2 text-[12.5px]"
+          }`}
         >
           {copied ? (
             <>
@@ -128,7 +137,11 @@ export function SessionCodeCard({ className = "" }: { className?: string }) {
           )}
         </button>
       </div>
-      <p className="mt-2 text-[11.5px] leading-[1.6] text-[#7A4A16]">
+      <p
+        className={`mt-2 leading-[1.6] text-[#7A4A16] ${
+          wide ? "text-center text-[13px]" : "text-[11.5px]"
+        }`}
+      >
         코드를 통해서 학습을 계속 이어갈 수 있어요
       </p>
     </section>

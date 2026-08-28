@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppHeader, Ghost, PrimaryButton, SecondaryButton, SpeechBubble } from "@/app/_components/ui";
 import { useSessionStore } from "@/app/_components/session-store";
+import { useExamStore, usePlanStore } from "@/app/_components/store";
 import { getSession, toMessage } from "@/lib/api";
 
 /** 서버가 발급하는 코드 형식. 입력값도 같은 규칙으로 먼저 걸러 낸다. */
@@ -12,6 +13,25 @@ const CODE_LENGTH = 8;
 export default function HomePage() {
   const router = useRouter();
   const setSessionCode = useSessionStore((state) => state.setSessionCode);
+  const clearSession = useSessionStore((state) => state.clear);
+  const resetExam = useExamStore((state) => state.reset);
+  const resetPlan = usePlanStore((state) => state.reset);
+
+  /**
+   * 처음부터 다시 시작한다.
+   *
+   * <p>이동만 하면 브라우저에 남아 있던 과목명·시험 일시·진행 상태가 그대로 되살아난다.
+   * "새로 시작"이라고 눌렀는데 지난 값이 채워져 있으면, 사용자는 그것을 자기가 방금
+   * 입력한 값으로 착각한 채 넘어간다. 세 곳을 모두 비우고 간다.
+   *
+   * <p>세션 코드도 지운다. 남겨 두면 새 시험 정보가 옛 세션에 덮어써진다.
+   */
+  const startFresh = () => {
+    clearSession();
+    resetExam();
+    resetPlan();
+    router.push("/exam-info");
+  };
 
   const [resuming, setResuming] = useState(false);
   const [code, setCode] = useState("");
@@ -86,7 +106,7 @@ export default function HomePage() {
             <div className="flex flex-wrap items-center gap-3">
               <PrimaryButton
                 className="px-[30px] py-[17px] text-[16.5px]"
-                onClick={() => router.push("/exam-info")}
+                onClick={startFresh}
               >
                 벼락치기 새로 시작하기
               </PrimaryButton>

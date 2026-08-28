@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FlowSteps } from "@/app/_components/flow-steps";
 import { AppHeader, CheckMini, Ghost, PrimaryButton, SecondaryButton } from "@/app/_components/ui";
 import { useSessionStore } from "@/app/_components/session-store";
+import { SessionCodeCard } from "@/app/_components/session-code-card";
 import { useHydrated } from "@/app/_components/use-hydrated";
 import {
   createCurriculum,
@@ -194,6 +195,12 @@ export default function AnalysisPage() {
               );
             })}
           </div>
+
+          {/*
+            기다리는 동안 코드를 눈에 익히게 한다.
+            분석은 1~2분 걸리는 유일한 대기 구간이라, 화면을 보고 있을 수밖에 없는 시간이다.
+          */}
+          <SessionCodeCard wide className="mx-auto mt-7 max-w-[540px]" />
 
           {error && (
             <p role="alert" className="mx-auto mt-6 max-w-[540px] rounded-xl border border-[#F5C2C7] bg-[#FDECEE] px-4 py-3 text-left text-[13.5px] text-[#B02A37]">
