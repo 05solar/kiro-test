@@ -350,14 +350,13 @@ hr.rule { border: 0; border-top: 1px solid var(--rule); margin: 0; }
   <span class="mark">해부도</span>
   <nav>
     <a href="#map">전체 지도</a>
-    <a href="#read">자료 읽기</a>
-    <a href="#context">학습 맥락</a>
-    <a href="#analyze">AI 분석</a>
-    <a href="#plan">학습 계획</a>
-    <a href="#progress">진행·재조정</a>
-    <a href="#quiz">퀴즈</a>
-    <a href="#api">API</a>
+    <a href="#struct">파일 구조</a>
+    <a href="#features">기능</a>
+    <a href="#growth">고도화</a>
+    <a href="#stable">안정성</a>
+    <a href="#tech">기술 원리</a>
     <a href="#test">테스트</a>
+    <a href="#api">API</a>
   </nav>
 </header>
 
@@ -368,825 +367,581 @@ hr.rule { border: 0; border-top: 1px solid var(--rule); margin: 0; }
     <div class="eyebrow">내일까지 해야 하는데 &middot; 백엔드 구조</div>
     <h1>강의자료를 실행 가능한<br>학습 계획으로 바꾸는 법</h1>
     <p class="lede">
-      회원가입이 없다. 8자리 코드 하나가 접근 키다. 사용자는 PDF를 던지고
-      &ldquo;시험까지 3시간&rdquo;이라고만 말한다. 그 3시간 안에 실제로 끝낼 수 있는
-      계획을 만들어 내는 것이 이 백엔드가 하는 일이다.
+      시험까지 세 시간 남았고, 읽어야 할 자료는 80쪽이다. 이 백엔드가 하는 일은
+      그 80쪽을 <b>남은 시간 안에 실제로 끝낼 수 있는 순서</b>로 바꾸는 것이다.
+      자료가 없으면 과목명과 시험 범위만으로 만들고, 공부하다 막히면 그 자리에서 답한다.
     </p>
 
-    <div class="facts">
-      <div class="fact"><div class="v">194</div><div class="k">main 클래스</div></div>
-      <div class="fact"><div class="v">22</div><div class="k">엔드포인트</div></div>
-      <div class="fact"><div class="v">850</div><div class="k">테스트 · 0 실패</div></div>
-      <div class="fact"><div class="v">8</div><div class="k">도메인 패키지</div></div>
+    <div class="pipe" id="pipe">
+      <div class="st"><span class="i">01</span><span class="l">세션</span></div>
+      <div class="st"><span class="i">02</span><span class="l">자료 추출</span></div>
+      <div class="st"><span class="i">03</span><span class="l">AI 분석</span></div>
+      <div class="st"><span class="i">04</span><span class="l">시간 배분</span></div>
+      <div class="st"><span class="i">05</span><span class="l">진행 기록</span></div>
+      <div class="st"><span class="i">06</span><span class="l">퀴즈</span></div>
+      <div class="st"><span class="i">07</span><span class="l">챗봇</span></div>
     </div>
 
-    <div class="plate" style="margin-top:14px">
-      <div class="plate-title">전체 파이프라인</div>
-      <div class="pipe" id="pipe">
-        <div class="st"><div class="i">01</div><div class="l">자료 업로드</div></div>
-        <div class="st"><div class="i">02</div><div class="l">텍스트 추출</div></div>
-        <div class="st"><div class="i">03</div><div class="l">학습 맥락</div></div>
-        <div class="st"><div class="i">04</div><div class="l">AI 분석</div></div>
-        <div class="st"><div class="i">05</div><div class="l">학습 계획</div></div>
-        <div class="st"><div class="i">06</div><div class="l">진행·재조정</div></div>
-        <div class="st"><div class="i">07</div><div class="l">퀴즈·오답</div></div>
-      </div>
-      <p class="caption">
-        각 단계는 앞 단계의 <b>DB에 저장된 결과</b>만 입력으로 쓴다. 어느 지점에서 브라우저를
-        닫아도 코드만 다시 넣으면 그 자리에서 이어진다.
-      </p>
+    <div class="facts">
+      <div class="fact"><span class="v">228</span><span class="k">클래스</span></div>
+      <div class="fact"><span class="v">11</span><span class="k">도메인 패키지</span></div>
+      <div class="fact"><span class="v">913</span><span class="k">테스트</span></div>
+      <div class="fact"><span class="v">0</span><span class="k">테스트 중 AI 호출</span></div>
     </div>
   </div>
 
   <!-- ================= 전체 지도 ================= -->
   <section id="map">
-    <div class="sec-head">
-      <span class="num">00</span>
-      <h2 class="t">전체 지도</h2>
+    <div class="sec-head"><span class="num">01</span><h2 class="t">전체 지도</h2></div>
+
+    <div class="prose stack">
+      <p>
+        이 서비스에는 <b>회원이 없다.</b> 서버가 발급한 8자리 코드가 유일한 접근 키이고,
+        모든 데이터가 그 아래 매달린다. 그래서 최상위 도메인은 <code>User</code>가 아니라
+        <code>StudySession</code>이다.
+      </p>
     </div>
 
-    <div class="stack-l">
-      <div class="prose stack">
-        <p>
-          계층이 아니라 도메인이 먼저다. <code>controller / service / repository</code> 를
-          최상위로 두면 기능 하나를 고칠 때 세 폴더를 오간다. 도메인으로 묶으면 한 폴더 안에서 끝난다.
-        </p>
-      </div>
-
-      <div class="plate" data-anim>
-        <div class="plate-title">도메인 패키지</div>
-        <div class="grid g4">
-          <div class="node blue"><div class="n-t">session</div><div class="n-s">8자리 코드 · 만료</div></div>
-          <div class="node blue"><div class="n-t">document</div><div class="n-s">업로드 · 파싱</div></div>
-          <div class="node blue"><div class="n-t">storage</div><div class="n-s">파일 저장 추상화</div></div>
-          <div class="node blue"><div class="n-t">studycontext</div><div class="n-s">사용자 추가 정보</div></div>
-          <div class="node blue"><div class="n-t">analysis</div><div class="n-s">AI 분석</div></div>
-          <div class="node blue"><div class="n-t">topic</div><div class="n-s">학습 단위</div></div>
-          <div class="node blue"><div class="n-t">curriculum</div><div class="n-s">계획 · 진행 · 재조정</div></div>
-          <div class="node blue"><div class="n-t">quiz</div><div class="n-s">문제 · 채점</div></div>
-          <div class="node blue"><div class="n-t">wronganswer</div><div class="n-s">오답 요약</div></div>
-          <div class="node ghost"><div class="n-t">common</div><div class="n-s">에러 · Clock · AI 공통</div></div>
-        </div>
-      </div>
-
-      <div class="plate" data-anim>
-        <div class="plate-title">요청 하나가 지나가는 길</div>
-        <div class="layers">
-          <div class="layer">
-            <div class="side">Controller</div>
-            <div class="body">경로 매핑과 응답 변환만. <b>상태 전이 로직을 두지 않는다.</b></div>
-          </div>
-          <div class="layer tx">
-            <div class="side">Service &mdash; @Transactional</div>
-            <div class="body">검증 순서 · 유스케이스 조립. 여러 엔티티가 같이 바뀌면 한 트랜잭션 안에서 끝난다.</div>
-          </div>
-          <div class="layer">
-            <div class="side">Entity</div>
-            <div class="body">상태 전이 규칙 본체. 세터가 없고 <code>start(now)</code> 같은 의미 있는 메서드만 있다.</div>
-          </div>
-          <div class="layer">
-            <div class="side">Repository</div>
-            <div class="body">항상 <b>소유 세션과 함께</b> 조회한다. id 하나로 찾지 않는다.</div>
-          </div>
-          <div class="layer">
-            <div class="side">AI Client</div>
-            <div class="body">인터페이스로 감싼다. 도메인 코드는 Gemini인지 Anthropic인지 모른다.</div>
-          </div>
-        </div>
-        <p class="caption">
-          AI 호출처럼 오래 걸리는 작업은 트랜잭션 밖으로 뺀다. 외부 응답을 기다리는 동안
-          DB 커넥션과 락을 잡고 있으면 안 되기 때문이다. 상태 기록은 짧은 트랜잭션으로 따로 쓴다.
-        </p>
-      </div>
-
-      <div class="grid g3" data-anim>
-        <div class="card key">
-          <h4>시각은 주입받는다</h4>
-          <p class="small">엔티티 안에서 <code>LocalDateTime.now()</code> 를 부르지 않는다. <code>Clock</code> 빈을 주입해 서비스가 넘긴다. 시간에 의존하는 로직 전부가 테스트 가능해진다.</p>
-        </div>
-        <div class="card key">
-          <h4>내부 id를 노출하지 않는다</h4>
-          <p class="small">외부는 8자리 코드로만 접근한다. UUID는 도메인 간 연관에만 쓴다. 없는 세션과 만료된 세션의 응답이 같다.</p>
-        </div>
-        <div class="card key">
-          <h4>없으면 404, 남의 것도 404</h4>
-          <p class="small">다른 세션 자원에 403을 주면 &ldquo;그건 존재한다&rdquo;가 드러난다. 존재 여부 자체를 숨긴다.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= 01 자료 읽기 ================= -->
-  <section id="read">
-    <div class="sec-head">
-      <span class="num">01</span>
-      <h2 class="t">자료를 읽는다</h2>
+    <div class="plate" data-anim>
+      <div class="plate-title">데이터가 매달리는 모양</div>
+      <pre class="mono small">8자리 코드 (7K2M9QXF)
+      │
+  StudySession ──┬── Document        올린 자료와 추출한 텍스트
+                 ├── StudyContext    교수님 강조·기출·약점
+                 ├── Topic ──┬── Quiz ── QuizResult
+                 │           └── (StudyStep 이 참조)
+                 ├── Curriculum ── StudyStep
+                 ├── WrongAnswerSummary
+                 └── ChatMessage     챗봇 대화</pre>
+      <p class="caption">
+        코드를 잃으면 되찾을 방법이 없다. 대신 코드만 있으면 어느 기기에서든 그대로 이어진다 —
+        <b>진행 상태를 화면이 아니라 서버가 갖는</b> 이유다.
+      </p>
     </div>
 
-    <div class="stack-l">
-      <div class="prose stack">
-        <p>
-          업로드와 텍스트 추출을 <b>다른 요청으로 나눴다.</b> 20MB PDF 열 개를 올리면서
-          동시에 파싱까지 하면 업로드 응답이 한참 돌아오지 않는다. 파일을 먼저 안전하게 받아 두고,
-          내용을 읽는 것은 그다음 요청에서 한다.
-        </p>
-      </div>
-
-      <div class="plate" data-anim>
-        <div class="plate-title">문서 상태 전이</div>
-        <div class="fsm">
-          <span class="state b">UPLOADED</span>
-          <span class="arrow">&rarr;</span>
-          <span class="state a">PARSING</span>
-          <span class="arrow">&rarr;</span>
-          <span class="state g">PARSED</span>
-        </div>
-        <div class="branch">
-          <span class="txt">추출에 실패하면</span>
-          <span class="arrow">&rarr;</span>
-          <span class="state r">PARSE_FAILED</span>
-        </div>
-        <p class="caption">
-          <code>PARSE_FAILED</code> 는 끝이 아니다. 다시 요청하면 재시도한다. 실패한 문서 하나 때문에
-          나머지 자료의 분석을 막지 않는다 &mdash; 분석 단계는 <code>PARSED</code> 문서만 골라 쓴다.
-        </p>
-      </div>
-
-      <div class="grid g2" data-anim>
-        <div class="card">
-          <h4>저장 경로에 원본 파일명을 쓰지 않는다</h4>
-          <p class="small">
-            사용자가 올린 이름에는 <code>../</code> 도, 제어 문자도 들어올 수 있다.
-            서버가 만든 식별자로 저장하고, 원본 이름은 화면 표시용으로 DB에만 둔다.
-          </p>
-        </div>
-        <div class="card">
-          <h4>저장소를 인터페이스로 감쌌다</h4>
-          <p class="small">
-            지금은 로컬 디스크(<code>LocalStorageService</code>)다. S3로 바꿀 때 도메인 코드는
-            건드리지 않는다. 구현체 하나만 갈아 끼운다.
-          </p>
-        </div>
-        <div class="card">
-          <h4>추출 텍스트에 <code>@Lob</code> 을 쓰지 않는다</h4>
-          <p class="small">
-            PostgreSQL에서 <code>@Lob String</code> 은 본문 대신 OID(<code>16411</code>)를 저장한다.
-            H2 테스트는 전부 통과했고 실제 DB에서만 드러났다. <code>columnDefinition = "TEXT"</code> 로 고정한다.
-          </p>
-        </div>
-        <div class="card">
-          <h4>라이브러리 예외를 그대로 내보내지 않는다</h4>
-          <p class="small">
-            PDFBox·POI의 메시지에는 내부 경로와 구조가 섞여 있다. 사용자에게는
-            <code>DOCUMENT_PARSE_FAILED</code> 만 주고, 원인은 로그에 남긴다.
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= 02 학습 맥락 ================= -->
-  <section id="context">
-    <div class="sec-head">
-      <span class="num">02</span>
-      <h2 class="t">사용자가 아는 것을 받는다</h2>
-    </div>
-
-    <div class="stack-l">
-      <div class="prose stack">
-        <p>
-          강의자료만으로는 알 수 없는 것이 있다. 교수님이 무엇을 강조했는지, 작년에 뭐가 나왔는지,
-          본인이 어디가 약한지. 이 네 가지를 <b>선택 입력</b>으로 받는다.
-        </p>
-      </div>
-
-      <div class="plate" data-anim>
-        <div class="plate-title">네 항목이 뒤에서 하는 일</div>
-        <div class="grid g4">
-          <div class="node"><div class="n-t">교수님 강조</div><div class="n-s">professorEmphasis</div></div>
-          <div class="node"><div class="n-t">기출 · 예상</div><div class="n-s">pastExamInfo</div></div>
-          <div class="node"><div class="n-t">자신 없는 부분</div><div class="n-s">weakAreas</div></div>
-          <div class="node amber"><div class="n-t">반드시 볼 범위</div><div class="n-s">mustStudyAreas</div></div>
-        </div>
-        <div style="display:flex;justify-content:center;padding:14px 0"><span class="arrow">&darr;</span></div>
-        <div class="grid g4">
-          <div class="node ghost"><div class="n-t">Topic 우선순위</div><div class="n-s">분석 단계</div></div>
-          <div class="node ghost"><div class="n-t">시간 배분 순서</div><div class="n-s">계획 단계</div></div>
-          <div class="node ghost"><div class="n-t">덜 깎이는 근거</div><div class="n-s">압축 단계</div></div>
-          <div class="node amber"><div class="n-t">제외 금지 제약</div><div class="n-s">계획 · 재조정</div></div>
-        </div>
-      </div>
-
-      <div class="focus" data-anim>
-        <div class="lab">중점</div>
-        <p style="margin-top:6px">
-          <b>&ldquo;반드시 볼 범위&rdquo;는 가중치가 아니라 제약이다.</b> 나머지 세 항목은 순서를 앞당기는
-          힌트지만, 이 항목에 걸린 주제는 중요도가 <code>LOW</code> 여도, 시간이 모자라도 계획에서 빠지지 않는다.
-          점수를 크게 주는 방식이었다면 시간이 부족할 때 조용히 밀려났을 것이다.
-        </p>
-      </div>
-
-      <div class="prose stack" data-anim>
+    <div class="grid g3" data-anim>
+      <div class="card key">
+        <h4>흐름은 한 방향</h4>
         <p class="small">
-          맥락은 <code>PUT</code> 이다. 부분 수정이 아니라 전체 교체다. 보내지 않은 항목은 비워진다.
-          네 항목이 전부 비어 있어도 정상 처리한다 &mdash; 추가 정보를 주지 않아도 이후 기능은 동작해야 한다.
+          자료 → 주제 → 계획 → 진행 → 퀴즈. 앞 단계가 끝나야 다음이 열린다.
+          건너뛰면 409로 막는다.
         </p>
       </div>
-    </div>
-  </section>
-
-  <!-- ================= 03 AI 분석 ================= -->
-  <section id="analyze">
-    <div class="sec-head">
-      <span class="num">03</span>
-      <h2 class="t">자료를 학습 단위로 쪼갠다</h2>
-    </div>
-
-    <div class="stack-l">
-      <div class="prose stack">
-        <p>
-          여기가 유일하게 AI가 판단을 하는 지점이다. 강의자료 전체를 한 번에 던지지 않는다.
-          <b>조각별 추출 &rarr; 전체 통합</b> 두 번에 나눠 부른다.
-        </p>
-      </div>
-
-      <div class="plate" data-anim id="chunkPlate">
-        <div class="plate-title">1차 &mdash; 조각내기</div>
-        <div class="doc-bar"></div>
-        <div class="chunks">
-          <div class="chunk-row">
-            <span class="chunk-lab">chunk 0</span>
-            <span class="chunk-track"><span class="chunk-fill" style="left:0;width:42%"></span></span>
-          </div>
-          <div class="chunk-row">
-            <span class="chunk-lab">chunk 1</span>
-            <span class="chunk-track">
-              <span class="chunk-fill" style="left:38%;width:42%"></span>
-              <span class="overlap" style="left:38%;width:4%"></span>
-            </span>
-          </div>
-          <div class="chunk-row">
-            <span class="chunk-lab">chunk 2</span>
-            <span class="chunk-track">
-              <span class="chunk-fill" style="left:76%;width:24%"></span>
-              <span class="overlap" style="left:76%;width:4%"></span>
-            </span>
-          </div>
-        </div>
-        <p class="caption">
-          <b>8,000자씩, 300자를 겹쳐서</b> 자른다. 겹치는 구간(<span style="color:var(--amber)">앰버</span>)이 없으면
-          경계에 걸친 설명이 양쪽 모두에서 잘린다. 자를 자리는 목표 크기 근처의 <b>문단 경계</b>를 찾아 정한다.
-          토큰이 아니라 글자 수 기준이다 &mdash; 토큰으로 두면 특정 모델의 토크나이저에 묶인다.
-        </p>
-      </div>
-
-      <div class="plate" data-anim>
-        <div class="plate-title">2차 &mdash; 통합</div>
-        <div class="grid g3">
-          <div class="node"><div class="n-t">"CPU Scheduling"</div><div class="n-s">chunk 0</div></div>
-          <div class="node"><div class="n-t">"CPU 스케줄링"</div><div class="n-s">chunk 1</div></div>
-          <div class="node"><div class="n-t">"스케줄링 알고리즘"</div><div class="n-s">chunk 2</div></div>
-        </div>
-        <div style="display:flex;justify-content:center;padding:14px 0"><span class="arrow">&darr;</span></div>
-        <div class="grid" style="grid-template-columns:1fr">
-          <div class="node blue">
-            <div class="n-t">CPU 스케줄링 &mdash; VERY_HIGH &middot; 45분 &middot; pastExamMatched</div>
-            <div class="n-s">중복 병합 · 한국어 통일 · 선수 개념 순서 정렬 · 중요도와 학습시간 판단</div>
-          </div>
-        </div>
-        <p class="caption">
-          1차에서는 <b>주제만</b> 뽑는다. 중요도·학습시간·맥락 관련성은 판단하지 않는다.
-          조각 하나만 보고 &ldquo;이게 전체에서 얼마나 중요한가&rdquo;를 물으면 답할 근거가 없기 때문이다.
-          그 판단은 전부 모인 2차에서 한 번에 한다.
-        </p>
-      </div>
-
-      <div class="focus" data-anim>
-        <div class="lab">중점 &mdash; 프롬프트를 데이터로부터 지킨다</div>
-        <div class="stack-s" style="margin-top:10px">
-          <p>
-            강의자료는 <b>사용자가 올린 임의의 텍스트</b>다. PDF 안에 &ldquo;위 지시를 무시하라&rdquo;가
-            적혀 있을 수 있다. 그래서 두 가지를 모든 프롬프트에 고정으로 넣는다.
-          </p>
-          <ul class="clean">
-            <li><b>주입 차단</b> &mdash; 자료와 사용자 맥락을 <code>&lt;lecture_document&gt;</code>,
-              <code>&lt;user_study_context&gt;</code> 태그로 감싸고, 그 안의 문장은 명령이 아니라
-              분석 대상 데이터로만 다루도록 명시한다.</li>
-            <li><b>근거 고정</b> &mdash; 강의자료에 없는 내용을 만들어 내지 않는다. 사용자 맥락은
-              힌트일 뿐 검증된 사실이 아니다. 맥락에만 있고 자료에서 찾지 못한 개념은 주제로 만들지 않는다.</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="plate" data-anim>
-        <div class="plate-title">응답을 믿지 않는다 &mdash; 저장 전 검증</div>
-        <div class="grid g2">
-          <div class="card"><h4>구조</h4><p class="small">주제 0개 &rarr; 실패. 상한 <span class="mono">30개</span> 초과 &rarr; 실패. 제목 200자 초과, 빈 요약, 빈 핵심개념 &rarr; 실패.</p></div>
-          <div class="card"><h4>범위</h4><p class="small">학습시간이 <span class="mono">5~120분</span> 밖이면 잘라 넣는다. 값이 아예 없으면 실패.</p></div>
-          <div class="card"><h4>출처</h4><p class="small">AI가 만들어 낸 문서 참조값은 버린다. 요청에 실제로 넣어 준 참조만 문서 id로 되돌린다.</p></div>
-          <div class="card"><h4>재시도</h4><p class="small">통합 결과가 검증에 걸리면 <b>한 번 더</b> 부른다. 연결 오류·5xx는 클라이언트 레벨에서 2회 재시도. 형식 오류는 여기서 재시도하지 않는다.</p></div>
-        </div>
-        <p class="caption">
-          검증을 전부 통과한 뒤에야 저장한다. 실패하면 세션은 <code>ANALYSIS_FAILED</code> 가 되고
-          자료와 맥락은 그대로 남는다. 사용자가 다시 요청할 수 있어야 하기 때문이다.
-        </p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= 04 학습 계획 ================= -->
-  <section id="plan">
-    <div class="sec-head">
-      <span class="num">04</span>
-      <h2 class="t">3시간 안에 들어가게 만든다</h2>
-    </div>
-
-    <div class="stack-l">
-      <div class="prose stack">
-        <p>
-          Topic을 그대로 나열하면 계획이 아니라 목록이다. 180분밖에 없는 사람에게
-          220분짜리 목록을 주는 것은 아무 도움이 안 된다. <b>무엇을 얼마나</b> 공부할지 정하는 것이
-          이 단계의 일이다.
-        </p>
-      </div>
-
-      <div class="focus" data-anim>
-        <div class="lab">중점 &mdash; 여기서는 AI를 부르지 않는다</div>
-        <p style="margin-top:6px">
-          중요도·예상 시간·맥락 일치는 이미 분석 단계의 결과다. 남은 일은 그 값으로 시간을 나누는 것이고,
-          그건 규칙이 낫다. LLM에게 &ldquo;180분에 맞춰 나눠 줘&rdquo;라고 맡기면 합이 200분이 되거나
-          반드시 넣어야 할 주제가 조용히 빠진다. <b>사용자는 그 실수를 알아채지 못한다.</b>
-          규칙으로 짜면 같은 입력에 같은 결과가 나오고, 시간 총합 같은 제약을 코드가 보장한다.
-        </p>
-      </div>
-
-      <div class="plate" data-anim>
-        <div class="plate-title">세 단계</div>
-        <ol class="steps">
-          <li><b>선택</b> &mdash; 우선순위 순으로, 각자의 최소 시간을 확보할 수 있는 주제만 담는다.
-            앞 주제가 안 들어가도 멈추지 않는다. 뒤의 짧은 주제는 들어갈 수 있다.</li>
-          <li><b>배분</b> &mdash; 남은 시간을 다시 우선순위 순으로 나눠 권장 시간까지 늘린다.
-            권장 시간보다 더 주지는 않는다.</li>
-          <li><b>정렬</b> &mdash; <code>topicOrder</code> 로 되돌린다. 중요하다고 뒤 내용을 앞으로 끌어오면
-            선수 개념 없이 공부하게 된다. 시간이 남으면 마지막에 복습 단계를 붙인다.</li>
-        </ol>
-      </div>
-
-      <div class="plate" data-anim>
-        <div class="plate-title">우선순위 &mdash; 점수가 아니라 순서</div>
-        <div class="grid g3" style="gap:8px">
-          <div class="node amber"><div class="n-t">1 &nbsp; mustStudy</div><div class="n-s">제약</div></div>
-          <div class="node blue"><div class="n-t">2 &nbsp; importance</div><div class="n-s">VERY_HIGH → LOW</div></div>
-          <div class="node"><div class="n-t">3 &nbsp; 교수 강조</div><div class="n-s">professorEmphasis</div></div>
-          <div class="node"><div class="n-t">4 &nbsp; 기출</div><div class="n-s">pastExam</div></div>
-          <div class="node"><div class="n-t">5 &nbsp; 취약</div><div class="n-s">weakArea</div></div>
-          <div class="node ghost"><div class="n-t">6 &nbsp; topicOrder</div><div class="n-s">원래 순서</div></div>
-        </div>
-        <p class="caption">
-          <code>VERY_HIGH = 100</code>, <code>교수 강조 = +30</code> 같은 계수를 쓰지 않는다.
-          그런 숫자는 근거 없이 정해지고, 한 번 박히면 왜 그 값인지 아무도 설명하지 못한다.
-          <b>무엇이 무엇보다 앞서는지만</b> 정한다. 그리고 이 순서를 <b>선택과 배분에 모두</b> 쓴다 &mdash;
-          그래서 자신 없다고 표시한 주제는 같은 중요도의 다른 주제보다 시간이 덜 깎인다. 보정 규칙이 따로 없다.
-        </p>
-      </div>
-
-      <div class="plate" data-anim id="allocPlate">
-        <div class="plate-title">압축 &mdash; 실제 배분 결과</div>
-        <div class="alloc" id="alloc">
-          <div class="alloc-row">
-            <span class="alloc-name">프로세스와 스레드</span>
-            <span class="alloc-track"><span class="alloc-need" style="width:100%"></span><span class="alloc-got" data-w="100"></span></span>
-            <span class="alloc-val">50 / 50</span>
-          </div>
-          <div class="alloc-row">
-            <span class="alloc-name">CPU 스케줄링</span>
-            <span class="alloc-track"><span class="alloc-need" style="width:90%"></span><span class="alloc-got" data-w="90"></span></span>
-            <span class="alloc-val">45 / 45</span>
-          </div>
-          <div class="alloc-row">
-            <span class="alloc-name">가상 메모리</span>
-            <span class="alloc-track"><span class="alloc-need" style="width:100%"></span><span class="alloc-got cut" data-w="78"></span></span>
-            <span class="alloc-val"><em>43</em> / <s>55</s></span>
-          </div>
-          <div class="alloc-row">
-            <span class="alloc-name">파일 시스템</span>
-            <span class="alloc-track"><span class="alloc-need" style="width:80%"></span><span class="alloc-got cut" data-w="24"></span></span>
-            <span class="alloc-val"><em>12</em> / <s>40</s></span>
-          </div>
-          <div class="alloc-row">
-            <span class="alloc-name">입출력 &mdash; 반드시 볼 범위</span>
-            <span class="alloc-track"><span class="alloc-need" style="width:60%"></span><span class="alloc-got" data-w="60"></span></span>
-            <span class="alloc-val">30 / 30</span>
-          </div>
-        </div>
-        <div class="budget">
-          <span class="small">필요한 시간 합계 <span class="mono">220분</span> &rarr; 남은 시간 <span class="mono">180분</span></span>
-          <span class="n">배정 합계 <b>180분</b></span>
-        </div>
-        <p class="caption">
-          중요도가 낮은 &ldquo;파일 시스템&rdquo;이 40분에서 12분까지 눌린다. 반면 <b>중요도가 가장 낮은
-          &ldquo;입출력&rdquo;은 30분을 전부 지킨다</b> &mdash; 사용자가 반드시 보겠다고 한 범위이기 때문이다.
-          이것이 가중치와 제약의 차이다.
-        </p>
-      </div>
-
-      <div class="grid g2" data-anim>
-        <div class="card warn">
-          <h4>중요도별 압축 하한</h4>
-          <p class="small" style="margin-bottom:8px">10분짜리로 쪼갠 여러 개보다 제대로 본 몇 개가 낫다는 판단이다. 하한을 확보할 수 없는 주제는 계획에 넣지 않는다.</p>
-          <table style="min-width:0"><tbody>
-            <tr><td class="mono">VERY_HIGH</td><td>권장 시간의 60%</td></tr>
-            <tr><td class="mono">HIGH</td><td>50%</td></tr>
-            <tr><td class="mono">MEDIUM</td><td>30%</td></tr>
-            <tr><td class="mono">LOW</td><td>최소 5분</td></tr>
-          </tbody></table>
-          <p class="small" style="margin-top:8px">MVP 휴리스틱이지 학습 과학의 기준이 아니다. 고칠 값이라 <code>CurriculumPolicy</code> 한 곳에 모았다.</p>
-        </div>
-        <div class="card key">
-          <h4>계획이 나가기 전 스스로 검사한다</h4>
-          <p class="small" style="margin-bottom:8px">규칙으로 만들었으니 깨질 리 없다고 두지 않는다. 하나라도 어긋나면 <b>조용히 잘못된 계획을 내보내는 대신 실패</b>한다.</p>
-          <ul class="clean">
-            <li>배정 합계가 가용 시간을 넘지 않음</li>
-            <li>단계 순서가 1부터 연속</li>
-            <li>각 단계가 최소 시간 이상, 권장 시간 이하</li>
-            <li>같은 주제가 두 번 들어가지 않음</li>
-          </ul>
-          <p class="small" style="margin-top:8px">무작위 입력 <span class="mono">60</span>회 반복 테스트로 이 불변식을 확인한다.</p>
-        </div>
-      </div>
-
-      <div class="prose stack" data-anim>
+      <div class="card">
+        <h4>AI 는 네 곳에서만</h4>
         <p class="small">
-          시간 값을 <b>세 개로 나눠</b> 저장한다. <code>originalEstimatedMinutes</code>(원래 필요했던 시간,
-          이후 불변) / <code>allocatedMinutes</code>(이번에 배정한 시간) / <code>actualStudyMinutes</code>(실제로 쓴 시간).
-          하나로 합치면 &ldquo;계획보다 12분 초과&rdquo;를 판단할 수 없고, 뒤에 나올 동적 재조정의 근거가 사라진다.
+          분석 · 퀴즈 · 오답 요약 · 챗봇. 나머지는 전부 순수 계산이라
+          네트워크 없이도 돈다.
         </p>
       </div>
-    </div>
-  </section>
-
-  <!-- ================= 05 진행 · 재조정 ================= -->
-  <section id="progress">
-    <div class="sec-head">
-      <span class="num">05</span>
-      <h2 class="t">계획이 현실과 어긋날 때</h2>
-    </div>
-
-    <div class="stack-l">
-      <div class="plate" data-anim>
-        <div class="plate-title">단계 진행</div>
-        <div class="fsm">
-          <span class="state">PENDING</span>
-          <span class="arrow">&rarr;</span>
-          <span class="state a">IN_PROGRESS</span>
-          <span class="arrow">&rarr;</span>
-          <span class="state g">COMPLETED</span>
-        </div>
-        <div class="branch">
-          <span class="txt">재조정에서 시간이 모자라면</span>
-          <span class="arrow">&rarr;</span>
-          <span class="state r">SKIPPED</span>
-        </div>
-        <div class="grid g3" style="margin-top:16px">
-          <div class="card"><h4>순서를 지킨다</h4><p class="small">시작 가능한 단계는 <code>PENDING</code> 중 가장 앞선 하나뿐이다. 뒤부터 하면 시간이 모자랄 때 정작 중요한 단계가 남는다.</p></div>
-          <div class="card"><h4>동시에 하나만</h4><p class="small">노트북과 휴대폰에서 각각 시작하면 같은 시간이 두 단계에 기록된다. 계획당 <code>IN_PROGRESS</code> 는 하나 이하다.</p></div>
-          <div class="card"><h4>실제 시간은 서버가 잰다</h4><p class="small">화면 타이머 값을 받지 않는다. <code>startedAt</code> 과 완료 요청 시각으로 계산하고, 1초라도 지났으면 <b>올림</b>해 1분으로 센다.</p></div>
-        </div>
-      </div>
-
-      <div class="focus" data-anim>
-        <div class="lab">중점 &mdash; 남은 시간을 빼지 않고 다시 계산한다</div>
-        <p style="margin-top:6px">
-          <code>remaining -= actual</code> 로 끝내면 안 된다. 실제 학습시간에는 사용자가 쉰 시간,
-          브라우저를 닫아 둔 시간까지 들어가 있다. 그대로 빼면 남은 학습 시간이 <b>시험까지 남은 실제
-          시간과 어긋난다.</b> 그래서 완료할 때마다 두 값 중 작은 쪽을 다시 구한다.
-        </p>
-        <div class="plate" style="background:var(--paper);margin-top:12px">
-          <div class="mono" style="font-size:12.5px;line-height:1.9">
-            remaining = <b>min</b>(<br>
-            &nbsp;&nbsp;&nbsp;사용자 예산 - 완료 단계들의 실제 학습시간 합,<br>
-            &nbsp;&nbsp;&nbsp;지금부터 시험까지 남은 분<br>
-            )
-          </div>
-        </div>
-      </div>
-
-      <div class="plate" data-anim id="reallocPlate">
-        <div class="plate-title">재조정 &mdash; 첫 단계가 예상보다 오래 걸렸다면</div>
-        <div class="alloc">
-          <div class="alloc-row">
-            <span class="alloc-name">STEP 1 &mdash; 완료</span>
-            <span class="alloc-track"><span class="alloc-need" style="width:100%"></span><span class="alloc-got" data-w="100" style="background:var(--green-soft);border-color:var(--green)"></span></span>
-            <span class="alloc-val">실제 <em>55</em> / 40</span>
-          </div>
-          <div class="alloc-row">
-            <span class="alloc-name">STEP 2</span>
-            <span class="alloc-track"><span class="alloc-need" style="width:100%"></span><span class="alloc-got cut" data-w="70"></span></span>
-            <span class="alloc-val"><em>28</em> / <s>40</s></span>
-          </div>
-          <div class="alloc-row">
-            <span class="alloc-name">STEP 3</span>
-            <span class="alloc-track"><span class="alloc-need" style="width:100%"></span><span class="alloc-got cut" data-w="64"></span></span>
-            <span class="alloc-val"><em>32</em> / <s>50</s></span>
-          </div>
-          <div class="alloc-row">
-            <span class="alloc-name">STEP 4</span>
-            <span class="alloc-track"><span class="alloc-need" style="width:100%"></span><span class="alloc-got gone" data-w="0"></span></span>
-            <span class="alloc-val" style="color:var(--red)">SKIPPED</span>
-          </div>
-        </div>
-        <p class="caption">
-          최초 계획과 <b>같은 우선순위, 같은 압축 하한</b>을 쓴다. 규칙이 두 벌이면 계획과 재조정의
-          기준이 달라진다. 시간이 부족해 잘린 단계는 <code>SKIPPED</code> 가 되고
-          <code>SkipReason.TIME_CONSTRAINT</code> 를 남긴다.
-        </p>
-      </div>
-
-      <div class="grid g2" data-anim>
-        <div class="card key">
-          <h4>순서가 중요하다</h4>
-          <p class="small">
-            완료 기록 &rarr; 남은 시간 재계산 &rarr; <b>재배분</b> &rarr; 다음 단계 조회.
-            다음 단계를 재배분보다 먼저 찾으면, 방금 시간 부족으로 <code>SKIPPED</code> 된 단계를
-            &ldquo;다음에 할 것&rdquo;이라고 알려 주게 된다.
-          </p>
-        </div>
-        <div class="card key">
-          <h4>건드리지 않는 것</h4>
-          <p class="small">
-            <code>availableStudyMinutes</code>(원본 예산), <code>originalEstimatedMinutes</code>,
-            그리고 이미 <code>COMPLETED</code> 된 단계의 모든 값. 계획 대비 실제를 비교하려면
-            기준값이 그대로 남아 있어야 한다.
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= 06 퀴즈 ================= -->
-  <section id="quiz">
-    <div class="sec-head">
-      <span class="num">06</span>
-      <h2 class="t">공부한 것만 물어본다</h2>
-    </div>
-
-    <div class="stack-l">
-      <div class="prose stack">
-        <p>
-          퀴즈는 Topic 하나 단위로 만든다. 그리고 <b>그 Topic의 학습 단계를 완료했을 때만</b> 만들 수 있다.
-          안 배운 것을 물어보면 시험이지 복습이 아니다.
-        </p>
-      </div>
-
-      <div class="plate" data-anim id="gatePlate">
-        <div class="plate-title">생성 전에 통과해야 하는 관문</div>
-        <div class="gates">
-          <div class="gate"><span class="dot"></span><span class="lbl">세션이 존재하고 만료되지 않았다</span><span class="err">404 SESSION_NOT_FOUND</span></div>
-          <div class="gate"><span class="dot"></span><span class="lbl">이 세션이 소유한 Topic이다</span><span class="err">404 TOPIC_NOT_FOUND</span></div>
-          <div class="gate"><span class="dot"></span><span class="lbl">해당 Topic의 학습 단계를 완료했다</span><span class="err">409 TOPIC_STUDY_NOT_COMPLETED</span></div>
-          <div class="gate"><span class="dot"></span><span class="lbl">출처 문서에서 근거 구간을 찾았다</span><span class="err">422 NO_QUIZ_SOURCE_CONTEXT</span></div>
-          <div class="gate"><span class="dot"></span><span class="lbl">이미 만든 퀴즈가 없다 &mdash; 있으면 그대로 반환</span><span class="err">200 기존 반환</span></div>
-        </div>
-      </div>
-
-      <div class="focus" data-anim>
-        <div class="lab">중점 &mdash; 문서 전체를 다시 보내지 않는다</div>
-        <div class="stack-s" style="margin-top:10px">
-          <p>
-            &ldquo;CPU 스케줄링&rdquo; 문제를 만들자고 강의자료 전부를 AI에 보내면 비싸고, 관련 없는
-            내용에서 문제가 나온다. <code>QuizContextExtractor</code> 가 <b>필요한 문단만 골라낸다.</b>
-          </p>
-          <ol class="steps">
-            <li>Topic의 <b>제목과 핵심 개념</b>을 키워드로 삼는다.</li>
-            <li>Topic이 <b>출처로 기록한 문서</b>만 대상으로 한다. 세션의 모든 자료가 아니다.</li>
-            <li>문단 단위로 훑어 키워드가 있는 문단과 <b>앞뒤 한 문단씩</b>을 함께 담는다 &mdash; 정의가 앞 문단에, 예시가 뒤 문단에 있는 경우가 많다.</li>
-            <li>키워드가 하나도 안 걸리면 앞부분부터 잘라 넣는다. 근거가 아예 없는 것보다 낫다.</li>
-            <li>상한 <span class="mono">20,000자</span>에서 끊는다.</li>
-          </ol>
-          <p class="small">출처 문서가 전부 삭제된 경우에는 남은 파싱 문서로라도 시도한다. 그래도 비면 <code>422</code> 로 실패한다.</p>
-        </div>
-      </div>
-
-      <div class="plate" data-anim>
-        <div class="plate-title">출제 규칙과 검증</div>
-        <div class="grid g2">
-          <div class="card">
-            <h4>프롬프트에 넣는 것</h4>
-            <ul class="clean">
-              <li>보기는 정확히 4개, 정답은 하나만</li>
-              <li>보기끼리 의미가 겹치지 않게</li>
-              <li>핵심 개념을 문제마다 분산 &mdash; 같은 것만 반복해 묻지 않는다</li>
-              <li>정답 위치를 한쪽으로 몰지 않게 분포</li>
-              <li>해설은 추출 구간에서 확인 가능한 근거로</li>
-              <li>난이도 EASY 1 · MEDIUM 2~3 · HARD 1 권장</li>
-            </ul>
-          </div>
-          <div class="card warn">
-            <h4>저장 전 검증 &mdash; 하나라도 걸리면 전부 버린다</h4>
-            <ul class="clean">
-              <li>문항 수가 <span class="mono">3</span>개 미만이거나 상한 초과</li>
-              <li>보기가 4개가 아니거나 빈 보기가 있음</li>
-              <li>보기 중 <b>중복</b>이 있음</li>
-              <li><code>correctIndex</code> 가 <span class="mono">0~3</span> 밖이거나 없음</li>
-              <li>문제·해설이 비었거나 2,000자 초과</li>
-            </ul>
-            <p class="small" style="margin-top:8px">전부 통과한 뒤 <code>saveAllAndFlush</code> 한 번으로 저장한다. <b>문제 일부만 남는 상태가 생기지 않는다.</b></p>
-          </div>
-        </div>
-      </div>
-
-      <div class="plate" data-anim>
-        <div class="plate-title">맥락이 출제 방향을 바꾼다</div>
-        <div class="grid g2">
-          <div class="node"><div class="n-t">교수님 강조 &rarr; 최소 한 문제</div><div class="n-s">단, 자료에 근거가 있을 때만</div></div>
-          <div class="node"><div class="n-t">기출 &rarr; 유사 유형 포함</div><div class="n-s">기출을 그대로 복사하지 않는다</div></div>
-          <div class="node"><div class="n-t">취약 영역 &rarr; 개념 구분·적용</div><div class="n-s">단순 암기 문제로만 채우지 않는다</div></div>
-          <div class="node amber"><div class="n-t">반드시 볼 범위 &rarr; 누락 금지</div><div class="n-s">핵심 개념을 빠뜨리지 않는다</div></div>
-        </div>
-      </div>
-
-      <div class="plate" data-anim>
-        <div class="plate-title">채점과 오답 요약</div>
-        <div class="fsm" style="margin-bottom:14px">
-          <span class="state b">답안 제출</span>
-          <span class="arrow">&rarr;</span>
-          <span class="state">정오답 + 해설 즉시 반환</span>
-          <span class="arrow">&rarr;</span>
-          <span class="state a">전 문항 완료</span>
-          <span class="arrow">&rarr;</span>
-          <span class="state g">오답 요약 생성</span>
-        </div>
+      <div class="card">
+        <h4>시간이 기준</h4>
         <p class="small">
-          정답 인덱스는 응답에 <b>답안을 낸 뒤에만</b> 들어간다. 퀴즈 조회 응답에는 문제와 보기만 있다.
-          모든 문항을 풀기 전에는 요약을 만들지 않는다(<code>409 QUIZ_NOT_COMPLETED</code>) &mdash;
-          절반만 보고 &ldquo;당신의 약점은 이것&rdquo;이라고 말할 수 없다. 틀린 문항이 없으면 AI를 부르지 않는다.
-          이미 만든 요약이 최신이면 그대로 돌려준다.
+          "무엇을 공부할까"가 아니라 <b>"남은 시간에 무엇까지 되나"</b>로 계획을 짠다.
+          시간이 줄면 계획도 줄어든다.
         </p>
       </div>
     </div>
   </section>
 
-  <!-- ================= API ================= -->
-  <section id="api">
-    <div class="sec-head">
-      <span class="num">07</span>
-      <h2 class="t">엔드포인트별 구현 초점</h2>
+  <!-- ================= 파일 구조 ================= -->
+  <section id="struct">
+    <div class="sec-head"><span class="num">02</span><h2 class="t">파일 구조</h2></div>
+
+    <div class="prose stack">
+      <p>
+        계층이 아니라 <b>도메인으로 먼저 나눈다.</b> <code>controller/</code>,
+        <code>service/</code>, <code>repository/</code> 를 최상위에 두면 기능 하나를 고칠 때
+        멀리 떨어진 폴더 서너 개를 오간다. 여기서는 <code>quiz/</code> 안에 퀴즈에 관한 것이 전부 있다.
+      </p>
     </div>
 
-    <div class="stack-l">
-      <div class="tbl-wrap" data-anim>
+    <div class="plate" data-anim>
+      <div class="plate-title">com.naeil.study &mdash; 도메인 11개, 클래스 228개</div>
+      <div class="tbl-wrap">
         <table>
           <thead>
-            <tr><th style="width:52px"></th><th>경로</th><th>무엇을</th><th>어디에 신경 썼는가</th></tr>
+            <tr><th>패키지</th><th>클래스</th><th>맡은 일</th></tr>
           </thead>
           <tbody>
-            <tr><td><span class="verb post">POST</span></td><td class="mono">/sessions</td><td>8자리 코드 발급</td><td>혼동 문자를 뺀 32자 알파벳. 중복 시 최대 10회 재발급. 코드가 곧 접근 키라 서버만 만든다.</td></tr>
-            <tr><td><span class="verb get">GET</span></td><td class="mono">/sessions/{code}</td><td>세션 조회</td><td>조회할 때마다 보관 기한을 30일 연장. 없는 코드와 만료된 코드의 응답이 같다.</td></tr>
-            <tr><td><span class="verb put">PUT</span></td><td class="mono">/{code}/exam</td><td>시험 정보</td><td><code>min</code>(입력 시간, 시험까지 남은 실제 시간). <code>@Future</code> 대신 주입한 <code>Clock</code> 으로 검증한다.</td></tr>
-            <tr><td><span class="verb post">POST</span></td><td class="mono">/{code}/documents</td><td>자료 업로드</td><td>개당 20MB · 10개 · 합계 100MB. 저장 경로에 원본 파일명을 쓰지 않는다.</td></tr>
-            <tr><td><span class="verb del">DEL</span></td><td class="mono">/{code}/documents/{id}</td><td>자료 삭제</td><td>DB 레코드와 실제 파일을 함께 지운다. 남의 세션 문서는 404.</td></tr>
-            <tr><td><span class="verb post">POST</span></td><td class="mono">/{code}/documents/parse</td><td>텍스트 추출</td><td>업로드와 분리. 문서별로 상태를 따로 기록해 하나가 실패해도 나머지는 진행한다.</td></tr>
-            <tr><td><span class="verb put">PUT</span></td><td class="mono">/{code}/study-context</td><td>학습 맥락</td><td>전체 교체. 네 항목 모두 선택 입력이고 전부 비어도 정상.</td></tr>
-            <tr><td><span class="verb post">POST</span></td><td class="mono">/{code}/analysis</td><td>AI 분석</td><td>조각 분석 &rarr; 통합 2패스. 프롬프트 주입 차단, 응답 검증 후 저장. 중복 실행은 409.</td></tr>
-            <tr><td><span class="verb get">GET</span></td><td class="mono">/{code}/topics</td><td>Topic 목록</td><td><code>topicOrder</code> 오름차순. 맥락 일치 여부를 boolean 네 개로 함께 준다.</td></tr>
-            <tr><td><span class="verb post">POST</span></td><td class="mono">/{code}/curriculum</td><td>계획 생성</td><td>이미 있으면 다시 만들지 않고 <b>200으로 기존 반환</b>. 새로 만든 경우만 201.</td></tr>
-            <tr><td><span class="verb get">GET</span></td><td class="mono">/{code}/curriculum</td><td>계획 조회</td><td>진행 상태·실제 학습시간·진행률까지 한 응답에. 그래서 &ldquo;현재 단계 조회&rdquo; API를 따로 두지 않았다.</td></tr>
-            <tr><td><span class="verb post">POST</span></td><td class="mono">/{code}/steps/{id}/start</td><td>학습 시작</td><td>순서·동시 진행·시험 시각 검증. 이미 진행 중이면 <code>startedAt</code> 을 덮지 않고 그대로 반환.</td></tr>
-            <tr><td><span class="verb post">POST</span></td><td class="mono">/{code}/steps/{id}/complete</td><td>학습 완료</td><td>실제 시간 기록 &rarr; 남은 시간 재계산 &rarr; 재배분 &rarr; 다음 단계. 재완료 시 값이 변하지 않는다.</td></tr>
-            <tr><td><span class="verb post">POST</span></td><td class="mono">/{code}/topics/{id}/quizzes</td><td>퀴즈 생성</td><td>학습 완료가 선행 조건. 출처 문서에서 관련 구간만 추출해 보낸다.</td></tr>
-            <tr><td><span class="verb get">GET</span></td><td class="mono">/{code}/topics/{id}/quizzes</td><td>퀴즈 조회</td><td>정답 인덱스를 내려보내지 않는다. 문제와 보기만.</td></tr>
-            <tr><td><span class="verb post">POST</span></td><td class="mono">/{code}/quizzes/{id}/answer</td><td>답안 제출</td><td>정오답과 해설을 즉시 반환. 재제출은 기존 결과 유지.</td></tr>
-            <tr><td><span class="verb get">GET</span></td><td class="mono">/{code}/topics/{id}/quiz-results</td><td>채점 결과</td><td>점수는 저장하지 않고 답안 기록에서 매번 센다.</td></tr>
-            <tr><td><span class="verb post">POST</span></td><td class="mono">/{code}/wrong-answer-summary</td><td>오답 요약</td><td>전 문항 완료가 선행 조건. 틀린 게 없으면 AI를 부르지 않는다.</td></tr>
+            <tr><td class="mono">session</td><td class="mono">18</td><td>8자리 코드 발급·복구, 시험 정보, 만료 정리</td></tr>
+            <tr><td class="mono">document</td><td class="mono">31</td><td>업로드, PDF/DOCX/TXT 텍스트 추출</td></tr>
+            <tr><td class="mono">studycontext</td><td class="mono">7</td><td>교수님 강조·기출·약점 (사용자가 아는 것)</td></tr>
+            <tr><td class="mono">analysis</td><td class="mono">32</td><td>자료를 학습 주제로 쪼개는 AI 호출</td></tr>
+            <tr><td class="mono">topic</td><td class="mono">8</td><td>학습 주제 조회</td></tr>
+            <tr><td class="mono">curriculum</td><td class="mono">39</td><td>시간 배분, 단계 진행, 재조정</td></tr>
+            <tr><td class="mono">quiz</td><td class="mono">33</td><td>문제 생성(회차), 채점, 결과 집계</td></tr>
+            <tr><td class="mono">wronganswer</td><td class="mono">22</td><td>오답 기반 복습 요약</td></tr>
+            <tr><td class="mono">chat</td><td class="mono">24</td><td>학습 챗봇</td></tr>
+            <tr><td class="mono">storage</td><td class="mono">5</td><td>파일 저장 추상화 (로컬 → S3 교체 지점)</td></tr>
+            <tr><td class="mono">common</td><td class="mono">8</td><td>예외 처리, 시간대, CORS</td></tr>
           </tbody>
         </table>
       </div>
+    </div>
 
-      <div class="grid g3" data-anim>
-        <div class="card key">
-          <h4>멱등을 오류로 만들지 않는다</h4>
-          <p class="small">이미 진행 중인 단계에 <code>start</code>, 완료한 단계에 <code>complete</code>, 이미 있는 계획에 <code>POST</code> &mdash; 전부 기존 결과를 돌려준다. 버튼을 두 번 누른 사용자에게 오류 화면을 보여줄 이유가 없다.</p>
+    <div class="plate" data-anim>
+      <div class="plate-title">한 도메인 안의 모양 &mdash; chat 을 예로</div>
+      <pre class="mono small">chat/
+├── controller/   ChatController          HTTP 표면
+├── dto/          ChatRequest/Response     밖으로 나가는 모양
+├── service/      ChatService              흐름
+├── context/      StudyContextProvider     근거를 고른다 ← 인터페이스
+├── client/       AiChatClient             AI 호출     ← 인터페이스
+│                 ├── GeminiChatClient
+│                 ├── ClaudeChatClient
+│                 ├── MockAiChatClient     과금 없음
+│                 └── UnavailableAiChatClient  키 없을 때
+├── prompt/       ChatPrompts             프롬프트 조립
+├── entity/       ChatMessage             대화 한 줄
+├── repository/   ChatMessageRepository
+├── exception/    ChatFailedException 등
+└── config/       AiChatClientConfig      어떤 구현을 붙일지</pre>
+      <p class="caption">
+        <b>바깥 세계와 닿는 곳은 전부 인터페이스다.</b> AI 공급자도, 근거를 고르는 방법도,
+        파일 저장소도 구현을 갈아 끼울 수 있다. 도메인 코드는 무엇이 붙었는지 모른다.
+      </p>
+    </div>
+
+    <div class="grid g2" data-anim>
+      <div class="card key">
+        <h4>인터페이스를 둔 자리</h4>
+        <ul class="small">
+          <li><code>AiAnalysisClient</code> / <code>AiQuizClient</code> / <code>AiChatClient</code>
+            &mdash; Gemini · Claude · Mock · Unavailable</li>
+          <li><code>StudyContextProvider</code> &mdash; 지금은 키워드, 나중에 벡터 검색</li>
+          <li><code>StorageService</code> &mdash; 지금은 로컬 디스크, 나중에 S3</li>
+          <li><code>DocumentParser</code> &mdash; 확장자별 구현</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>문서도 코드 옆에</h4>
+        <p class="small">
+          패키지마다 <code>README.md</code>, <code>PROCESS.md</code>, <code>AGENT.md</code> 를 둔다.
+          왜 그렇게 짰는지를 코드에서 멀리 떨어진 위키가 아니라 <b>고칠 때 눈에 들어오는 자리</b>에 남긴다.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 기능 ================= -->
+  <section id="features">
+    <div class="sec-head"><span class="num">03</span><h2 class="t">어떤 기능이 있는가</h2></div>
+
+    <div class="grid g2" data-anim>
+      <div class="card">
+        <h4>1. 세션 &mdash; 회원 없는 접근</h4>
+        <p class="small">
+          8자리 코드를 발급한다. <code>0/O/1/I</code> 처럼 헷갈리는 글자를 뺀 32자 알파벳에서 뽑아
+          받아 적기 쉽게 했다. 마지막 접근 후 30일 보관하고, 조회할 때마다 연장된다.
+        </p>
+      </div>
+      <div class="card">
+        <h4>2. 자료 업로드와 추출</h4>
+        <p class="small">
+          PDF · DOCX · TXT. <b>업로드와 텍스트 추출을 나눴다</b> &mdash; 20MB 파일 여러 개를
+          받으면서 파싱까지 하면 응답이 한참 돌아오지 않는다. 저장 경로에 원본 파일명을 쓰지 않는다.
+        </p>
+      </div>
+      <div class="card">
+        <h4>3. 학습 맥락</h4>
+        <p class="small">
+          교수님이 강조한 것, 작년 기출, 자신 없는 부분. 자료만으로는 알 수 없는 것들이다.
+          <b>사실의 출처가 아니라 우선순위 힌트</b>로만 쓴다.
+        </p>
+      </div>
+      <div class="card">
+        <h4>4. AI 분석 &rarr; 학습 주제</h4>
+        <p class="small">
+          자료를 8000자 조각으로 나눠 후보를 뽑고, 한 번에 통합한다. 중요도와 예상 학습시간이
+          이때 정해진다. <b>자료가 없으면</b> 과목명과 시험 범위만으로 만든다.
+        </p>
+      </div>
+      <div class="card">
+        <h4>5. 학습 계획</h4>
+        <p class="small">
+          남은 시간에 들어가는 만큼만 고른다. 중요도 순으로 담고, 넘치면 뒤에서 자른다.
+          시간이 남으면 마지막에 복습 단계를 붙인다.
+        </p>
+      </div>
+      <div class="card">
+        <h4>6. 진행 기록과 재조정</h4>
+        <p class="small">
+          단계를 시작·완료하면 <b>실제 걸린 시간</b>을 기록하고, 남은 시간을 다시 계산해
+          이후 단계의 배정을 조정한다. 예상보다 오래 걸리면 계획이 줄어든다.
+        </p>
+      </div>
+      <div class="card">
+        <h4>7. 퀴즈 &mdash; 회차 개념</h4>
+        <p class="small">
+          학습을 마친 주제만 출제한다. 채점은 서버가 한다(조회 응답에 정답이 없다).
+          "새로운 퀴즈"는 기존 문제를 지우지 않고 <b>다음 회차</b>를 쌓는다.
+        </p>
+      </div>
+      <div class="card">
+        <h4>8. 오답 요약 · 챗봇</h4>
+        <p class="small">
+          틀린 문제만 모아 복습 요약을 만든다. 챗봇은 공부하다 막힌 것을 그 자리에서 묻는 기능으로,
+          <b>무엇에 근거해 답했는지</b>를 함께 돌려준다.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 고도화 ================= -->
+  <section id="growth">
+    <div class="sec-head"><span class="num">04</span><h2 class="t">어떻게 고도화했는가</h2></div>
+
+    <div class="prose stack">
+      <p>
+        기능을 더할 때마다 <b>이미 있던 것을 깨뜨리지 않는 방향</b>을 골랐다.
+        아래 넷은 그 판단이 갈렸던 지점이다.
+      </p>
+    </div>
+
+    <div class="stack" data-anim>
+      <div class="plate">
+        <div class="plate-title">① 자료가 없어도 만든다</div>
+        <div class="branch">
+          <div class="txt"><b>전</b> 추출된 자료가 없으면 분석을 거절 &rarr; 서비스가 거기서 멈춘다</div>
         </div>
-        <div class="card key">
-          <h4>201과 200을 구분한다</h4>
-          <p class="small">새로 만들었으면 201, 기존 것을 돌려줬으면 200. 만들지 않았는데 201을 주면 클라이언트가 생성 여부를 알 수 없다.</p>
+        <div class="branch">
+          <div class="txt"><b>후</b> 과목명 + 시험 범위로 일반 교과 지식에서 만든다</div>
         </div>
-        <div class="card key">
-          <h4>에러 코드는 한 곳에</h4>
-          <p class="small">약 40개를 <code>ErrorCode</code> enum에 모았다. 클라이언트는 <code>code</code> 문자열로 분기하고, <code>message</code> 는 그대로 화면에 띄울 수 있다.</p>
+        <p class="caption">
+          어려운 쪽은 만드는 게 아니라 <b>감추지 않는 것</b>이었다. 그렇게 만든 내용은 실제 수업 범위와
+          다를 수 있는데, 화면이 그 차이를 감추면 사용자는 자기 자료에서 나온 내용이라고 믿는다.
+          그래서 근거(<code>sourceType</code>)를 세션에 남기고 커리큘럼·퀴즈 화면에 항상 표시한다.
+        </p>
+      </div>
+
+      <div class="plate">
+        <div class="plate-title">② 같은 범위로 새 문제</div>
+        <p class="small">
+          "다시 풀기"는 이미 낸 문제를 보는 것이고, 이쪽은 <b>같은 범위에서 다른 문제</b>를 만드는 것이다.
+          기존 문제와 답안 기록을 지우지 않고 회차를 올려 쌓는다. 이전 회차의 문제 문장을 AI 에 함께 보내
+          중복을 피한다.
+        </p>
+        <div class="focus">
+          <span class="lab">겪은 것</span>
+          <code>UNIQUE(topic_id, quiz_order)</code> 가 2회차 1번 문제를 막았다.
+          <code>(topic_id, round, quiz_order)</code> 로 바꿨다 &mdash; 순서는 회차 안에서만 유일하다.
+          목으로는 안 잡히고 실제 DB 테스트에서만 드러난 문제다.
         </div>
+      </div>
+
+      <div class="plate">
+        <div class="plate-title">③ 학습 챗봇</div>
+        <p class="small">
+          답하는 것보다 <b>무엇에 근거해 답했는지</b>가 어려웠다. 값을 둘로 나눈다.
+        </p>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>값</th><th>단위</th><th>뜻</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">grounded</td><td>세션</td><td>이 세션이 자료 기반인가</td></tr>
+              <tr><td class="mono">answeredFromMaterial</td><td>질문</td><td>이 답이 자료에서 나왔나</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="caption">
+          자료를 올린 세션이라도 질문이 자료 밖이면 두 번째는 <code>false</code> 다.
+          자료가 없는 세션에서는 모델이 규칙을 어기고 <code>true</code> 로 답해도 서버가 그대로 내보내지 않는다.
+        </p>
+      </div>
+
+      <div class="plate">
+        <div class="plate-title">④ 마이그레이션을 배포 안으로</div>
+        <div class="branch">
+          <div class="txt"><b>전</b> 사람이 psql 로 먼저 적용 &rarr; 새 이미지 배포 (순서가 배포 밖에 있다)</div>
+        </div>
+        <div class="branch">
+          <div class="txt"><b>후</b> 기동하면서 Flyway 가 적용 &rarr; Hibernate 가 검증 (한 기동 안)</div>
+        </div>
+        <div class="focus">
+          <span class="lab">실제로 죽었다</span>
+          <code class="mono">Schema-validation: missing column [exam_scope]</code> &mdash;
+          이미지를 먼저 올리자 컬럼 없이 기동해 죽었고, <code>depends_on</code> 때문에 프론트까지 뜨지 않았다.
+          순서를 <em>지키게</em> 만드는 대신 순서를 <em>없앴다</em>.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 안정성 ================= -->
+  <section id="stable">
+    <div class="sec-head"><span class="num">05</span><h2 class="t">안정적으로 빌드하기 위한 구조</h2></div>
+
+    <div class="grid g2" data-anim>
+      <div class="card key">
+        <h4>트랜잭션을 클래스에 걸지 않는다</h4>
+        <p class="small">
+          AI 호출은 수십 초가 걸린다. 그동안 DB 커넥션을 잡고 있으면 커넥션 풀이 마른다.
+          상태 변경만 짧은 트랜잭션으로 떼어 낸다.
+        </p>
+        <pre class="mono small">AnalysisStateWriter.beginAnalysis()   짧게 (상태 → ANALYZING)
+   ↓  AI 호출 — 트랜잭션 밖, 수십 초
+AnalysisStateWriter.completeAnalysis() 짧게 (결과 저장)</pre>
+      </div>
+      <div class="card key">
+        <h4>스키마 검증을 두 겹으로</h4>
+        <p class="small">
+          Flyway 는 쓰인 대로 적용할 뿐, 마이그레이션을 <b>빠뜨렸는지는 모른다.</b>
+          어긋났다고 알려 주는 것은 <code>ddl-auto=validate</code> 뿐이다.
+          로컬도 같은 설정이라 그 실패가 EC2 가 아니라 내 컴퓨터에서 먼저 난다.
+        </p>
+      </div>
+      <div class="card">
+        <h4>실패를 미루는 구현체</h4>
+        <p class="small">
+          API 키가 없다고 애플리케이션이 안 뜨면 AI 와 무관한 기능까지 막힌다.
+          <code>UnavailableAiClient</code> 를 대신 등록해 기동은 시키고,
+          <b>실제로 요청한 순간에만</b> 실패시킨다.
+        </p>
+      </div>
+      <div class="card">
+        <h4>기본값은 목(mock)</h4>
+        <p class="small">
+          <code>LLM_MODE=mock</code> 이 기본이다. 화면을 한 번 확인할 때마다 과금되는 것보다
+          실수로 꺼져 있는 편이 낫다. 목 응답은 자기가 목이라고 본문에 적는다 &mdash;
+          실제 답변과 구분되지 않으면 원인을 한참 들여다보게 된다.
+        </p>
+      </div>
+      <div class="card">
+        <h4>세션 삭제 순서를 한곳에</h4>
+        <p class="small">
+          자식부터 부모 순으로 지운다. 리포지터리 여덟 곳에 흩어 두면 순서를 놓치고,
+          그날 이후 아무 세션도 지워지지 않는다. <code>SessionPurgeRepository</code> 한 곳에 모았다.
+        </p>
+      </div>
+      <div class="card warn">
+        <h4>PostgreSQL 에서 <code>@Lob</code> 금지</h4>
+        <p class="small">
+          <code>@Lob String</code> 은 OID 로 저장되어 값이 깨진다. 긴 문자열은
+          <code>columnDefinition = "TEXT"</code> 로 둔다. 4단계에서 실제로 겪고 규칙으로 굳혔다.
+        </p>
+      </div>
+    </div>
+
+    <div class="plate" data-anim>
+      <div class="plate-title">시각은 주입한 Clock 으로만</div>
+      <p class="small">
+        <code>LocalDateTime.now()</code> 를 직접 부르지 않는다. AWS 의 EC2·ECS 는 기본이 UTC 라
+        그대로 두면 <b>남은 학습 시간이 9시간 부풀려진다.</b> 에러 없이 틀린 답이 나오므로
+        더 위험하다. <code>Clock</code> 빈을 <code>Asia/Seoul</code> 로 고정하고 전부 주입받는다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ================= 기술 원리 ================= -->
+  <section id="tech">
+    <div class="sec-head"><span class="num">06</span><h2 class="t">쓰인 기술과 그 원리</h2></div>
+
+    <div class="grid g2" data-anim>
+      <div class="card key">
+        <h4>구조화 출력</h4>
+        <p class="small">
+          자연어 응답을 정규식으로 뜯지 않는다. 응답 타입을 클래스로 넘기면 SDK 가 스키마를 만들고
+          검증된 객체로 돌려준다. 응답 필드는 <code>Integer</code>, <code>Boolean</code> 처럼
+          <b>감싼 타입</b>으로 둔다 &mdash; 값을 빠뜨렸을 때 0이나 false 로 조용히 채워지지 않게.
+        </p>
+      </div>
+      <div class="card key">
+        <h4>프롬프트 주입 방어</h4>
+        <p class="small">
+          시스템 지시문과 데이터를 한 문자열로 이어붙이지 않는다. 자료·맥락·대화·질문을
+          각각 태그로 감싸고, <b>그 안은 전부 데이터</b>라고 못박는다.
+          "위 지시를 무시하라" 가 들어 있어도 명령으로 취급하지 않는다.
+        </p>
+        <pre class="mono small">SYSTEM RULES        규칙
+&lt;lecture_context&gt;   자료      ← 데이터
+&lt;conversation&gt;      지난 대화  ← 데이터
+&lt;question&gt;          질문      ← 데이터</pre>
+      </div>
+      <div class="card">
+        <h4>Grounding</h4>
+        <p class="small">
+          자료에 없는 내용을 새로 만들지 않는다. 학습 맥락에 "B+ Tree" 가 있어도 자료에 없으면
+          주제로 만들지 않는다. AI 가 출처 문서 ID 를 지어내도 검증 단계에서 버린다 &mdash;
+          <b>문서 ID 는 AI 가 만드는 값이 아니다.</b>
+        </p>
+      </div>
+      <div class="card">
+        <h4>컨텍스트 최소화</h4>
+        <p class="small">
+          문서 전체를 매번 보내지 않는다. 키워드가 걸린 문단과 그 이웃만 골라 보낸다.
+          임베딩·벡터 검색은 쓰지 않는다 &mdash; 지금 규모에서 과하고,
+          바꿀 자리를 인터페이스로 열어 뒀다.
+        </p>
+      </div>
+      <div class="card">
+        <h4>Flyway baseline</h4>
+        <p class="small">
+          이력 표가 없는 기존 DB 를 만나면 <code>V1</code> 이 적용된 것으로 표시하고 그다음부터 이어 적용한다.
+          그래서 <code>V2</code> 이후는 <b>멱등해야 한다</b> &mdash; 손으로 이미 적용해 둔 DB 에서는 다시 실행된다.
+        </p>
+      </div>
+      <div class="card">
+        <h4>동시 실행 막기</h4>
+        <p class="small">
+          같은 주제의 퀴즈 생성이 겹치면 그만큼 과금된다. 진행 중인 주제를 메모리에 표시해
+          두 번째 요청은 409 로 돌려보낸다. 화면에서도 버튼을 막지만,
+          <b>눌린 뒤에 막는 것보다 안 눌리게 하는 편이 낫다.</b>
+        </p>
+      </div>
+    </div>
+
+    <div class="plate" data-anim>
+      <div class="plate-title">스택</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>층</th><th>기술</th><th>고른 이유</th></tr></thead>
+          <tbody>
+            <tr><td>언어·런타임</td><td class="mono">Java 21</td><td>레코드·패턴 매칭·텍스트 블록</td></tr>
+            <tr><td>프레임워크</td><td class="mono">Spring Boot 3.5</td><td>슬라이스 테스트가 잘 갖춰져 있다</td></tr>
+            <tr><td>영속성</td><td class="mono">Spring Data JPA</td><td>도메인 중심 모델링</td></tr>
+            <tr><td>DB</td><td class="mono">PostgreSQL 16</td><td><code>jsonb</code> 로 배열 필드를 그대로 저장</td></tr>
+            <tr><td>마이그레이션</td><td class="mono">Flyway</td><td>기동과 같은 트랜잭션 흐름 안에서 적용</td></tr>
+            <tr><td>문서 추출</td><td class="mono">PDFBox · POI</td><td>텍스트 레이어가 없으면 실패로 알린다</td></tr>
+            <tr><td>AI</td><td class="mono">Gemini · Claude</td><td>인터페이스 뒤에 두어 교체 가능</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </section>
 
   <!-- ================= 테스트 ================= -->
   <section id="test">
-    <div class="sec-head">
-      <span class="num">08</span>
-      <h2 class="t">어떻게 확인했는가</h2>
+    <div class="sec-head"><span class="num">07</span><h2 class="t">어떻게 확인했는가</h2></div>
+
+    <div class="prose stack">
+      <p>
+        테스트 <b>913건</b>이 돌고, 그중 <b>실제 AI 를 부르는 것은 하나도 없다.</b>
+        과금되고, 응답이 매번 달라 테스트가 흔들리며, 네트워크가 없으면 실패하기 때문이다.
+        AI 자리에는 전부 가짜 구현이 들어간다.
+      </p>
     </div>
 
-    <div class="stack-l">
-      <div class="plate" data-anim id="pyrPlate">
-        <div class="plate-title">테스트 계층 &mdash; 56개 파일 · 850건</div>
-        <div class="pyr">
-          <div class="lvl l1"><b>단위</b> &mdash; Mockito <span class="c">11개 클래스 &middot; 계획 알고리즘, 상태 전이, 검증기</span></div>
-          <div class="lvl l2"><b>슬라이스</b> &mdash; @WebMvcTest <span class="c">12개 &middot; 상태 코드와 JSON 형태</span></div>
-          <div class="lvl l3"><b>영속</b> &mdash; @DataJpaTest <span class="c">6개 &middot; 매핑, jsonb 왕복, 페치 조인</span></div>
-          <div class="lvl l4"><b>통합</b> &mdash; @SpringBootTest <span class="c">13개 &middot; HTTP로 전 구간</span></div>
-        </div>
-        <p class="caption">
-          통합 테스트는 실제 포트를 열고 <code>TestRestTemplate</code> 으로 부른다. 세션 생성부터
-          퀴즈 채점까지 API만 써서 도는지 확인한다.
+    <div class="plate" id="pyrPlate">
+      <div class="plate-title">네 층으로 나눈 이유 &mdash; 각 층이 잡는 것이 다르다</div>
+      <div class="pyr">
+        <div class="lvl l1"><span class="c">단위 · Mockito &mdash; 12개 파일</span></div>
+        <div class="lvl l2"><span class="c">JPA 슬라이스 · @DataJpaTest &mdash; 6개</span></div>
+        <div class="lvl l3"><span class="c">웹 슬라이스 · @WebMvcTest &mdash; 12개</span></div>
+        <div class="lvl l4"><span class="c">통합 · @SpringBootTest &mdash; 15개</span></div>
+      </div>
+      <div class="layers">
+        <div class="layer"><span class="side">단위</span><span class="body">분기와 계산. 시간 배분처럼 규칙이 많은 곳</span></div>
+        <div class="layer"><span class="side">JPA</span><span class="body">제약과 쿼리. <b>목으로는 절대 안 잡히는 것</b> &mdash; UNIQUE 위반이 여기서 드러났다</span></div>
+        <div class="layer"><span class="side">웹</span><span class="body">상태 코드와 응답 모양. 내부 사유가 새어 나가는지</span></div>
+        <div class="layer"><span class="side">통합</span><span class="body">실제 HTTP + DB 왕복. 긴 한글이 깨지지 않는지, 세션 경계가 새지 않는지</span></div>
+      </div>
+    </div>
+
+    <div class="grid g2" data-anim>
+      <div class="card key">
+        <h4>JVM 밖은 스크립트가 본다</h4>
+        <p class="small">
+          테스트는 H2 로 돈다. PostgreSQL 문법인 마이그레이션 파일은 그대로 실행되지 않아
+          Flyway 를 꺼 두었다. 그 자리를 실제 컨테이너를 띄우는 스크립트가 메운다.
+        </p>
+        <pre class="mono small">migration-verify.sh  빈 DB / 구버전 / 최신 / 재기동  13건
+gk-verify.sh         자료 없이 생성                  19건
+chat-verify.sh       챗봇 근거 표시·세션 경계         19건</pre>
+      </div>
+      <div class="card">
+        <h4>실제 AI 는 딱 한 번</h4>
+        <p class="small">
+          무료 사용량을 아끼기 위해 <b>5회</b>만 실제로 불러 확인하고 기록했다.
+          같은 질문에 자료 있는 세션과 없는 세션이 다르게 답했고, 자료 있는 쪽은
+          자료의 용어를 그대로 썼다("순환 대기"가 아니라 <b>"환형 대기"</b>) &mdash;
+          Grounding 이 실제로 동작한다는 가장 분명한 증거였다.
         </p>
       </div>
+    </div>
 
-      <div class="focus" data-anim>
-        <div class="lab">중점 &mdash; 테스트가 실제 AI를 부르지 않는다</div>
-        <p style="margin-top:6px">
-          <code>FakeAiAnalysisClient</code>, <code>FakeAiQuizClient</code>,
-          <code>FakeAiWrongAnswerSummaryClient</code> 세 개를 두고 <code>@TestConfiguration</code> 으로
-          갈아 끼운다. 850건을 돌려도 <b>과금이 0원</b>이고, 응답을 마음대로 조작할 수 있어
-          &ldquo;AI가 주제 0개를 돌려줬을 때&rdquo; 같은 경로도 검증한다.
-          Fake는 스프링 싱글턴이라 테스트 간 요청이 쌓인다 &mdash; <code>@BeforeEach</code> 에서 <code>reset()</code> 한다.
+    <div class="plate" data-anim>
+      <div class="plate-title">테스트가 실제로 잡아낸 것</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>증상</th><th>원인</th><th>잡은 층</th></tr></thead>
+          <tbody>
+            <tr><td>2회차 1번 문제가 저장되지 않음</td><td><code>UNIQUE(topic_id, quiz_order)</code></td><td>JPA 슬라이스</td></tr>
+            <tr><td>결과 화면에 정답이 <code>undefined</code></td><td>응답 DTO 를 추측으로 맞춤</td><td>통합</td></tr>
+            <tr><td>답변이 질문 위에 표시 (확률 1/2)</td><td>같은 시각 저장 → 정렬 기준이 무작위 UUID</td><td>통합</td></tr>
+            <tr><td>계획 조회가 500</td><td>지연 로딩 프록시를 트랜잭션 밖에서 초기화</td><td>통합</td></tr>
+            <tr><td>기동 실패</td><td>마이그레이션 미적용</td><td>스크립트</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="caption">
+        위 셋은 <b>단위 테스트로는 잡히지 않는다.</b> 목은 개발자가 상상한 대로만 답하기 때문이다.
+        층을 나눈 값이 여기서 나온다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ================= API ================= -->
+  <section id="api">
+    <div class="sec-head"><span class="num">08</span><h2 class="t">엔드포인트별 구현 초점</h2></div>
+
+    <div class="tbl-wrap" data-anim>
+      <table>
+        <thead>
+          <tr><th>메서드</th><th>경로</th><th>구현에서 중점을 둔 것</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="verb post">POST</span></td><td class="mono">/api/sessions</td><td>헷갈리는 글자를 뺀 코드. 중복 시 재시도</td></tr>
+          <tr><td><span class="verb get">GET</span></td><td class="mono">/api/sessions/{code}</td><td>없는 코드와 만료된 코드에 <b>같은 응답</b> &mdash; 존재를 알려주지 않는다</td></tr>
+          <tr><td><span class="verb put">PUT</span></td><td class="mono">/api/sessions/{code}/exam</td><td>입력 시간과 실제 남은 시간 중 <b>작은 쪽</b>을 쓴다</td></tr>
+          <tr><td><span class="verb post">POST</span></td><td class="mono">/documents</td><td>저장 경로에 원본 파일명을 쓰지 않는다</td></tr>
+          <tr><td><span class="verb post">POST</span></td><td class="mono">/documents/parse</td><td>업로드와 분리. 일부 실패해도 나머지로 진행</td></tr>
+          <tr><td><span class="verb post">POST</span></td><td class="mono">/analysis</td><td>자료가 없으면 과목명+범위로. 둘 다 없을 때만 거절</td></tr>
+          <tr><td><span class="verb post">POST</span></td><td class="mono">/curriculum</td><td>이미 있으면 새로 만들지 않는다</td></tr>
+          <tr><td><span class="verb post">POST</span></td><td class="mono">/steps/{id}/complete</td><td>실제 학습시간 기록 후 남은 단계 재배분</td></tr>
+          <tr><td><span class="verb post">POST</span></td><td class="mono">/topics/{id}/quizzes</td><td>멱등 &mdash; 이미 있으면 AI 를 부르지 않는다</td></tr>
+          <tr><td><span class="verb post">POST</span></td><td class="mono">/quizzes/regenerate</td><td>회차를 올려 쌓는다. 진행 중이면 409</td></tr>
+          <tr><td><span class="verb post">POST</span></td><td class="mono">/quizzes/{id}/answer</td><td>채점은 서버가. 조회 응답에 정답이 없다</td></tr>
+          <tr><td><span class="verb post">POST</span></td><td class="mono">/chat</td><td>지난 대화를 요청 본문으로 받지 않는다</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid g3" data-anim>
+      <div class="card key">
+        <h4>다른 세션은 404</h4>
+        <p class="small">
+          403 이 아니다. 403 은 "있지만 권한이 없다"를 알려 주는 셈이라,
+          코드를 넣어 보며 존재 여부를 알아낼 수 있다.
         </p>
       </div>
-
-      <div class="grid g2" data-anim>
-        <div class="card">
-          <h4>H2로는 안 잡히는 것이 있다</h4>
-          <p class="small">
-            매 단계 <b>실제 PostgreSQL</b>에 붙여 통합 테스트를 한 번 더 돌리고 curl로 E2E를 확인한다.
-            이 절차가 <code>@Lob String</code> 이 본문 대신 OID를 저장하는 버그를 잡았다 &mdash;
-            H2에서는 342건이 전부 통과했다.
-          </p>
-        </div>
-        <div class="card">
-          <h4>불변식을 무작위로 때린다</h4>
-          <p class="small">
-            계획 알고리즘은 <code>@RepeatedTest(60)</code> 으로 무작위 주제 조합을 넣어
-            &ldquo;배정 합계가 가용 시간을 넘지 않는다&rdquo;를 확인한다. 예제 몇 개로는 경계가 드러나지 않는다.
-          </p>
-        </div>
-        <div class="card">
-          <h4>라이브 E2E는 환경변수로 잠근다</h4>
-          <p class="small">
-            실제 Gemini에 진짜 강의자료를 넣는 테스트가 하나 있다.
-            <code>@EnabledIfEnvironmentVariable</code> 로 <code>GEMINI_API_KEY</code> 와
-            자료 경로가 둘 다 있을 때만 돈다. 평소 빌드에서는 건너뛴다.
-          </p>
-        </div>
-        <div class="card">
-          <h4>실패하면 다음 단계로 가지 않는다</h4>
-          <p class="small">
-            단계마다 컴파일 &rarr; 단위 &rarr; 전체 &rarr; 실제 DB &rarr; <code>clean build</code> 순서로 확인하고,
-            통과하지 못하면 앞 단계를 다시 본다. 검증 실패와 조치를 <code>PROCESS.md</code> 에 남긴다.
-          </p>
-        </div>
+      <div class="card">
+        <h4>내부 사유는 로그에만</h4>
+        <p class="small">
+          라이브러리 예외 메시지가 응답에 나가면 내부 구조가 드러난다.
+          사용자에게는 무엇을 하면 되는지만 말한다.
+        </p>
+      </div>
+      <div class="card">
+        <h4>본문은 로그에 없다</h4>
+        <p class="small">
+          질문·답변·자료 전문을 로그에 남기지 않는다. 사용자가 약점을 그대로 적는 자리라,
+          로그에 남으면 그게 곧 유출이다.
+        </p>
       </div>
     </div>
   </section>
 
-  <!-- ================= 마무리 ================= -->
-  <section class="foot">
-    <div class="line">
-      <div class="eyebrow">관통하는 원칙</div>
-      <div class="grid g2" style="margin-top:18px" data-anim>
-        <div class="stack-s">
-          <h3>AI는 판단에만 쓴다</h3>
-          <p class="small">
-            무엇이 중요한지, 어떤 문제를 낼지는 AI가 정한다. 시간을 몇 분씩 나눌지, 합이 맞는지,
-            반드시 볼 범위가 빠지지 않았는지는 <b>코드가 보장한다.</b> LLM이 잘하는 일과
-            규칙이 잘하는 일을 섞지 않는다.
-          </p>
-        </div>
-        <div class="stack-s">
-          <h3>모델의 응답을 믿지 않는다</h3>
-          <p class="small">
-            구조·범위·출처를 전부 검사하고 통과한 것만 저장한다. 사용자 자료는 데이터일 뿐
-            지시가 아니라고 프롬프트에 명시한다. 조용히 이상한 결과를 내보내는 것보다 실패하는 편이 낫다.
-          </p>
-        </div>
-        <div class="stack-s">
-          <h3>기록은 나누고, 덮어쓰지 않는다</h3>
-          <p class="small">
-            필요했던 시간 / 배정한 시간 / 실제 쓴 시간을 따로 둔다. 완료된 것은 다시 계산하지 않는다.
-            이 규율 덕분에 동적 재조정을 <b>엔티티 구조를 바꾸지 않고</b> 뒤에 얹을 수 있었다.
-          </p>
-        </div>
-        <div class="stack-s">
-          <h3>코드 하나가 전부다</h3>
-          <p class="small">
-            회원이 없으니 8자리 코드가 유일한 접근 키다. 남의 자원은 존재 여부조차 알리지 않고,
-            내부 id를 밖으로 내보내지 않으며, 진행 상태는 전부 서버에 있어 어느 기기에서든 복구된다.
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
+  <div class="foot">
+    <div class="line"></div>
+    <p class="small">
+      명세는 <code>docs/api/</code>, 검증 기록은 <code>docs/*-test.md</code>,
+      배포 절차는 <code>DEPLOY.md</code> 에 있다.
+      각 패키지의 <code>README.md</code> 에는 그 도메인을 그렇게 짠 이유가 적혀 있다.
+    </p>
+  </div>
 
 </main>
-
 <script>
 (function () {
   var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
