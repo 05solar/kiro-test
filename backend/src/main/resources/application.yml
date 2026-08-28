@@ -87,7 +87,40 @@ session:
   code:
     # 중복되지 않는 8자리 코드를 뽑기 위한 최대 재시도 횟수.
     max-generation-attempts: ${SESSION_CODE_MAX_ATTEMPTS:10}
+  cleanup:
+    # 보관 기한이 지난 세션과 그 파일을 지운다. 없으면 디스크와 DB가 무한정 늘어나고,
+    # "30일 후 삭제"라는 사용자와의 약속도 지켜지지 않는다.
+    enabled: ${SESSION_CLEANUP_ENABLED:true}
+    # 애플리케이션 시간대 기준. 기본은 매일 새벽 4시.
+    cron: ${SESSION_CLEANUP_CRON:0 0 4 * * *}
+    # 한 번에 지우는 세션 수. 오래 방치된 환경의 첫 실행이 DB를 오래 잠그지 않게 한다.
+    batch-size: ${SESSION_CLEANUP_BATCH_SIZE:200}
 
 logging:
   level:
     com.naeil.study: ${LOG_LEVEL:DEBUG}
+
+app:
+  # 시각 계산의 기준 시간대. OS 설정에 기대지 않는다.
+  # AWS의 EC2/ECS는 기본이 UTC라 이 값을 두지 않으면 남은 시간이 9시간 부풀려진다.
+  timezone: ${APP_TIMEZONE:Asia/Seoul}
+  cors:
+    # 프론트를 다른 도메인에 올릴 때만 채운다. 비어 있으면 CORS 설정을 등록하지 않는다.
+    # 예: https://naeil.example.com,https://www.naeil.example.com
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # 헬스체크만 연다. env/beans/mappings 는 내부 구조를 노출한다.
+        include: health
+  endpoint:
+    health:
+      # 로드밸런서가 DB 장애를 감지할 수 있어야 한다. 200만 보고 살았다고 판단하면 안 된다.
+      show-details: never
+      probes:
+        enabled: true
+  health:
+    db:
+      enabled: true
