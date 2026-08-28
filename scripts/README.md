@@ -7,6 +7,7 @@
 | --- | --- |
 | `gk-verify.sh` | 자료 없이 시험 범위만으로 주제·계획·퀴즈가 만들어지는지 |
 | `chat-verify.sh` | 학습 챗봇이 근거를 사실대로 표시하고 대화를 저장하는지 |
+| `live-gemini.sh` | **실제 Gemini 를 5회 부른다.** 함부로 돌리지 않는다 |
 
 ## 실행
 
@@ -15,7 +16,7 @@
 
 ```bash
 LLM_MODE=mock QUIZ_AI_MODE=mock PUBLIC_PORT=8090 docker compose up -d --build
-bash scripts/gk-verify.sh
+bash scripts/gk-verify.sh    # 실제 AI 를 부르지 않는다
 bash scripts/chat-verify.sh
 ```
 
@@ -32,3 +33,17 @@ bash scripts/chat-verify.sh
 - `PUT /exam` 응답에 저장한 시험 범위가 빠져 있었다 → `ExamResponse` 수정
 
 결과는 `docs/general-knowledge-test.md` 에 남긴다.
+
+## live-gemini.sh 만 예외다
+
+이 스크립트만 실제 AI 를 부른다(5회). 무료 사용량을 아껴야 하므로 **함부로 돌리지 않는다.**
+무엇에 몇 번 쓰는지는 스크립트 첫머리에 적어 두었다.
+
+```bash
+LLM_MODE=gemini PUBLIC_PORT=8090 docker compose up -d
+bash scripts/live-gemini.sh <자료가-추출된-세션코드>
+LLM_MODE=mock QUIZ_AI_MODE=mock PUBLIC_PORT=8090 docker compose up -d   # 곧바로 되돌린다
+```
+
+되돌리는 것을 잊으면 화면을 열어 볼 때마다 과금된다. 결과는
+`docs/live-gemini-test.md` 에 남긴다.

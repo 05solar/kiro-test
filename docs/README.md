@@ -13,6 +13,7 @@
 | [frontend-integration-test.md](frontend-integration-test.md) | 프론트 연동 테스트 과정과 결과 |
 | [general-knowledge-test.md](general-knowledge-test.md) | 자료 미업로드 시 일반 지식 기반 생성 검증 기록 |
 | [study-chat-test.md](study-chat-test.md) | 학습 챗봇 검증 기록 |
+| [live-gemini-test.md](live-gemini-test.md) | 실제 Gemini 호출 검증 (1회, 5콜) |
 | [schema.sql](schema.sql) | 운영 DB 초기 스키마 (ddl-auto=validate 용) |
 | [migrations/](migrations/) | 이미 데이터가 있는 DB 에 적용할 스키마 변경분 |
 | [live-e2e-report.md](live-e2e-report.md) | 실제 강의자료 라이브 E2E 기록 |

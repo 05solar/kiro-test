@@ -572,7 +572,7 @@ DB에서 다시 읽은 `...773419` 가 달랐다. DB 타임스탬프가 마이�
 - `./gradlew test` — 전체 통과
 - `scripts/gk-verify.sh` — 19건 전부 통과 (`LLM_MODE=mock`)
 - 프론트 `npm test` / `npx tsc --noEmit` / `npm run build` 통과
-- 실제 Gemini 호출 검증은 무료 사용량을 아끼기 위해 마지막에 최소 횟수만 따로 한다
+- 실제 Gemini 호출 검증 완료 — `docs/live-gemini-test.md` (1회 실행, 5콜)
 
 ---
 

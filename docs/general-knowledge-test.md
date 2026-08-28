@@ -131,8 +131,7 @@ select source_document_ids from topics t
 | `SessionApiIntegrationTest` | 실제 HTTP + DB 로 `examScope` 저장·조회 |
 | `adapt.test.ts` (프론트) | `toSourceLabel()` — 안내 문구가 조용히 사라지지 않게 문자열까지 고정 |
 
-## 아직 하지 않은 것
+## 실제 AI 로도 확인했다
 
-**실제 Gemini 호출 검증.** 무료 사용량을 아끼기 위해 마지막에 최소 횟수만 따로 한다.
-목 모드에서 확인한 것은 "경로가 이어진다"이고, 실제 AI 가 시험 범위만으로 쓸 만한 주제를
-만드는지는 그때 확인한다.
+**실제 Gemini 호출 검증은 따로 마쳤다** — `live-gemini-test.md`.
+범위 3개가 주제 9개로 쪼개졌고, 그 주제로 퀴즈까지 만들어졌다.
