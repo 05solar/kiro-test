@@ -408,7 +408,7 @@ function MapCanvas({ steps, completedStepIds, currentStep, weakSteps, goalReache
     return { stepNodes, progressOf, rewardNodes, goalPoint };
   })();
 
-  // 캐릭터 진행 비율 — 마지막으로 완료한 STEP 의 위치. 전부 끝나면 시험장.
+  // 길 채움(완주 표시)은 마지막으로 완료한 STEP 까지다.
   let progress = 0.02;
   if (layout) {
     for (const step of steps) {
@@ -421,10 +421,16 @@ function MapCanvas({ steps, completedStepIds, currentStep, weakSteps, goalReache
   }
   if (goalReached) progress = 1;
 
+  // 캐릭터는 완료 지점이 아니라 "지금 할 STEP" 바로 위에 선다. 다음에 무엇을 하면
+  // 되는지가 완료 이력보다 먼저 보여야 하기 때문이다. 전부 끝나면 시험장으로 간다.
+  const characterProgress = goalReached
+    ? 1
+    : (layout?.progressOf.get(currentStep) ?? progress);
+
   const character = (() => {
     const el = fullPathRef.current;
     if (!el || length <= 0) return null;
-    const pt = el.getPointAtLength(length * progress);
+    const pt = el.getPointAtLength(length * characterProgress);
     return { x: pt.x, y: pt.y };
   })();
 
@@ -587,11 +593,11 @@ function MapCanvas({ steps, completedStepIds, currentStep, weakSteps, goalReache
             transition: hasMeasured ? "left 0.8s ease-out, top 0.8s ease-out" : "none",
           }}
         >
-          <div className="relative flex flex-col items-center gap-1.5" style={{ transform: "translateY(-58px)" }}>
+          <div className="relative flex flex-col items-center gap-1" style={{ transform: "translateY(-96px)" }}>
             <div className="font-jua whitespace-nowrap rounded-[12px_12px_12px_3px] border border-[#FFE0C4] bg-white px-[13px] py-2 text-[13.5px] shadow-[0_4px_12px_rgba(0,0,0,.07)]">
               {characterMessage}
             </div>
-            <Ghost width={78} mood={goalReached ? "happy" : "default"} className="animate-bob drop-shadow-[0_8px_12px_rgba(255,122,0,.3)]" />
+            <Ghost width={78} ripple={false} mood={goalReached ? "happy" : "default"} className="animate-bob drop-shadow-[0_8px_12px_rgba(255,122,0,.3)]" />
           </div>
         </div>
       )}
