@@ -1,0 +1,601 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>내일까지 해야 하는데 — API 테스트 콘솔</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #fff; --line: #dfe3e8; --text: #1c2128;
+    --muted: #6b7684; --accent: #2f6feb; --ok: #1a7f37; --warn: #9a6700; --err: #cf222e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171a; --card: #1c2024; --line: #30363d; --text: #e6edf3;
+      --muted: #9198a1; --accent: #4f8bf0; --ok: #3fb950; --warn: #d29922; --err: #f85149;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 16px 64px; background: var(--bg); color: var(--text);
+    font: 14px/1.6 "Malgun Gothic", -apple-system, system-ui, sans-serif;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+
+  .bar {
+    position: sticky; top: 0; z-index: 10; display: flex; gap: 12px; align-items: center;
+    flex-wrap: wrap; background: var(--card); border: 1px solid var(--line);
+    border-radius: 8px; padding: 12px 14px; margin-bottom: 20px;
+  }
+  .bar code { font-size: 16px; font-weight: 700; letter-spacing: 1px; color: var(--accent); }
+  .bar .meta { color: var(--muted); font-size: 12px; }
+
+  section {
+    background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+    padding: 16px; margin-bottom: 14px;
+  }
+  section h2 { font-size: 15px; margin: 0 0 12px; display: flex; gap: 8px; align-items: center; }
+  section h2 .n {
+    background: var(--accent); color: #fff; border-radius: 4px;
+    font-size: 11px; padding: 2px 7px; font-weight: 700;
+  }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+  label { font-size: 12px; color: var(--muted); min-width: 92px; }
+  input, textarea, select {
+    font: inherit; padding: 6px 9px; border: 1px solid var(--line); border-radius: 6px;
+    background: var(--bg); color: var(--text); flex: 1; min-width: 140px;
+  }
+  textarea { min-height: 48px; resize: vertical; }
+  button {
+    font: inherit; padding: 6px 13px; border: 1px solid var(--accent); border-radius: 6px;
+    background: var(--accent); color: #fff; cursor: pointer;
+  }
+  button.ghost { background: transparent; color: var(--accent); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+
+  .out {
+    margin-top: 10px; padding: 10px; border-radius: 6px; background: var(--bg);
+    border: 1px solid var(--line); font-family: Consolas, monospace; font-size: 12px;
+    white-space: pre-wrap; word-break: break-all; max-height: 320px; overflow: auto;
+  }
+  .out:empty { display: none; }
+
+  .list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+  .item {
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px;
+  }
+  .item .grow { flex: 1; min-width: 120px; }
+  .tag {
+    font-size: 11px; padding: 1px 6px; border-radius: 3px;
+    border: 1px solid var(--line); color: var(--muted);
+  }
+  .tag.ok { color: var(--ok); border-color: var(--ok); }
+  .tag.run { color: var(--warn); border-color: var(--warn); }
+  .tag.err { color: var(--err); border-color: var(--err); }
+
+  .quiz { border: 1px solid var(--line); border-radius: 6px; padding: 10px; margin-top: 8px; }
+  .quiz .q { font-weight: 600; margin-bottom: 8px; }
+  .quiz .opt {
+    display: block; width: 100%; text-align: left; margin-bottom: 4px;
+    background: transparent; color: var(--text); border-color: var(--line);
+  }
+  .quiz .opt:hover:not(:disabled) { border-color: var(--accent); }
+  .quiz .opt.correct { border-color: var(--ok); color: var(--ok); }
+  .quiz .opt.wrong { border-color: var(--err); color: var(--err); }
+  .quiz .exp { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+  .hint { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  #log { font-family: Consolas, monospace; font-size: 11px; }
+  .log-line { padding: 2px 0; border-bottom: 1px solid var(--line); }
+  .s2 { color: var(--ok); } .s4 { color: var(--warn); } .s5 { color: var(--err); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>내일까지 해야 하는데 — API 테스트 콘솔</h1>
+  <div class="sub">
+    백엔드가 서빙하는 정적 페이지다. 같은 오리진이라 CORS 설정 없이 <code>/api</code> 를 그대로 호출한다.
+    AI 키는 이 페이지에 없다 — 서버가 환경변수로 들고 호출한다.
+  </div>
+
+  <div class="bar">
+    <div>세션 <code id="code">없음</code></div>
+    <input id="codeInput" placeholder="기존 8자리 코드" maxlength="8" style="max-width:150px">
+    <button class="ghost" onclick="restore()">복구</button>
+    <button class="ghost" onclick="reset()">초기화</button>
+    <div class="meta" id="sessionMeta"></div>
+  </div>
+
+  <section>
+    <h2><span class="n">1</span> 세션</h2>
+    <button onclick="createSession()">세션 생성</button>
+    <button class="ghost" onclick="getSession()">세션 조회</button>
+    <div class="out" id="out1"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">2</span> 시험 정보</h2>
+    <div class="row"><label>과목</label><input id="subject" value="운영체제"></div>
+    <div class="row"><label>시험 일시</label><input id="examAt" type="datetime-local"></div>
+    <div class="row"><label>학습 가능 시간</label><input id="minutes" type="number" value="180"> <span class="meta">분</span></div>
+    <button onclick="saveExam()">저장</button>
+    <div class="out" id="out2"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">3</span> 강의자료</h2>
+    <div class="row"><input id="files" type="file" multiple accept=".pdf,.docx,.txt"></div>
+    <button onclick="upload()">업로드</button>
+    <button class="ghost" onclick="listDocs()">목록</button>
+    <button class="ghost" onclick="parseDocs()">텍스트 추출</button>
+    <div class="hint">PDF · DOCX · TXT / 개당 20MB, 최대 10개. 파일이 없으면 아래 버튼으로 샘플을 만든다.</div>
+    <button class="ghost" onclick="uploadSample()" style="margin-top:6px">샘플 TXT 업로드</button>
+    <div class="list" id="docs"></div>
+    <div class="out" id="out3"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">4</span> 학습 맥락 <span class="tag">선택</span></h2>
+    <div class="row"><label>교수님 강조</label><textarea id="ctx1">스케줄링 알고리즘은 반드시 나온다고 하셨다.</textarea></div>
+    <div class="row"><label>기출/예상</label><textarea id="ctx2">작년 기출에 교착상태 조건 문제가 나왔다.</textarea></div>
+    <div class="row"><label>자신 없는 부분</label><textarea id="ctx3">가상 메모리 페이지 교체가 헷갈린다.</textarea></div>
+    <div class="row"><label>반드시 볼 범위</label><textarea id="ctx4">프로세스와 스레드 차이</textarea></div>
+    <button onclick="saveContext()">저장</button>
+    <button class="ghost" onclick="getContext()">조회</button>
+    <div class="out" id="out4"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">5</span> AI 분석 <span class="tag run">과금</span></h2>
+    <div class="hint">실제 AI를 호출한다. 자료가 크면 수십 초 걸린다.</div>
+    <button onclick="analyze()" style="margin-top:6px">분석 실행</button>
+    <button class="ghost" onclick="listTopics()">Topic 목록</button>
+    <div class="list" id="topics"></div>
+    <div class="out" id="out5"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">6</span> 학습 계획</h2>
+    <button onclick="createPlan()">계획 생성</button>
+    <button class="ghost" onclick="loadPlan()">계획 조회</button>
+    <div id="progress" class="hint"></div>
+    <div class="list" id="steps"></div>
+    <div class="out" id="out6"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">7</span> 퀴즈 <span class="tag run">과금</span></h2>
+    <div class="hint">Topic을 먼저 고른다. 5단계의 Topic 목록에서 [퀴즈] 를 누르면 여기에 들어온다.</div>
+    <div class="row" style="margin-top:6px">
+      <label>Topic</label><input id="quizTopic" placeholder="topicId">
+      <button onclick="genQuiz()">생성</button>
+      <button class="ghost" onclick="loadQuiz()">조회</button>
+      <button class="ghost" onclick="quizResults()">채점 결과</button>
+    </div>
+    <div id="quizzes"></div>
+    <div class="out" id="out7"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">8</span> 오답 복습 요약 <span class="tag run">과금</span></h2>
+    <div class="hint">한 Topic의 퀴즈를 <b>전부 풀어야</b> 생성된다. 남으면 409 QUIZ_NOT_COMPLETED 가 온다.</div>
+    <button onclick="genSummary()" style="margin-top:6px">요약 생성</button>
+    <button class="ghost" onclick="loadSummary()">조회</button>
+    <div class="out" id="out8"></div>
+  </section>
+
+  <section>
+    <h2>요청 기록</h2>
+    <button class="ghost" onclick="document.getElementById('log').innerHTML=''">지우기</button>
+    <div class="out" id="log" style="max-height:260px"></div>
+  </section>
+
+</div>
+
+<script>
+"use strict";
+
+let code = localStorage.getItem("sessionCode") || "";
+let steps = [];
+
+/* ---------- 공통 ---------- */
+
+function setCode(v) {
+  code = v || "";
+  localStorage.setItem("sessionCode", code);
+  document.getElementById("code").textContent = code || "없음";
+}
+
+function show(id, status, data) {
+  const el = document.getElementById(id);
+  const mark = status >= 500 ? "s5" : status >= 400 ? "s4" : "s2";
+  el.innerHTML = `<span class="${mark}">HTTP ${status}</span>\n`
+    + (typeof data === "string" ? esc(data) : esc(JSON.stringify(data, null, 2)));
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+}
+
+function log(method, path, status) {
+  const mark = status >= 500 ? "s5" : status >= 400 ? "s4" : "s2";
+  const line = document.createElement("div");
+  line.className = "log-line";
+  line.innerHTML = `<span class="${mark}">${status}</span> ${method} ${esc(path)}`;
+  const box = document.getElementById("log");
+  box.prepend(line);
+}
+
+/** 모든 호출은 여기를 지난다. 상태 코드와 본문을 그대로 돌려준다. */
+async function api(method, path, body, isForm) {
+  const opt = { method };
+  if (body !== undefined) {
+    if (isForm) {
+      opt.body = body;                       // multipart 는 Content-Type 을 직접 넣지 않는다
+    } else {
+      opt.headers = { "Content-Type": "application/json" };
+      opt.body = JSON.stringify(body);
+    }
+  }
+  let res, data;
+  try {
+    res = await fetch(path, opt);
+  } catch (e) {
+    log(method, path, 0);
+    return { status: 0, data: "서버에 연결할 수 없다. 백엔드가 떠 있는지 확인한다. (" + e.message + ")" };
+  }
+  const text = await res.text();
+  try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+  log(method, path, res.status);
+  return { status: res.status, data };
+}
+
+function needCode(outId) {
+  if (!code) {
+    show(outId, 0, "세션 코드가 없다. 1단계에서 세션을 먼저 만든다.");
+    return false;
+  }
+  return true;
+}
+
+const base = () => "/api/sessions/" + code;
+
+/* ---------- 1. 세션 ---------- */
+
+async function createSession() {
+  const r = await api("POST", "/api/sessions");
+  if (r.status === 201 || r.status === 200) setCode(r.data.sessionCode);
+  show("out1", r.status, r.data);
+  renderMeta(r.data);
+}
+
+async function getSession() {
+  if (!needCode("out1")) return;
+  const r = await api("GET", base());
+  show("out1", r.status, r.data);
+  renderMeta(r.data);
+}
+
+function renderMeta(s) {
+  if (!s || !s.status) return;
+  const bits = [s.status];
+  if (s.subject) bits.push(s.subject);
+  if (s.remainingStudyMinutes != null) bits.push("남은 " + s.remainingStudyMinutes + "분");
+  if (s.currentStepOrder != null) bits.push("STEP " + s.currentStepOrder + " 진행 중");
+  document.getElementById("sessionMeta").textContent = bits.join(" · ");
+}
+
+function restore() {
+  const v = document.getElementById("codeInput").value.trim().toUpperCase();
+  if (!v) return;
+  setCode(v);
+  getSession();
+}
+
+function reset() {
+  setCode("");
+  document.getElementById("sessionMeta").textContent = "";
+  ["docs", "topics", "steps", "quizzes"].forEach(id => document.getElementById(id).innerHTML = "");
+}
+
+/* ---------- 2. 시험 정보 ---------- */
+
+async function saveExam() {
+  if (!needCode("out2")) return;
+  const at = document.getElementById("examAt").value;
+  if (!at) return show("out2", 0, "시험 일시를 입력한다.");
+  const r = await api("PUT", base() + "/exam", {
+    subject: document.getElementById("subject").value,
+    examAt: at.length === 16 ? at + ":00" : at,   // datetime-local 은 초가 없다
+    availableStudyMinutes: Number(document.getElementById("minutes").value)
+  });
+  show("out2", r.status, r.data);
+  renderMeta(r.data);
+}
+
+/* ---------- 3. 강의자료 ---------- */
+
+async function upload() {
+  if (!needCode("out3")) return;
+  const picked = document.getElementById("files").files;
+  if (!picked.length) return show("out3", 0, "파일을 고른다.");
+  const form = new FormData();
+  for (const f of picked) form.append("files", f);
+  const r = await api("POST", base() + "/documents", form, true);
+  show("out3", r.status, r.data);
+  if (r.status < 400) listDocs();
+}
+
+async function uploadSample() {
+  if (!needCode("out3")) return;
+  const text = [
+    "운영체제 5주차 — 프로세스와 CPU 스케줄링",
+    "",
+    "1. 프로세스와 스레드",
+    "프로세스는 실행 중인 프로그램이다. 각자 독립된 주소 공간을 가진다.",
+    "스레드는 한 프로세스 안에서 코드와 데이터를 공유하며 실행 흐름만 나눈 것이다.",
+    "문맥 교환 비용은 스레드 쪽이 훨씬 작다.",
+    "",
+    "2. CPU 스케줄링",
+    "FCFS 는 먼저 온 순서대로 처리한다. 긴 작업이 앞에 오면 뒤가 오래 기다린다(호위 효과).",
+    "SJF 는 평균 대기시간이 가장 짧지만 실행시간을 미리 알아야 한다.",
+    "라운드 로빈은 타임 퀀텀만큼 돌아가며 실행한다. 퀀텀이 너무 작으면 문맥 교환이 잦아진다.",
+    "",
+    "3. 교착상태",
+    "상호 배제, 점유와 대기, 비선점, 원형 대기 네 조건이 모두 성립할 때 발생한다.",
+    "하나라도 깨면 교착상태는 생기지 않는다.",
+    "",
+    "4. 가상 메모리",
+    "페이지 교체 알고리즘에는 FIFO, LRU, 최적 교체가 있다.",
+    "FIFO 는 벨라디의 역설이 나타날 수 있다. LRU 는 가장 오래 쓰지 않은 페이지를 내보낸다."
+  ].join("\n");
+  const form = new FormData();
+  form.append("files", new File([text], "운영체제_5주차.txt", { type: "text/plain" }));
+  const r = await api("POST", base() + "/documents", form, true);
+  show("out3", r.status, r.data);
+  if (r.status < 400) listDocs();
+}
+
+async function listDocs() {
+  if (!needCode("out3")) return;
+  const r = await api("GET", base() + "/documents");
+  show("out3", r.status, r.data);
+  const box = document.getElementById("docs");
+  box.innerHTML = "";
+  const list = Array.isArray(r.data) ? r.data : (r.data && r.data.documents) || [];
+  list.forEach(d => {
+    const cls = d.status === "PARSED" ? "ok" : d.status === "PARSE_FAILED" ? "err" : "";
+    box.insertAdjacentHTML("beforeend", `
+      <div class="item">
+        <span class="grow">${esc(d.originalFileName)}</span>
+        <span class="tag">${esc(d.fileType)}</span>
+        <span class="tag ${cls}">${esc(d.status)}</span>
+        ${d.characterCount != null ? `<span class="tag">${d.characterCount}자</span>` : ""}
+        <button class="ghost" onclick="delDoc('${d.id}')">삭제</button>
+      </div>`);
+  });
+}
+
+async function delDoc(id) {
+  const r = await api("DELETE", base() + "/documents/" + id);
+  show("out3", r.status, r.data ?? "삭제됨");
+  listDocs();
+}
+
+async function parseDocs() {
+  if (!needCode("out3")) return;
+  const r = await api("POST", base() + "/documents/parse");
+  show("out3", r.status, r.data);
+  listDocs();
+}
+
+/* ---------- 4. 학습 맥락 ---------- */
+
+async function saveContext() {
+  if (!needCode("out4")) return;
+  const r = await api("PUT", base() + "/study-context", {
+    professorEmphasis: document.getElementById("ctx1").value,
+    pastExamInfo: document.getElementById("ctx2").value,
+    weakAreas: document.getElementById("ctx3").value,
+    mustStudyAreas: document.getElementById("ctx4").value
+  });
+  show("out4", r.status, r.data);
+}
+
+async function getContext() {
+  if (!needCode("out4")) return;
+  const r = await api("GET", base() + "/study-context");
+  show("out4", r.status, r.data);
+}
+
+/* ---------- 5. 분석 ---------- */
+
+async function analyze() {
+  if (!needCode("out5")) return;
+  show("out5", 0, "분석 중… 자료가 크면 수십 초 걸린다.");
+  const r = await api("POST", base() + "/analysis");
+  show("out5", r.status, r.data);
+  if (r.status < 400) listTopics();
+}
+
+async function listTopics() {
+  if (!needCode("out5")) return;
+  const r = await api("GET", base() + "/topics");
+  show("out5", r.status, r.data);
+  const box = document.getElementById("topics");
+  box.innerHTML = "";
+  const list = Array.isArray(r.data) ? r.data : (r.data && r.data.topics) || [];
+  list.forEach(t => {
+    const marks = [
+      t.mustStudyMatched && "필수", t.professorEmphasisMatched && "교수강조",
+      t.pastExamMatched && "기출", t.weakAreaMatched && "취약"
+    ].filter(Boolean).map(m => `<span class="tag">${m}</span>`).join("");
+    box.insertAdjacentHTML("beforeend", `
+      <div class="item">
+        <span class="tag">${t.topicOrder}</span>
+        <span class="grow">${esc(t.title)}</span>
+        <span class="tag">${esc(t.importance)}</span>
+        <span class="tag">${t.estimatedStudyMinutes}분</span>
+        ${marks}
+        <button class="ghost" onclick="pickTopic('${t.id}')">퀴즈</button>
+      </div>`);
+  });
+}
+
+function pickTopic(id) {
+  document.getElementById("quizTopic").value = id;
+  document.getElementById("quizTopic").scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+/* ---------- 6. 학습 계획 ---------- */
+
+async function createPlan() {
+  if (!needCode("out6")) return;
+  const r = await api("POST", base() + "/curriculum");
+  show("out6", r.status, r.data);
+  if (r.status < 400) renderPlan(r.data);
+}
+
+async function loadPlan() {
+  if (!needCode("out6")) return;
+  const r = await api("GET", base() + "/curriculum");
+  show("out6", r.status, r.data);
+  if (r.status < 400) renderPlan(r.data);
+}
+
+function renderPlan(plan) {
+  steps = plan.steps || [];
+  const p = plan.progress;
+  document.getElementById("progress").textContent = p
+    ? `계획 ${plan.status} · 배정 ${plan.totalAllocatedMinutes}/${plan.initialRemainingMinutes}분 · `
+      + `진행 ${p.completedSteps}/${p.totalSteps} (${p.percentage}%)`
+    : "";
+
+  const box = document.getElementById("steps");
+  box.innerHTML = "";
+  steps.forEach(s => {
+    const cls = s.status === "COMPLETED" ? "ok"
+      : s.status === "IN_PROGRESS" ? "run"
+      : s.status === "SKIPPED" ? "err" : "";
+    // 배정 시간이 원래 필요 시간보다 줄었으면 함께 보여준다. 압축됐다는 사실이 화면에 남아야 한다.
+    const time = s.allocatedMinutes < s.originalEstimatedMinutes
+      ? `${s.allocatedMinutes}/${s.originalEstimatedMinutes}분`
+      : `${s.allocatedMinutes}분`;
+    const actual = s.actualStudyMinutes != null ? `<span class="tag ok">실제 ${s.actualStudyMinutes}분</span>` : "";
+    box.insertAdjacentHTML("beforeend", `
+      <div class="item">
+        <span class="tag">${s.order}</span>
+        <span class="grow">${esc(s.title)}</span>
+        <span class="tag">${esc(s.type)}</span>
+        <span class="tag">${time}</span>
+        ${actual}
+        <span class="tag ${cls}">${esc(s.status)}</span>
+        <button class="ghost" onclick="stepAction('${s.id}','start')"
+          ${s.status === "PENDING" ? "" : "disabled"}>시작</button>
+        <button class="ghost" onclick="stepAction('${s.id}','complete')"
+          ${s.status === "IN_PROGRESS" ? "" : "disabled"}>완료</button>
+      </div>`);
+  });
+}
+
+async function stepAction(stepId, action) {
+  const r = await api("POST", base() + "/steps/" + stepId + "/" + action);
+  show("out6", r.status, r.data);
+  loadPlan();          // 완료 시 재조정으로 뒤 단계 시간이 바뀔 수 있으므로 항상 다시 읽는다
+  getSession();
+}
+
+/* ---------- 7. 퀴즈 ---------- */
+
+function topicId(outId) {
+  const v = document.getElementById("quizTopic").value.trim();
+  if (!v) { show(outId, 0, "Topic 을 먼저 고른다."); return null; }
+  return v;
+}
+
+async function genQuiz() {
+  if (!needCode("out7")) return;
+  const t = topicId("out7"); if (!t) return;
+  show("out7", 0, "퀴즈 생성 중…");
+  const r = await api("POST", base() + "/topics/" + t + "/quizzes");
+  show("out7", r.status, r.data);
+  if (r.status < 400) renderQuizzes(r.data);
+}
+
+async function loadQuiz() {
+  if (!needCode("out7")) return;
+  const t = topicId("out7"); if (!t) return;
+  const r = await api("GET", base() + "/topics/" + t + "/quizzes");
+  show("out7", r.status, r.data);
+  if (r.status < 400) renderQuizzes(r.data);
+}
+
+function renderQuizzes(data) {
+  const box = document.getElementById("quizzes");
+  box.innerHTML = "";
+  (data.quizzes || []).forEach(q => {
+    const opts = q.options.map((o, i) =>
+      `<button class="opt" data-i="${i}" onclick="answer('${q.id}',${i},this)">${i + 1}. ${esc(o)}</button>`
+    ).join("");
+    box.insertAdjacentHTML("beforeend", `
+      <div class="quiz" id="q-${q.id}">
+        <div class="q">${q.order}. ${esc(q.question)} <span class="tag">${esc(q.difficulty)}</span></div>
+        ${opts}
+        <div class="exp"></div>
+      </div>`);
+  });
+}
+
+async function answer(quizId, index, btn) {
+  const r = await api("POST", base() + "/quizzes/" + quizId + "/answer", { selectedIndex: index });
+  show("out7", r.status, r.data);
+  if (r.status >= 400) return;
+
+  const card = document.getElementById("q-" + quizId);
+  card.querySelectorAll(".opt").forEach(b => {
+    b.disabled = true;
+    const i = Number(b.dataset.i);
+    if (i === r.data.correctIndex) b.classList.add("correct");
+    else if (i === r.data.selectedIndex) b.classList.add("wrong");
+  });
+  card.querySelector(".exp").textContent =
+    (r.data.correct ? "정답 — " : "오답 — ") + r.data.explanation;
+}
+
+async function quizResults() {
+  if (!needCode("out7")) return;
+  const t = topicId("out7"); if (!t) return;
+  const r = await api("GET", base() + "/topics/" + t + "/quiz-results");
+  show("out7", r.status, r.data);
+}
+
+/* ---------- 8. 오답 요약 ---------- */
+
+async function genSummary() {
+  if (!needCode("out8")) return;
+  show("out8", 0, "요약 생성 중…");
+  const r = await api("POST", base() + "/wrong-answer-summary");
+  show("out8", r.status, r.data);
+}
+
+async function loadSummary() {
+  if (!needCode("out8")) return;
+  const r = await api("GET", base() + "/wrong-answer-summary");
+  show("out8", r.status, r.data);
+}
+
+/* ---------- 시작 ---------- */
+
+(function init() {
+  setCode(code);
+  const t = new Date(Date.now() + 3 * 60 * 60 * 1000 - new Date().getTimezoneOffset() * 60000);
+  document.getElementById("examAt").value = t.toISOString().slice(0, 16);
+  if (code) getSession();
+})();
+</script>
+</body>
+</html>
