@@ -1,0 +1,105 @@
+import { request } from "./client";
+import type {
+  AnalysisResponse,
+  CurriculumResponse,
+  DocumentResponse,
+  QuizAnswerResponse,
+  QuizListResponse,
+  QuizResultsResponse,
+  SessionResponse,
+  StepCompletionResponse,
+  StudyStepProgressResponse,
+  TopicResponse,
+  UpdateExamRequest,
+  UpdateStudyContextRequest,
+} from "./types";
+
+/**
+ * 백엔드 엔드포인트 하나당 함수 하나.
+ *
+ * <p>경로 문자열을 화면에 흩어 두지 않는다. 백엔드가 경로를 바꾸면 여기만 고친다.
+ * 함수 이름은 화면의 동작이 아니라 <b>서버가 하는 일</b>을 따른다.
+ */
+
+const s = (code: string) => `/sessions/${encodeURIComponent(code)}`;
+
+/* ── 세션 ─────────────────────────────────────────────── */
+
+export const createSession = () => request<SessionResponse>("/sessions", { method: "POST" });
+
+export const getSession = (code: string) => request<SessionResponse>(s(code));
+
+export const updateExam = (code: string, body: UpdateExamRequest) =>
+  request<SessionResponse>(`${s(code)}/exam`, { method: "PUT", json: body });
+
+/* ── 강의자료 ─────────────────────────────────────────── */
+
+/**
+ * 여러 파일을 한 번에 올린다. 파트 이름은 `files` 로 고정이다.
+ *
+ * <p>`Content-Type` 을 직접 넣지 않는다. multipart 경계 문자열은 브라우저가 만든다.
+ */
+export function uploadDocuments(code: string, files: File[]) {
+  const form = new FormData();
+  files.forEach((file) => form.append("files", file));
+  return request<DocumentResponse[]>(`${s(code)}/documents`, { method: "POST", body: form });
+}
+
+export const listDocuments = (code: string) => request<DocumentResponse[]>(`${s(code)}/documents`);
+
+export const deleteDocument = (code: string, documentId: string) =>
+  request<void>(`${s(code)}/documents/${documentId}`, { method: "DELETE" });
+
+/** 업로드한 자료에서 텍스트를 뽑는다. 업로드와 분리된 요청이다. */
+export const parseDocuments = (code: string) =>
+  request<DocumentResponse[]>(`${s(code)}/documents/parse`, { method: "POST" });
+
+/* ── 학습 맥락 ────────────────────────────────────────── */
+
+export const updateStudyContext = (code: string, body: UpdateStudyContextRequest) =>
+  request<unknown>(`${s(code)}/study-context`, { method: "PUT", json: body });
+
+/* ── 분석 ─────────────────────────────────────────────── */
+
+/** 실제 AI 를 부른다. 자료가 크면 분 단위로 걸릴 수 있다. */
+export const runAnalysis = (code: string, signal?: AbortSignal) =>
+  request<AnalysisResponse>(`${s(code)}/analysis`, { method: "POST", signal });
+
+export const listTopics = (code: string) => request<TopicResponse[]>(`${s(code)}/topics`);
+
+/* ── 학습 계획 ────────────────────────────────────────── */
+
+/** 이미 있으면 새로 만들지 않고 기존 계획을 돌려준다. */
+export const createCurriculum = (code: string) =>
+  request<CurriculumResponse>(`${s(code)}/curriculum`, { method: "POST" });
+
+export const getCurriculum = (code: string) => request<CurriculumResponse>(`${s(code)}/curriculum`);
+
+/* ── 학습 진행 ────────────────────────────────────────── */
+
+export const startStep = (code: string, stepId: string) =>
+  request<StudyStepProgressResponse>(`${s(code)}/steps/${stepId}/start`, { method: "POST" });
+
+export const completeStep = (code: string, stepId: string) =>
+  request<StepCompletionResponse>(`${s(code)}/steps/${stepId}/complete`, { method: "POST" });
+
+/* ── 퀴즈 ─────────────────────────────────────────────── */
+
+/** 실제 AI 를 부른다. 해당 Topic 의 학습 단계를 완료해야 만들 수 있다. */
+export const generateQuizzes = (code: string, topicId: string, signal?: AbortSignal) =>
+  request<QuizListResponse>(`${s(code)}/topics/${topicId}/quizzes`, { method: "POST", signal });
+
+export const getQuizzes = (code: string, topicId: string) =>
+  request<QuizListResponse>(`${s(code)}/topics/${topicId}/quizzes`);
+
+export const answerQuiz = (code: string, quizId: string, selectedIndex: number) =>
+  request<QuizAnswerResponse>(`${s(code)}/quizzes/${quizId}/answer`, {
+    method: "POST",
+    json: { selectedIndex },
+  });
+
+export const getQuizResults = (code: string, topicId: string) =>
+  request<QuizResultsResponse>(`${s(code)}/topics/${topicId}/quiz-results`);
+
+export { ApiError, NetworkError, toMessage } from "./client";
+export type * from "./types";
