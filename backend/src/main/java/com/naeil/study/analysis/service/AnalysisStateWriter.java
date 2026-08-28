@@ -6,9 +6,13 @@ import com.naeil.study.analysis.exception.ExamInfoRequiredException;
 import com.naeil.study.analysis.exception.NoParsedDocumentException;
 import com.naeil.study.analysis.service.AnalysisTarget.AnalysisDocument;
 import com.naeil.study.analysis.validation.ValidatedTopic;
+import com.naeil.study.curriculum.repository.CurriculumRepository;
+import com.naeil.study.curriculum.repository.StudyStepRepository;
 import com.naeil.study.document.entity.Document;
 import com.naeil.study.document.entity.DocumentStatus;
 import com.naeil.study.document.repository.DocumentRepository;
+import com.naeil.study.quiz.repository.QuizRepository;
+import com.naeil.study.quiz.repository.QuizResultRepository;
 import com.naeil.study.session.entity.StudySession;
 import com.naeil.study.session.entity.StudySourceType;
 import com.naeil.study.session.repository.StudySessionRepository;
@@ -17,6 +21,7 @@ import com.naeil.study.studycontext.entity.StudyContext;
 import com.naeil.study.studycontext.repository.StudyContextRepository;
 import com.naeil.study.topic.entity.Topic;
 import com.naeil.study.topic.repository.TopicRepository;
+import com.naeil.study.wronganswer.repository.WrongAnswerSummaryRepository;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -50,6 +55,11 @@ public class AnalysisStateWriter {
     private final DocumentRepository documentRepository;
     private final StudyContextRepository studyContextRepository;
     private final TopicRepository topicRepository;
+    private final QuizResultRepository quizResultRepository;
+    private final QuizRepository quizRepository;
+    private final StudyStepRepository studyStepRepository;
+    private final CurriculumRepository curriculumRepository;
+    private final WrongAnswerSummaryRepository wrongAnswerSummaryRepository;
     private final Clock clock;
 
     public AnalysisStateWriter(
@@ -57,12 +67,22 @@ public class AnalysisStateWriter {
             DocumentRepository documentRepository,
             StudyContextRepository studyContextRepository,
             TopicRepository topicRepository,
+            QuizResultRepository quizResultRepository,
+            QuizRepository quizRepository,
+            StudyStepRepository studyStepRepository,
+            CurriculumRepository curriculumRepository,
+            WrongAnswerSummaryRepository wrongAnswerSummaryRepository,
             Clock clock
     ) {
         this.studySessionRepository = studySessionRepository;
         this.documentRepository = documentRepository;
         this.studyContextRepository = studyContextRepository;
         this.topicRepository = topicRepository;
+        this.quizResultRepository = quizResultRepository;
+        this.quizRepository = quizRepository;
+        this.studyStepRepository = studyStepRepository;
+        this.curriculumRepository = curriculumRepository;
+        this.wrongAnswerSummaryRepository = wrongAnswerSummaryRepository;
         this.clock = clock;
     }
 
@@ -125,6 +145,11 @@ public class AnalysisStateWriter {
      *
      * <p>기존 Topic을 지우고 새로 넣는다. 분석 결과는 통째로 갈아 끼우는 값이라
      * 재분석 때 이전 결과가 섞이면 안 된다.
+     *
+     * <p><b>Topic 에서 파생된 것들을 먼저 지운다.</b> 학습 계획·퀴즈·오답 요약은 전부
+     * 옛 Topic 을 가리키므로 재분석과 함께 무효가 된다. 지우지 않으면 FK 제약 때문에
+     * Topic 삭제 자체가 실패하고(실제로 겪은 500), 남겨 둔들 새 Topic 과 무관한
+     * 낡은 계획이 화면에 살아남는다. 삭제 순서는 FK 의존의 역순이다.
      */
     @Transactional
     public List<Topic> completeAnalysis(UUID sessionId, List<ValidatedTopic> validatedTopics) {
@@ -132,8 +157,17 @@ public class AnalysisStateWriter {
                 .orElseThrow(SessionNotFoundException::new);
         LocalDateTime now = now();
 
+        // 답안 → 퀴즈 → 학습 단계 → 계획 → 오답 요약 → Topic 순서로 지운다
+        quizResultRepository.deleteAllByStudySessionId(sessionId);
+        quizRepository.deleteAllByTopicStudySessionId(sessionId);
+        studyStepRepository.deleteAllByCurriculumStudySessionId(sessionId);
+        curriculumRepository.deleteAllByStudySessionId(sessionId);
+        wrongAnswerSummaryRepository.deleteAllByStudySessionId(sessionId);
         topicRepository.deleteAllByStudySessionId(sessionId);
         topicRepository.flush();
+
+        // 진행 중이던 단계 표시도 옛 계획의 것이다. 새 계획은 처음부터 시작한다.
+        session.clearCurrentStep(now);
 
         List<Topic> topics = new ArrayList<>(validatedTopics.size());
         for (ValidatedTopic validated : validatedTopics) {

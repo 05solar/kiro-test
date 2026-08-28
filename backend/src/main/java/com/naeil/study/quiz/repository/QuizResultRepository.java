@@ -16,4 +16,7 @@ public interface QuizResultRepository extends JpaRepository<QuizResult, UUID> {
 
     /** 세션의 답안 전체. 오답 요약이 완료 여부 확인과 오답 추출에 쓴다. */
     List<QuizResult> findAllByStudySessionId(UUID sessionId);
+
+    /** 세션의 답안을 모두 지운다. 재분석으로 퀴즈가 교체될 때 함께 사라진다. */
+    void deleteAllByStudySessionId(UUID sessionId);
 }

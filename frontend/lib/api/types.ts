@@ -81,6 +81,18 @@ export interface DocumentResponse {
   createdAt: string;
 }
 
+/**
+ * 텍스트 추출 응답의 항목. {@link DocumentResponse} 와 형식이 다르다 —
+ * `documentId` 를 쓰고 `fileSize`/`createdAt` 이 없다.
+ */
+export interface DocumentParseResponse {
+  documentId: string;
+  originalFileName: string;
+  status: DocumentStatus;
+  characterCount: number | null;
+  parsedAt: string | null;
+}
+
 export interface UpdateStudyContextRequest {
   professorEmphasis: string | null;
   pastExamInfo: string | null;
@@ -92,6 +104,15 @@ export interface AnalysisResponse {
   sessionCode: string;
   status: SessionStatus;
   topicCount: number;
+}
+
+/** 분석 진행도. 서버가 실제로 처리한 조각 수를 준다 — 화면 타이머로 흉내내지 않는다. */
+export interface AnalysisProgressResponse {
+  phase: "NONE" | "PREPARING" | "ANALYZING" | "MERGING" | "SAVING" | "DONE" | "FAILED";
+  completedChunks: number;
+  totalChunks: number;
+  /** 0~100. 조각 분석 구간에 실제 비율이 펴져 있다. */
+  percent: number;
 }
 
 export interface TopicResponse {

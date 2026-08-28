@@ -68,3 +68,17 @@ export const NODE_LABEL_OFFSET: Record<number, { dx: number; dy: number }> = {
 };
 
 export const DEFAULT_NODE_LABEL_OFFSET = { dx: 0, dy: 56 };
+
+/**
+ * 상자를 놓을 위치 규칙 — "몇 번째 STEP 뒤에 상자가 있는가".
+ *
+ * 실제 STEP 수는 계획마다 다르므로 좌표가 아니라 규칙으로 정한다.
+ * 첫 STEP 부터 한 칸 건너 하나씩(1·3·5…번째 뒤), 마지막 STEP 뒤에는 두지 않는다
+ * (거기는 시험장 도착이 보상이다).
+ *
+ * @param stepIds 살아있는 STEP id 를 진행 순서대로
+ * @return 상자가 붙는 STEP id 목록 (그 STEP 을 완료하면 상자가 열린다)
+ */
+export function rewardAfterSteps(stepIds: readonly number[]): number[] {
+  return stepIds.filter((_, index) => index % 2 === 0 && index < stepIds.length - 1);
+}

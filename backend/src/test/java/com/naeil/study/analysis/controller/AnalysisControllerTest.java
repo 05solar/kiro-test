@@ -1,8 +1,10 @@
 package com.naeil.study.analysis.controller;
 
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -11,7 +13,12 @@ import com.naeil.study.analysis.exception.AiAnalysisException;
 import com.naeil.study.analysis.exception.AnalysisAlreadyRunningException;
 import com.naeil.study.analysis.exception.ExamInfoRequiredException;
 import com.naeil.study.analysis.exception.NoParsedDocumentException;
+import com.naeil.study.analysis.progress.AnalysisProgressTracker;
+import com.naeil.study.analysis.progress.AnalysisProgressTracker.AnalysisProgress;
+import com.naeil.study.analysis.progress.AnalysisProgressTracker.Phase;
 import com.naeil.study.analysis.service.AnalysisService;
+import com.naeil.study.session.entity.StudySession;
+import com.naeil.study.session.service.SessionService;
 import com.naeil.study.session.exception.InvalidSessionCodeException;
 import com.naeil.study.session.exception.SessionNotFoundException;
 import com.naeil.study.topic.entity.Topic;
@@ -35,6 +42,12 @@ class AnalysisControllerTest {
 
     @MockitoBean
     private AnalysisService analysisService;
+
+    @MockitoBean
+    private AnalysisProgressTracker progressTracker;
+
+    @MockitoBean
+    private SessionService sessionService;
 
     @Test
     @DisplayName("POST /analysis 정상 → 200, READY 상태와 Topic 수를 반환한다")
@@ -110,5 +123,25 @@ class AnalysisControllerTest {
         mockMvc.perform(post("/api/sessions/{sessionCode}/analysis", "ABC"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_SESSION_CODE"));
+    }
+
+    @Test
+    @DisplayName("GET /analysis/progress → 200, 실제 조각 진행도를 반환한다")
+    void progressReturnsChunkCounts() throws Exception {
+        StudySession session = StudySession.create(SESSION_CODE,
+                java.time.LocalDateTime.of(2026, 8, 28, 10, 0), 30L);
+        java.lang.reflect.Field id = StudySession.class.getDeclaredField("id");
+        id.setAccessible(true);
+        id.set(session, java.util.UUID.randomUUID());
+        given(sessionService.getSessionAndTouch(SESSION_CODE)).willReturn(session);
+        given(progressTracker.get(any())).willReturn(
+                new AnalysisProgress(Phase.ANALYZING, 3, 7, 39));
+
+        mockMvc.perform(get("/api/sessions/{sessionCode}/analysis/progress", SESSION_CODE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.phase").value("ANALYZING"))
+                .andExpect(jsonPath("$.completedChunks").value(3))
+                .andExpect(jsonPath("$.totalChunks").value(7))
+                .andExpect(jsonPath("$.percent").value(39));
     }
 }

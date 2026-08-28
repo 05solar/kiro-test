@@ -344,4 +344,29 @@ class QuizApiIntegrationTest {
         ResponseEntity<Map<String, Object>> aggregated = results(sessionCode, topicId);
         assertThat(aggregated.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
+
+    @Test
+    @DisplayName("재분석하면 옛 계획·퀴즈·답안이 함께 사라진다")
+    void reanalysisClearsDerivedData() {
+        String sessionCode = plannedSession(aiTopic("CPU 스케줄링", "VERY_HIGH", 50));
+        String topicId = completeFirstStep(sessionCode);
+        List<Map<String, Object>> quizzes = quizzesOf(generateQuizzes(sessionCode, topicId));
+        answer(sessionCode, quizzes.get(0).get("id"), 0);
+
+        // 자료·맥락이 바뀌었다고 가정하고 다시 분석한다. Topic 이 통째로 교체된다.
+        ResponseEntity<Map<String, Object>> reanalyzed = restTemplate.exchange(
+                "/api/sessions/" + sessionCode + "/analysis", HttpMethod.POST, null, JSON_MAP);
+        assertThat(reanalyzed.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        // 옛 Topic 에서 파생된 것들은 모두 무효가 되어 사라져야 한다 (FK 500 회귀 방지)
+        ResponseEntity<Map<String, Object>> curriculum = restTemplate.exchange(
+                "/api/sessions/" + sessionCode + "/curriculum", HttpMethod.GET, null, JSON_MAP);
+        assertThat(curriculum.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(curriculum.getBody().get("code")).isEqualTo("CURRICULUM_NOT_FOUND");
+
+        ResponseEntity<Map<String, Object>> oldTopicQuizzes = restTemplate.exchange(
+                "/api/sessions/" + sessionCode + "/topics/" + topicId + "/quizzes",
+                HttpMethod.GET, null, JSON_MAP);
+        assertThat(oldTopicQuizzes.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
 }

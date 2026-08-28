@@ -46,6 +46,9 @@ public interface QuizRepository extends JpaRepository<Quiz, UUID> {
             + "order by topic.topicOrder asc, quiz.quizOrder asc")
     List<Quiz> findAllBySessionIdWithTopic(@Param("sessionId") UUID sessionId);
 
+    /** 세션의 퀴즈를 모두 지운다. 답안({@code quiz_results})을 먼저 지운 뒤에 호출한다. */
+    void deleteAllByTopicStudySessionId(UUID sessionId);
+
     /**
      * 세션이 소유한 문제를 조회한다.
      *

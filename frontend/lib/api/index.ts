@@ -1,9 +1,11 @@
 import { request } from "./client";
 import type {
+  AnalysisProgressResponse,
   AnalysisResponse,
   ChatHistoryResponse,
   ChatResponse,
   CurriculumResponse,
+  DocumentParseResponse,
   DocumentResponse,
   ExamResponse,
   QuizAnswerResponse,
@@ -37,25 +39,43 @@ export const updateExam = (code: string, body: UpdateExamRequest) =>
 
 /* ── 강의자료 ─────────────────────────────────────────── */
 
+/*
+ * 목록류 응답은 배열이 아니라 객체로 감싸져 온다 — `{"documents": [...]}`, `{"topics": [...]}`.
+ * 여기서 풀어서 배열로 돌려준다. 화면이 감싸는 형식을 알 필요가 없고,
+ * 감싼 채로 흘려보내면 화면의 `.map` 이 렌더 중에 터진다 (실제로 그랬다).
+ */
+
 /**
  * 여러 파일을 한 번에 올린다. 파트 이름은 `files` 로 고정이다.
  *
  * <p>`Content-Type` 을 직접 넣지 않는다. multipart 경계 문자열은 브라우저가 만든다.
  */
-export function uploadDocuments(code: string, files: File[]) {
+export async function uploadDocuments(code: string, files: File[]): Promise<DocumentResponse[]> {
   const form = new FormData();
   files.forEach((file) => form.append("files", file));
-  return request<DocumentResponse[]>(`${s(code)}/documents`, { method: "POST", body: form });
+  const res = await request<{ documents: DocumentResponse[] }>(`${s(code)}/documents`, {
+    method: "POST",
+    body: form,
+  });
+  return res.documents;
 }
 
-export const listDocuments = (code: string) => request<DocumentResponse[]>(`${s(code)}/documents`);
+export const listDocuments = async (code: string): Promise<DocumentResponse[]> =>
+  (await request<{ documents: DocumentResponse[] }>(`${s(code)}/documents`)).documents;
 
 export const deleteDocument = (code: string, documentId: string) =>
   request<void>(`${s(code)}/documents/${documentId}`, { method: "DELETE" });
 
-/** 업로드한 자료에서 텍스트를 뽑는다. 업로드와 분리된 요청이다. */
-export const parseDocuments = (code: string) =>
-  request<DocumentResponse[]>(`${s(code)}/documents/parse`, { method: "POST" });
+/**
+ * 업로드한 자료에서 텍스트를 뽑는다. 업로드와 분리된 요청이다.
+ *
+ * <p>항목 형식이 목록 조회와 <b>다르다</b> — `documentId` 를 쓰고 `fileSize` 가 없다.
+ * 화면 목록을 갱신할 때는 이 응답이 아니라 {@link listDocuments} 를 다시 부른다.
+ */
+export const parseDocuments = async (code: string): Promise<DocumentParseResponse[]> =>
+  (await request<{ documents: DocumentParseResponse[] }>(`${s(code)}/documents/parse`, {
+    method: "POST",
+  })).documents;
 
 /* ── 학습 맥락 ────────────────────────────────────────── */
 
@@ -68,7 +88,12 @@ export const updateStudyContext = (code: string, body: UpdateStudyContextRequest
 export const runAnalysis = (code: string, signal?: AbortSignal) =>
   request<AnalysisResponse>(`${s(code)}/analysis`, { method: "POST", signal });
 
-export const listTopics = (code: string) => request<TopicResponse[]>(`${s(code)}/topics`);
+/** 분석이 도는 동안 폴링해서 실제 진행도(조각 n/전체)를 받는다. */
+export const getAnalysisProgress = (code: string) =>
+  request<AnalysisProgressResponse>(`${s(code)}/analysis/progress`);
+
+export const listTopics = async (code: string): Promise<TopicResponse[]> =>
+  (await request<{ topics: TopicResponse[] }>(`${s(code)}/topics`)).topics;
 
 /* ── 학습 계획 ────────────────────────────────────────── */
 

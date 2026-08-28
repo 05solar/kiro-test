@@ -6,72 +6,91 @@ import { useExamStore } from "@/app/_components/store";
 import { useHydrated } from "@/app/_components/use-hydrated";
 import type { SourceLabel } from "@/lib/api/adapt";
 
-type GhostMood = "eyes" | "plain" | "smile" | "happy" | "worried" | "neutral" | "excited";
+/**
+ * 캐릭터 상태.
+ *
+ * 새 다섯 가지가 실제 이미지이고, 과거 SVG 시절의 무드 이름은 호출부를 한꺼번에 바꾸지
+ * 않기 위해 받아서 기본 이미지로 흡수한다.
+ *
+ * <pre>
+ * default   평상시 (구 eyes/plain/neutral/worried 포함)
+ * progress  AI 가 일하는 중 (분석·퀴즈 생성)
+ * smile     분석 완료
+ * happy     퀴즈를 잘 마쳤을 때
+ * sad       오답이 많을 때 / 실패
+ * </pre>
+ */
+type GhostMood =
+  | "default"
+  | "progress"
+  | "smile"
+  | "happy"
+  | "sad"
+  // 과거 무드 — 전부 default 이미지로 그린다
+  | "eyes"
+  | "plain"
+  | "worried"
+  | "neutral"
+  | "excited";
+
+const THUNDER_SRC: Record<string, string> = {
+  progress: "/character/thunder-progress.png",
+  smile: "/character/thunder-smile.png",
+  happy: "/character/thunder-happy.png",
+  sad: "/character/thunder-sad.png",
+};
 
 type GhostProps = {
   width?: number;
   mood?: GhostMood;
+  /** 외곽에서 퍼져나가는 주황 그라데이션 링. 본문 캐릭터에는 켜고, 로고처럼 작은 곳은 끈다. */
+  ripple?: boolean;
   className?: string;
   style?: CSSProperties;
 };
 
+/**
+ * 번개 캐릭터. 배경이 투명한 PNG 하나를 그대로 그린다 — 뒤에 원판·배경을 깔지 않는다.
+ *
+ * <p>이름은 과거 유령 캐릭터 시절의 것이지만 호출부가 많아 유지한다.
+ */
 export function Ghost({
   width = 62,
-  mood = "plain",
+  mood = "default",
+  ripple = true,
   className,
   style,
 }: GhostProps) {
-  const height = Math.round(width * 1.2);
+  const src = THUNDER_SRC[mood] ?? "/character/thunder-default.png";
   return (
-    <svg
-      width={width}
-      height={height}
-      viewBox="0 0 100 120"
-      className={className}
-      style={style}
+    <span
+      className={`relative inline-block ${className ?? ""}`}
+      style={{ width, height: width, ...style }}
       aria-hidden="true"
     >
-      <path
-        d="M57 4 C79 4 92 27 92 57 C92 80 86 97 74 105 C66 111 57 108 54 100 C51 93 44 93 40 101 C35 110 25 108 22 99 C20 93 22 87 26 83 C28 81 26 79 22 78 C12 76 5 70 6 62 C7 54 14 49 21 47 C24 46 25 43 25 39 C27 17 39 4 57 4 Z"
-        fill="#FF7A00"
-      />
-      {mood === "excited" ? (
+      {ripple && (
         <>
-          <path d="M39 50 Q47 40 55 50" stroke="#222" strokeWidth="3.6" fill="none" strokeLinecap="round" />
-          <path d="M60 50 Q68 40 76 50" stroke="#222" strokeWidth="3.6" fill="none" strokeLinecap="round" />
-          <ellipse cx="52" cy="76" rx="7" ry="8" fill="#222" />
-        </>
-      ) : mood === "smile" ? (
-        <>
-          <path d="M40 50 Q47 41 54 50" stroke="#222" strokeWidth="3.4" fill="none" strokeLinecap="round" />
-          <path d="M61 50 Q68 41 75 50" stroke="#222" strokeWidth="3.4" fill="none" strokeLinecap="round" />
-        </>
-      ) : (
-        <>
-          <ellipse cx="47" cy="49" rx="6.5" ry="10" fill="#222" />
-          <ellipse cx="68" cy="49" rx="6.5" ry="10" fill="#222" />
-          {mood === "plain" && (
-            <path d="M50 70 Q58 78 66 70" stroke="#222" strokeWidth="3.4" fill="none" strokeLinecap="round" />
-          )}
-          {mood === "happy" && (
-            <path d="M44 75 Q52 82 60 75" stroke="#222" strokeWidth="3.2" fill="none" strokeLinecap="round" />
-          )}
-          {mood === "worried" && (
-            <path d="M50 72 Q58 66 66 72" stroke="#222" strokeWidth="3.2" fill="none" strokeLinecap="round" />
-          )}
-          {mood === "neutral" && (
-            <path d="M50 72 L64 72" stroke="#222" strokeWidth="3.2" fill="none" strokeLinecap="round" />
-          )}
+          <span className="thunder-ripple-ring" />
+          <span className="thunder-ripple-ring" />
         </>
       )}
-    </svg>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt=""
+        width={width}
+        height={width}
+        draggable={false}
+        className="relative z-10 size-full select-none object-contain"
+      />
+    </span>
   );
 }
 
 export function Logo({ compact = false }: { compact?: boolean }) {
   return (
     <div className="flex items-center gap-2.5">
-      <Ghost width={26} mood="eyes" />
+      <Ghost width={26} ripple={false} />
       {!compact && <span className="font-jua text-[21px] tracking-[-0.5px] text-[#222]">내일까지</span>}
     </div>
   );
@@ -180,7 +199,7 @@ export function AppHeader() {
           <span className="absolute inset-0 animate-pulse-ring rounded-full bg-[#FF7A00]" />
           <span className="absolute inset-0 rounded-full bg-[#FF7A00]" />
         </span>
-        <span className="hidden text-xs text-[#888] sm:inline">시험까지</span>
+        <span className="hidden text-xs text-[#666] sm:inline">시험까지</span>
         <span className="text-sm font-bold sm:text-[15px]"><Countdown compact /></span>
       </div>
     </header>
@@ -191,7 +210,7 @@ function NavButton({ children, onClick }: { children: React.ReactNode; onClick: 
   return (
     <button
       type="button"
-      className="cursor-pointer rounded-lg border-0 bg-transparent px-[13px] py-[7px] text-[13px] font-medium text-[#888] transition-colors hover:bg-[#FFF3E8] hover:text-[#E85D00]"
+      className="cursor-pointer rounded-lg border-0 bg-transparent px-[13px] py-[7px] text-[13px] font-medium text-[#666] transition-colors hover:bg-[#FFF3E8] hover:text-[#E85D00]"
       onClick={onClick}
     >
       {children}
@@ -234,7 +253,7 @@ export function SecondaryButton({
     <button
       type="button"
       aria-expanded={ariaExpanded}
-      className={`cursor-pointer rounded-xl border border-[#eee] bg-white px-6 py-4 text-[15px] text-[#888] transition-colors hover:border-[#FFE0C4] hover:text-[#E85D00] ${className}`}
+      className={`cursor-pointer rounded-xl border border-[#eee] bg-white px-6 py-4 text-[15px] text-[#666] transition-colors hover:border-[#FFE0C4] hover:text-[#E85D00] ${className}`}
       onClick={onClick}
     >
       {children}
@@ -246,6 +265,15 @@ export function CheckIcon() {
   return (
     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M5 13l5 5L19 7" stroke="#E85D00" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** 목록 표시용 작은 체크. 텍스트 체크 문자(✓) 대신 쓴다 — 기본 이모티콘·딩뱃 금지. */
+export function CheckMini({ size = 12, color = "#E85D00" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0">
+      <path d="M4 13l5.5 5.5L20 6" stroke={color} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -276,13 +304,13 @@ export function SpeechBubble({
 
   return (
     <div
-      className={`relative inline-block rounded-[18px] border-2 border-[#FFD3A8] bg-white px-[22px] py-4 text-[19px] font-bold leading-[1.5] tracking-[-.3px] text-[#222] shadow-[0_6px_20px_rgba(255,122,0,.16)] sm:text-[21px] ${className}`}
+      className={`relative inline-block rounded-[16px] border-2 border-[#FFD3A8] bg-white px-4 py-2.5 text-[14.5px] font-bold leading-[1.5] tracking-[-.2px] text-[#222] shadow-[0_5px_16px_rgba(255,122,0,.15)] sm:text-[15.5px] ${className}`}
     >
       {children}
       {/* 테두리와 배경을 각각 찍어 꼬리에도 선이 이어지게 한다. */}
       <span
         aria-hidden="true"
-        className={`absolute size-[18px] rotate-45 border-b-2 border-r-2 border-[#FFD3A8] bg-white ${tailPosition}`}
+        className={`absolute size-[13px] rotate-45 border-b-2 border-r-2 border-[#FFD3A8] bg-white ${tailPosition}`}
         style={tail === "left" ? { transform: "rotate(135deg)" } : undefined}
       />
     </div>

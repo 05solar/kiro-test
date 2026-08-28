@@ -9,7 +9,7 @@
   --brand-soft: #fff3e8;
   --brand-border: #ffe0c4;
   --line: #eeeeee;
-  --muted: #888888;
+  --muted: #666666;
 }
 
 @theme inline {
@@ -39,6 +39,55 @@
   0% { transform: scale(1); opacity: 0.55; }
   70% { transform: scale(1.55); opacity: 0; }
   100% { opacity: 0; }
+}
+
+/* 캐릭터 외곽에서 퍼져나가는 주황 그라데이션 링.
+   두 개의 링을 시차를 두고 반복시켜 "계속 퍼져나오는" 느낌을 만든다. */
+@keyframes thunder-ripple {
+  0% { transform: scale(0.94); opacity: 0.55; }
+  75% { transform: scale(1.7); opacity: 0; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+
+.thunder-ripple-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(255, 122, 0, 0) 42%, rgba(255, 122, 0, 0.42) 62%, rgba(255, 160, 64, 0) 78%);
+  /* 천천히 은은하게 퍼지는 편이 눈에 덜 밟힌다 */
+  animation: thunder-ripple 4s ease-out infinite;
+  pointer-events: none;
+}
+
+.thunder-ripple-ring:nth-child(2) {
+  animation-delay: 2s;
+}
+
+/* 클레이모피즘 — 살짝 불투명한 찰흙 질감.
+   위·왼쪽에 밝은 하이라이트, 아래·오른쪽에 브랜드색 그림자를 안쪽으로 넣는다. */
+.clay-circle {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(4px);
+  box-shadow:
+    inset 5px 6px 9px rgba(255, 255, 255, 0.95),
+    inset -6px -7px 10px rgba(255, 138, 30, 0.22),
+    7px 9px 18px rgba(255, 122, 0, 0.16);
+}
+
+.clay-circle-active {
+  background: linear-gradient(145deg, #ffa040, #ff7a00 55%, #f06a00);
+  box-shadow:
+    inset 5px 6px 10px rgba(255, 214, 166, 0.75),
+    inset -6px -8px 12px rgba(190, 80, 0, 0.4),
+    9px 12px 24px rgba(255, 122, 0, 0.38);
+}
+
+.clay-done {
+  background: linear-gradient(145deg, #ffe9d2, #ffd9b4);
+  box-shadow:
+    inset 4px 5px 8px rgba(255, 255, 255, 0.9),
+    inset -5px -6px 9px rgba(255, 150, 60, 0.28),
+    6px 8px 16px rgba(255, 122, 0, 0.14);
 }
 
 /* 완주 구간 점선이 흐르는 애니메이션. 진행 연장(stroke-dashoffset transition)과는
@@ -119,5 +168,5 @@ textarea {
    기본값을 미리 채워 두면 사용자가 자기 값으로 착각한 채 넘어간다. */
 .form-input::placeholder,
 textarea.form-input::placeholder {
-  color: #B5B5B5;
+  color: #9a9a9a;
 }

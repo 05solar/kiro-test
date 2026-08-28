@@ -53,4 +53,7 @@ public interface StudyStepRepository extends JpaRepository<StudyStep, UUID> {
      * Topic 이 계획에 아예 들어가지 못한 경우(시간 부족으로 선택되지 않음)는 비어 있다.
      */
     Optional<StudyStep> findFirstByCurriculumStudySessionIdAndTopicId(UUID sessionId, UUID topicId);
+
+    /** 세션의 학습 단계를 모두 지운다. 재분석으로 계획이 무효화될 때 쓴다. */
+    void deleteAllByCurriculumStudySessionId(UUID sessionId);
 }

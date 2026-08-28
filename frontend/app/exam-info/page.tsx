@@ -7,6 +7,7 @@ import { AppHeader, Countdown, Ghost, PrimaryButton, RequiredMark, SpeechBubble 
 import { usePlanStore, useExamStore, type PrepState } from "@/app/_components/store";
 import { useSessionStore } from "@/app/_components/session-store";
 import { useHydrated } from "@/app/_components/use-hydrated";
+import { DatePickerField, TimePickerField } from "@/app/_components/date-time-picker";
 import { createSession, toMessage, updateExam } from "@/lib/api";
 import { toExamAt } from "@/lib/api/adapt";
 
@@ -54,9 +55,9 @@ export default function ExamInfoPage() {
   const setSessionCode = useSessionStore((state) => state.setSessionCode);
 
   const subjectRef = useRef<HTMLInputElement>(null);
-  const examDateRef = useRef<HTMLInputElement>(null);
-  const examTimeRef = useRef<HTMLInputElement>(null);
-  const fieldRefs: Record<RequiredField, React.RefObject<HTMLInputElement | null>> = {
+  const examDateRef = useRef<HTMLButtonElement>(null);
+  const examTimeRef = useRef<HTMLButtonElement>(null);
+  const fieldRefs: Record<RequiredField, React.RefObject<HTMLInputElement | HTMLButtonElement | null>> = {
     subject: subjectRef,
     examDate: examDateRef,
     examTime: examTimeRef,
@@ -158,7 +159,7 @@ export default function ExamInfoPage() {
         <FlowSteps current={0} />
         <div className="mb-2.5 text-[13px] font-bold text-[#FF7A00]">STEP 1 / 2</div>
         <h1 className="font-jua mb-2 text-4xl tracking-[-1px]">시험 정보를 알려주세요</h1>
-        <p className="mb-9 text-[15px] text-[#888]">
+        <p className="mb-9 text-[15px] text-[#666]">
           남은 시간은 자동으로 계산됩니다. <span className="font-bold text-[#E03131]">*</span> 는 필수 입력이에요.
         </p>
         <div className="grid items-start gap-6 lg:grid-cols-[1fr_340px]">
@@ -187,36 +188,28 @@ export default function ExamInfoPage() {
                   <span className="mb-[9px] block text-[13.5px] font-bold">
                     시험 날짜<RequiredMark />
                   </span>
-                  <input
-                    ref={examDateRef}
-                    name="examDate"
-                    type="date"
+                  <DatePickerField
+                    triggerRef={examDateRef}
                     value={examDate}
-                    aria-required="true"
-                    aria-invalid={invalid.has("examDate")}
-                    onChange={(event) => {
-                      setExamDate(event.target.value);
+                    invalid={invalid.has("examDate")}
+                    onChange={(value) => {
+                      setExamDate(value);
                       clearInvalid("examDate");
                     }}
-                    className={inputClass("examDate")}
                   />
                 </label>
                 <label className="block">
                   <span className="mb-[9px] block text-[13.5px] font-bold">
                     시험 시간<RequiredMark />
                   </span>
-                  <input
-                    ref={examTimeRef}
-                    name="examTime"
-                    type="time"
+                  <TimePickerField
+                    triggerRef={examTimeRef}
                     value={examTime}
-                    aria-required="true"
-                    aria-invalid={invalid.has("examTime")}
-                    onChange={(event) => {
-                      setExamTime(event.target.value);
+                    invalid={invalid.has("examTime")}
+                    onChange={(value) => {
+                      setExamTime(value);
                       clearInvalid("examTime");
                     }}
-                    className={inputClass("examTime")}
                   />
                 </label>
               </div>
@@ -229,7 +222,7 @@ export default function ExamInfoPage() {
                   onChange={(event) => setRange(event.target.value)}
                   className="form-input"
                 />
-                <span className="mt-2 block text-[12.5px] text-[#888]">
+                <span className="mt-2 block text-[12.5px] text-[#666]">
                   교재 목차나 강의 슬라이드 제목을 그대로 붙여도 됩니다.{" "}
                   <b className="text-[#E85D00]">자료를 올리지 않고 진행하려면 이 칸을 채워 주세요.</b>
                 </span>
@@ -242,7 +235,7 @@ export default function ExamInfoPage() {
                       key={item.value}
                       type="button"
                       onClick={() => setPrepState(item.value)}
-                      className={`cursor-pointer rounded-full border px-[18px] py-[11px] text-sm transition-colors ${prepState === item.value ? "border-[#FF7A00] bg-[#FFF3E8] font-bold text-[#E85D00]" : "border-[#eee] bg-white text-[#888] hover:border-[#FFE0C4] hover:text-[#E85D00]"}`}
+                      className={`cursor-pointer rounded-full border px-[18px] py-[11px] text-sm transition-colors ${prepState === item.value ? "border-[#FF7A00] bg-[#FFF3E8] font-bold text-[#E85D00]" : "border-[#eee] bg-white text-[#666] hover:border-[#FFE0C4] hover:text-[#E85D00]"}`}
                     >
                       {item.label}
                     </button>
@@ -268,7 +261,7 @@ export default function ExamInfoPage() {
             <div className="rounded-[18px] border border-[#FFE0C4] bg-[#FFF3E8] p-7 text-center">
               <div className="mb-3.5 text-[13px] font-bold text-[#E85D00]">시험까지 남은 시간</div>
               <div className="text-[40px]"><Countdown /></div>
-              <div className="mt-4 border-t border-[#FFE0C4] pt-4 text-[13px] leading-[1.7] text-[#888]">
+              <div className="mt-4 border-t border-[#FFE0C4] pt-4 text-[13px] leading-[1.7] text-[#666]">
                 휴식·수면 시간을 빼고 <b className="text-[#222]">실제 공부 가능 시간</b>만 플랜에 반영합니다.
               </div>
             </div>
@@ -277,7 +270,7 @@ export default function ExamInfoPage() {
                 범위가 넓네…<br />
                 그래도 <span className="text-[#E85D00]">중요한 것부터</span> 짜볼게!
               </SpeechBubble>
-              <Ghost width={72} mood="worried" className="animate-bob-small" />
+              <Ghost width={96} className="animate-bob-small" />
             </div>
           </aside>
         </div>

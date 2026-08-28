@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AppHeader, Countdown, Ghost, PrimaryButton } from "@/app/_components/ui";
+import { AppHeader, CheckMini, Countdown, Ghost, PrimaryButton } from "@/app/_components/ui";
 import { StudyChat } from "@/app/_components/study-chat";
 import { type StudyContent } from "@/app/_components/data";
 import { useSessionStore } from "@/app/_components/session-store";
@@ -104,10 +104,10 @@ export default function StudyPage() {
       <div className="min-h-screen bg-white text-[#222]">
         <AppHeader />
         <main className="mx-auto flex max-w-[720px] flex-col items-center px-6 py-24 text-center">
-          <Ghost width={78} mood="worried" className="animate-bob-small mb-6" />
+          <Ghost width={96} mood="sad" className="animate-bob-small mb-6" />
           <div className="mb-3 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700">STEP {stepId} 제외</div>
           <h1 className="font-jua mb-3 text-3xl">이 STEP은 플랜에서 제외됐어요</h1>
-          <p className="mb-8 text-[14.5px] leading-7 text-[#888]">남은 시간에 맞춰 우선순위가 높은 개념부터 학습하도록 조정했어요.</p>
+          <p className="mb-8 text-[14.5px] leading-7 text-[#666]">남은 시간에 맞춰 우선순위가 높은 개념부터 학습하도록 조정했어요.</p>
           <PrimaryButton onClick={() => router.push("/curriculum")}>커리큘럼으로 돌아가기</PrimaryButton>
         </main>
       </div>
@@ -180,10 +180,10 @@ function StudyView({
       <div className="grid min-h-[calc(100vh-68px)] xl:grid-cols-[272px_minmax(0,1fr)_300px]">
         <aside className="order-2 border-t border-[#eee] p-6 xl:order-1 xl:border-r xl:border-t-0 xl:px-6 xl:py-8">
           <div className="mb-[26px]">
-            <div className="mb-[11px] flex items-baseline justify-between"><span className="text-[12.5px] font-bold text-[#888]">전체 진행률</span><span className="font-jua text-[19px] text-[#FF7A00]">{progress}%</span></div>
+            <div className="mb-[11px] flex items-baseline justify-between"><span className="text-[12.5px] font-bold text-[#666]">전체 진행률</span><span className="font-jua text-[19px] text-[#FF7A00]">{progress}%</span></div>
             <div className="h-2 overflow-hidden rounded-full bg-[#FFF3E8]"><div className="h-full rounded-full bg-[#FF7A00] transition-[width]" style={{ width: `${progress}%` }} /></div>
           </div>
-          <div className="mb-3.5 text-[12.5px] font-bold text-[#888]">STEP</div>
+          <div className="mb-3.5 text-[12.5px] font-bold text-[#666]">STEP</div>
           <div className="grid gap-2">
             {[...stepTitles.entries()]
               .sort(([a], [b]) => a - b)
@@ -208,25 +208,30 @@ function StudyView({
                   }`}
                 >
                   {done ? (
-                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#FFE0C4] text-xs text-[#E85D00]">✓</span>
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#FFE0C4]"><CheckMini size={11} /></span>
                   ) : active ? (
                     <span className="font-jua flex size-6 shrink-0 items-center justify-center rounded-full bg-[#FF7A00] text-[13px] text-white">{step.id}</span>
                   ) : (
                     <span className="size-6 shrink-0 rounded-full border-2 border-[#eee]" />
                   )}
-                  <span className={`min-w-0 flex-1 truncate text-[13.5px] ${active ? "font-bold text-[#E85D00]" : "text-[#888]"}`}>{step.id}. {step.title}</span>
-                  {bookmarked && <span className="shrink-0 text-xs" title="다시 볼 개념">🔖</span>}
+                  <span className={`min-w-0 flex-1 truncate text-[13.5px] ${active ? "font-bold text-[#E85D00]" : "text-[#666]"}`}>{step.id}. {step.title}</span>
+                  {bookmarked && (
+                    <svg width="12" height="14" viewBox="0 0 24 28" fill="none" aria-hidden="true" className="shrink-0">
+                      <title>다시 볼 개념</title>
+                      <path d="M5 2h14a1 1 0 0 1 1 1v23l-8-5.5L4 26V3a1 1 0 0 1 1-1Z" fill="#F59F00" stroke="#E8590C" strokeWidth="1.6" strokeLinejoin="round" />
+                    </svg>
+                  )}
                 </button>
               );
             })}
           </div>
-          <button type="button" className="mt-[22px] w-full cursor-pointer rounded-[10px] border border-[#eee] bg-white p-3 text-[13px] text-[#888] transition-colors hover:border-[#FFE0C4] hover:text-[#E85D00]" onClick={() => router.push("/curriculum")}>맵으로 돌아가기</button>
+          <button type="button" className="mt-[22px] w-full cursor-pointer rounded-[10px] border border-[#eee] bg-white p-3 text-[13px] text-[#666] transition-colors hover:border-[#FFE0C4] hover:text-[#E85D00]" onClick={() => router.push("/curriculum")}>맵으로 돌아가기</button>
         </aside>
 
         <main className="order-1 max-w-[900px] px-6 py-10 sm:px-14 sm:pb-20 sm:pt-11 xl:order-2">
           <div className="mb-3.5 flex items-center gap-2.5">
             <span className="rounded-full bg-[#FFF3E8] px-[11px] py-[5px] text-xs font-bold text-[#E85D00]">STEP {stepId}</span>
-            <span className="text-[13px] text-[#888]">{content.chapter} · 예상 {estimatedMinutes}분</span>
+            <span className="text-[13px] text-[#666]">{content.chapter} · 예상 {estimatedMinutes}분</span>
             {quizFirst && <span className="rounded-full bg-amber-50 px-2 py-1 text-[11px] font-bold text-amber-700">복습 모드</span>}
           </div>
           <h1 className="font-jua mb-[34px] text-[40px] tracking-[-1.2px]">{content.title}</h1>
@@ -243,13 +248,13 @@ function StudyView({
             <section className="mb-5 rounded-[18px] border border-[#eee] px-6 py-7 sm:px-8 sm:py-[30px]">
               <div className="mb-5 flex items-center justify-between">
                 <span className="text-[13px] font-bold text-[#FF7A00]">핵심 개념 {content.concepts.length}가지</span>
-                {quizFirst && <button type="button" onClick={() => setConceptsOpen(false)} className="text-xs text-[#888]">접기</button>}
+                {quizFirst && <button type="button" onClick={() => setConceptsOpen(false)} className="text-xs text-[#666]">접기</button>}
               </div>
               <div className="grid gap-[22px]">
                 {content.concepts.map((concept, index) => (
                   <article key={concept.title} className="flex gap-4">
                     <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#FFF3E8] text-[13px] font-bold text-[#E85D00]">{index + 1}</div>
-                    <div><h2 className="mb-[7px] text-[17px] font-bold">{concept.title}</h2><p className="text-[14.5px] leading-[1.75] text-[#888]">{concept.description}</p></div>
+                    <div><h2 className="mb-[7px] text-[17px] font-bold">{concept.title}</h2><p className="text-[14.5px] leading-[1.75] text-[#666]">{concept.description}</p></div>
                   </article>
                 ))}
               </div>
@@ -277,10 +282,10 @@ function StudyView({
               className={`cursor-pointer rounded-xl border px-6 py-4 text-[15px] transition-colors ${
                 isWeak
                   ? "border-amber-400 bg-amber-100 font-bold text-amber-800"
-                  : "border-[#eee] bg-white text-[#888] hover:border-amber-300 hover:text-amber-700"
+                  : "border-[#eee] bg-white text-[#666] hover:border-amber-300 hover:text-amber-700"
               }`}
             >
-              {isWeak ? "다시 볼 개념 ✓" : "나중에 다시 볼 개념으로 표시"}
+              {isWeak ? "다시 볼 개념으로 표시됨" : "나중에 다시 볼 개념으로 표시"}
             </button>
           </div>
         </main>
@@ -291,13 +296,13 @@ function StudyView({
             <div className="text-[28px]"><Countdown /></div>
           </div>
           <div className="mb-4 rounded-2xl border border-[#eee] p-5">
-            <div className="mb-3 text-[12.5px] font-bold text-[#888]">STEP {stepId} 중요도</div>
-            <div className="mb-2.5 flex items-center gap-[9px]"><span className="font-jua text-[22px] text-[#FF7A00]">{content.importanceLabel}</span><span className="text-xs text-[#888]">{content.importanceNote}</span></div>
+            <div className="mb-3 text-[12.5px] font-bold text-[#666]">STEP {stepId} 중요도</div>
+            <div className="mb-2.5 flex items-center gap-[9px]"><span className="font-jua text-[22px] text-[#FF7A00]">{content.importanceLabel}</span><span className="text-xs text-[#666]">{content.importanceNote}</span></div>
             <div className="flex gap-[5px]"><div className="h-[7px] flex-1 rounded-full bg-[#FF7A00]" /><div className="h-[7px] flex-1 rounded-full bg-[#FF7A00]" /><div className="h-[7px] flex-1 rounded-full bg-[#FFE0C4]" /><div className="h-[7px] flex-1 rounded-full bg-[#FFE0C4]" /></div>
-            <div className="mt-3.5 border-t border-[#eee] pt-3.5 text-[12.5px] leading-[1.7] text-[#888]">{content.summary}</div>
+            <div className="mt-3.5 border-t border-[#eee] pt-3.5 text-[12.5px] leading-[1.7] text-[#666]">{content.summary}</div>
           </div>
           <div className="rounded-2xl border border-[#eee] p-5 text-center">
-            <Ghost width={52} mood={completedSteps.includes(stepId) ? "happy" : "neutral"} className="animate-bob-small mx-auto opacity-90" />
+            <Ghost width={68} mood={completedSteps.includes(stepId) ? "happy" : "default"} className="animate-bob-small mx-auto opacity-90" />
             <p className="mt-2.5 text-[13px] leading-[1.65]">{content.characterComment}</p>
           </div>
         </aside>
@@ -310,7 +315,7 @@ function StudyLoading() {
   return (
     <div className="min-h-screen bg-white text-[#222]">
       <AppHeader />
-      <main className="mx-auto max-w-[760px] px-6 py-24 text-center text-[#888]">커리큘럼으로 이동하는 중…</main>
+      <main className="mx-auto max-w-[760px] px-6 py-24 text-center text-[#666]">커리큘럼으로 이동하는 중…</main>
     </div>
   );
 }

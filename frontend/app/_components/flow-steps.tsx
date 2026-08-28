@@ -23,10 +23,10 @@ export function FlowSteps({ current }: { current: number }) {
             disabled={index >= current}
             className="flex items-center gap-2 border-0 bg-transparent p-0 text-left disabled:cursor-default"
           >
-            <span className={`flex size-7 items-center justify-center rounded-full text-xs font-bold ${index <= current ? "bg-[#FF7A00] text-white" : "bg-[#eee] text-[#888]"}`}>
+            <span className={`flex size-7 items-center justify-center rounded-full text-xs font-bold ${index <= current ? "bg-[#FF7A00] text-white" : "bg-[#eee] text-[#666]"}`}>
               {number}
             </span>
-            <span className={`hidden text-xs font-bold sm:inline ${index <= current ? "text-[#E85D00]" : "text-[#aaa]"}`}>{label}</span>
+            <span className={`hidden text-xs font-bold sm:inline ${index <= current ? "text-[#E85D00]" : "text-[#8a8a8a]"}`}>{label}</span>
           </button>
           {index < FLOW.length - 1 && <span className={`mx-3 h-px flex-1 ${index < current ? "bg-[#FF7A00]" : "bg-[#eee]"}`} />}
         </li>

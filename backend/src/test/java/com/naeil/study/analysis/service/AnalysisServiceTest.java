@@ -17,6 +17,7 @@ import com.naeil.study.analysis.client.dto.AiTopicMergeRequest;
 import com.naeil.study.analysis.client.dto.AiTopicResult;
 import com.naeil.study.analysis.chunk.DocumentChunker;
 import com.naeil.study.analysis.exception.AiAnalysisException;
+import com.naeil.study.analysis.progress.AnalysisProgressTracker;
 import com.naeil.study.analysis.exception.AnalysisAlreadyRunningException;
 import com.naeil.study.analysis.exception.ExamInfoRequiredException;
 import com.naeil.study.analysis.exception.NoParsedDocumentException;
@@ -72,6 +73,7 @@ class AnalysisServiceTest {
                 new DocumentChunker(8000, 300),
                 aiClient,
                 new AiTopicResponseValidator(30),
+                new AnalysisProgressTracker(),
                 30);
         session = StudySession.create(SESSION_CODE, NOW.minusHours(1), 30L);
         Field field = StudySession.class.getDeclaredField("id");
@@ -143,7 +145,7 @@ class AnalysisServiceTest {
     void splitsLongDocumentIntoChunks() {
         AnalysisService serviceWithSmallChunks = new AnalysisService(
                 sessionService, stateWriter, new DocumentChunker(100, 0),
-                aiClient, new AiTopicResponseValidator(30), 30);
+                aiClient, new AiTopicResponseValidator(30), new AnalysisProgressTracker(), 30);
         givenSessionFound();
         givenAnalysisTarget(target(AiStudyContext.empty(),
                 document(DOC_1_ID, "DOC_1", "긴자료.pdf", "가".repeat(500))));

@@ -62,16 +62,22 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-white text-[#222]">
       <AppHeader />
-      <main>
-        <section className="mx-auto grid max-w-[1240px] items-center gap-10 px-6 py-16 md:grid-cols-[1.15fr_.85fr] md:px-10 md:pb-24 md:pt-[88px]">
+      <main className="relative overflow-clip">
+        {/*
+          배경 반구 — 중심을 화면 오른쪽 맨끝에 두고 절반만 안으로 들어오게 한다.
+          지름을 화면 너비(105vw)로 잡아 반구의 끝이 화면 가로 중앙을 살짝 넘어온다.
+          overflow-clip 이 없으면 바깥 절반이 스크롤을 만들고 위아래로 삐져나온다.
+        */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute right-0 top-1/2 size-[105vw] -translate-y-1/2 translate-x-1/2 rounded-full bg-[#FFF3E8]"
+        />
+        <section className="relative mx-auto grid max-w-[1240px] items-center gap-10 px-6 py-16 md:grid-cols-[1.15fr_.85fr] md:px-10 md:pb-24 md:pt-[88px]">
           <div>
-            <div className="mb-[26px] inline-block rounded-full bg-[#FFF3E8] px-3 py-1.5 text-[12.5px] font-bold text-[#E85D00]">
-              시험 D-1 전용 학습 도우미
-            </div>
             <h1 className="font-jua m-0 mb-[22px] text-[48px] leading-[1.14] tracking-[-2px] text-[#222] sm:text-[66px]">
               내일까지<br />해야 하는데<span className="text-[#FF7A00]">.</span>
             </h1>
-            <p className="mb-[38px] max-w-[500px] text-[17px] leading-[1.65] text-[#888] sm:text-[19px]">
+            <p className="mb-[38px] max-w-[500px] text-[17px] leading-[1.65] text-[#666] sm:text-[19px]">
               시험 자료와 남은 시간을 알려주면 벼락치기 로드맵과 퀴즈를 만들어줄께!
             </p>
 
@@ -115,7 +121,7 @@ export default function HomePage() {
                     className={`form-input font-mono tracking-[2px] ${error ? "form-input-error" : ""}`}
                   />
                 </label>
-                <p className="mt-2 text-[12.5px] leading-[1.6] text-[#888]">
+                <p className="mt-2 text-[12.5px] leading-[1.6] text-[#666]">
                   벼락치기를 시작할 때 받은 8자리 코드예요. 다른 기기에서도 같은 코드로 이어집니다.
                 </p>
 
@@ -136,14 +142,13 @@ export default function HomePage() {
             )}
           </div>
 
-          <div className="relative flex h-[340px] items-center justify-center md:h-[380px]">
-            <div className="absolute size-[260px] rounded-full bg-[#FFF3E8] sm:size-[300px]" />
-            <SpeechBubble tail="bottom-left" className="font-jua absolute right-0 top-2 z-10">
+          {/* 말풍선은 항상 캐릭터 머리 위에 둔다. 배경은 화면 오른쪽의 거대한 반구가 담당한다. */}
+          <div className="relative flex h-[480px] flex-col items-center justify-center gap-3 md:h-[560px]">
+            <SpeechBubble tail="bottom-left" className="font-jua relative z-10">
               아직 안 늦었어!
             </SpeechBubble>
             <Ghost
-              width={190}
-              mood="plain"
+              width={250}
               className="animate-bob relative drop-shadow-[0_14px_22px_rgba(255,122,0,.25)]"
             />
           </div>
