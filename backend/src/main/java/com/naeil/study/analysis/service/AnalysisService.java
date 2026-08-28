@@ -11,6 +11,7 @@ import com.naeil.study.analysis.client.dto.AiTopicCandidate;
 import com.naeil.study.analysis.client.dto.AiTopicCandidates;
 import com.naeil.study.analysis.client.dto.AiTopicMergeRequest;
 import com.naeil.study.analysis.exception.AiAnalysisException;
+import com.naeil.study.analysis.progress.AnalysisProgressTracker;
 import com.naeil.study.analysis.service.AnalysisTarget.AnalysisDocument;
 import com.naeil.study.analysis.validation.AiTopicResponseValidator;
 import com.naeil.study.analysis.validation.ValidatedTopic;
@@ -54,6 +55,7 @@ public class AnalysisService {
     private final DocumentChunker documentChunker;
     private final AiAnalysisClient aiAnalysisClient;
     private final AiTopicResponseValidator validator;
+    private final AnalysisProgressTracker progressTracker;
     private final int maxTopics;
 
     public AnalysisService(
@@ -62,6 +64,7 @@ public class AnalysisService {
             DocumentChunker documentChunker,
             AiAnalysisClient aiAnalysisClient,
             AiTopicResponseValidator validator,
+            AnalysisProgressTracker progressTracker,
             @Value("${ai.analysis.max-topics:30}") int maxTopics
     ) {
         this.sessionService = sessionService;
@@ -69,6 +72,7 @@ public class AnalysisService {
         this.documentChunker = documentChunker;
         this.aiAnalysisClient = aiAnalysisClient;
         this.validator = validator;
+        this.progressTracker = progressTracker;
         this.maxTopics = maxTopics;
     }
 
@@ -89,11 +93,14 @@ public class AnalysisService {
         UUID sessionId = target.sessionId();
 
         try {
+            progressTracker.preparing(sessionId);
             List<Topic> topics = runAnalysis(target);
+            progressTracker.done(sessionId);
             log.info("analysis finished: sessionId={}, documents={}, topics={}",
                     sessionId, target.documents().size(), topics.size());
             return topics;
         } catch (RuntimeException e) {
+            progressTracker.failed(sessionId);
             stateWriter.failAnalysis(sessionId);
             log.warn("analysis failed: sessionId={}, reason={}", sessionId, describe(e));
             throw e;
@@ -111,8 +118,10 @@ public class AnalysisService {
 
         AiTopicMergeRequest mergeRequest = new AiTopicMergeRequest(
                 target.subject(), target.studyContext(), references, candidates, maxTopics);
+        progressTracker.merging(target.sessionId());
         List<ValidatedTopic> validated = mergeAndValidate(mergeRequest, references);
 
+        progressTracker.saving(target.sessionId());
         return stateWriter.completeAnalysis(target.sessionId(), validated);
     }
 
@@ -123,32 +132,43 @@ public class AnalysisService {
      * 커리큘럼은 사용자에게 더 나쁘다. 실패를 감추는 것보다 다시 시도하게 하는 편이 낫다.
      */
     private List<AiSourcedTopicCandidate> collectCandidates(AnalysisTarget target) {
-        List<AiSourcedTopicCandidate> candidates = new ArrayList<>();
-        int totalChunks = 0;
-
+        // 조각을 먼저 전부 나눠 총수를 확정한다. 그래야 진행도가 "몇 번째 / 전체" 로 보인다.
+        record PendingChunk(AnalysisDocument document, DocumentChunk chunk, int chunkCount) {
+        }
+        List<PendingChunk> pending = new ArrayList<>();
         for (AnalysisDocument document : target.documents()) {
             List<DocumentChunk> chunks =
                     documentChunker.chunk(document.documentId(), document.fileName(), document.text());
-            totalChunks += chunks.size();
-
             for (DocumentChunk chunk : chunks) {
-                AiChunkAnalysisRequest request = new AiChunkAnalysisRequest(
-                        target.subject(),
-                        document.reference(),
-                        document.fileName(),
-                        chunk.chunkIndex(),
-                        chunks.size(),
-                        chunk.text());
+                pending.add(new PendingChunk(document, chunk, chunks.size()));
+            }
+        }
 
-                AiTopicCandidates result = aiAnalysisClient.analyzeChunk(request);
-                if (result == null || result.topics() == null) {
-                    continue;
-                }
-                for (AiTopicCandidate candidate : result.topics()) {
-                    if (isUsable(candidate)) {
-                        candidates.add(new AiSourcedTopicCandidate(
-                                document.reference(), document.fileName(), chunk.chunkIndex(), candidate));
-                    }
+        int totalChunks = pending.size();
+        progressTracker.analyzing(target.sessionId(), 0, totalChunks);
+
+        List<AiSourcedTopicCandidate> candidates = new ArrayList<>();
+        int completed = 0;
+        for (PendingChunk item : pending) {
+            AiChunkAnalysisRequest request = new AiChunkAnalysisRequest(
+                    target.subject(),
+                    item.document().reference(),
+                    item.document().fileName(),
+                    item.chunk().chunkIndex(),
+                    item.chunkCount(),
+                    item.chunk().text());
+
+            AiTopicCandidates result = aiAnalysisClient.analyzeChunk(request);
+            progressTracker.analyzing(target.sessionId(), ++completed, totalChunks);
+
+            if (result == null || result.topics() == null) {
+                continue;
+            }
+            for (AiTopicCandidate candidate : result.topics()) {
+                if (isUsable(candidate)) {
+                    candidates.add(new AiSourcedTopicCandidate(
+                            item.document().reference(), item.document().fileName(),
+                            item.chunk().chunkIndex(), candidate));
                 }
             }
         }
