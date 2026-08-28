@@ -206,7 +206,8 @@ export default function UploadPage() {
               자료가 없으면 과목명과 시험 범위만으로 만들어 드릴게요.
             </p>
           </div>
-          <SessionCodeCard />
+          {/* 넓은 화면에서는 위 막대에 이미 있다. 여기서는 좁은 화면에서만 그린다. */}
+          <SessionCodeCard className="lg:hidden" />
         </div>
 
         <div className="grid items-start gap-6 lg:grid-cols-[1fr_300px]">

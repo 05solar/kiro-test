@@ -5,6 +5,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { useExamStore } from "@/app/_components/store";
 import { useHydrated } from "@/app/_components/use-hydrated";
 import type { SourceLabel } from "@/lib/api/adapt";
+import { SessionCodePill } from "@/app/_components/session-code-card";
 
 /**
  * 캐릭터 상태.
@@ -213,7 +214,7 @@ export function AppHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 flex h-[62px] items-center gap-7 border-b border-[#eee] bg-white/90 px-4 backdrop-blur-lg sm:h-[68px] sm:px-8">
+      <header className="sticky top-0 z-50 flex h-[62px] items-center gap-4 border-b border-[#eee] bg-white/90 px-4 backdrop-blur-lg sm:h-[68px] sm:px-8 lg:gap-5">
         <button type="button" className="shrink-0 cursor-pointer border-0 bg-transparent p-0" onClick={() => navigate("/")} aria-label="처음으로">
           <Logo />
         </button>
@@ -225,6 +226,8 @@ export function AppHeader() {
           ))}
         </nav>
         <div className="flex-1" />
+        {/* 남은 시간 왼쪽에 세션 코드. 넓은 화면에서만 나온다 — 좁은 화면은 본문 카드가 맡는다. */}
+        <SessionCodePill />
         <div className="flex items-center gap-2 rounded-full border border-[#FFE0C4] bg-[#FFF3E8] px-3 py-1.5 sm:gap-2.5 sm:px-4 sm:py-2">
           <span className="relative inline-flex size-2" aria-hidden="true">
             <span className="absolute inset-0 animate-pulse-ring rounded-full bg-[#FF7A00]" />

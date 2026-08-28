@@ -170,7 +170,8 @@ export default function CurriculumPage() {
           </div>
           {/* 제목 오른쪽 — 세션 코드와 이어하기 버튼 */}
           <div className="flex flex-wrap items-center gap-3">
-            <SessionCodeCard />
+            {/* 넓은 화면에서는 위 막대에 이미 있다. */}
+            <SessionCodeCard className="lg:hidden" />
             {allDone ? (
               <PrimaryButton
                 className="px-7 py-[15px] text-[15.5px]"
