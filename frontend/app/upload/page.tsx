@@ -148,7 +148,9 @@ export default function UploadPage() {
       });
 
       const parsed = await parseDocuments(sessionCode);
-      setDocuments(parsed);
+      // 파싱 응답은 목록 조회와 형식이 다르다(documentId, fileSize 없음).
+      // 화면 목록은 항상 같은 형식을 쓰도록 다시 조회한다.
+      setDocuments(await listDocuments(sessionCode));
 
       if (!parsed.some((doc) => doc.status === "PARSED")) {
         setError("자료에서 읽을 수 있는 텍스트를 찾지 못했습니다. 다른 파일을 올려 주세요.");

@@ -60,6 +60,18 @@ export interface DocumentResponse {
   createdAt: string;
 }
 
+/**
+ * 텍스트 추출 응답의 항목. {@link DocumentResponse} 와 형식이 다르다 —
+ * `documentId` 를 쓰고 `fileSize`/`createdAt` 이 없다.
+ */
+export interface DocumentParseResponse {
+  documentId: string;
+  originalFileName: string;
+  status: DocumentStatus;
+  characterCount: number | null;
+  parsedAt: string | null;
+}
+
 export interface UpdateStudyContextRequest {
   professorEmphasis: string | null;
   pastExamInfo: string | null;
