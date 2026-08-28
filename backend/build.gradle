@@ -29,6 +29,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 
+	// 헬스체크. 로드밸런서가 DB까지 살아 있는지 확인할 수 있어야 한다.
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
 	// 문서 텍스트 추출. Spring Boot BOM이 관리하지 않으므로 버전을 명시한다.
 	implementation 'org.apache.pdfbox:pdfbox:3.0.8'
 	implementation 'org.apache.poi:poi-ooxml:5.5.1'
