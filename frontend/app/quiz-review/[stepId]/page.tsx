@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AppHeader, CheckMini, Ghost, PrimaryButton, SecondaryButton } from "@/app/_components/ui";
+import { AppHeader, Ghost, SecondaryButton } from "@/app/_components/ui";
+import { RetryQuiz } from "@/app/_components/quiz-retry";
 import { useSessionStore } from "@/app/_components/session-store";
 import { useCurriculum } from "@/app/_components/use-curriculum";
 import { useHydrated } from "@/app/_components/use-hydrated";
@@ -136,7 +137,11 @@ export default function QuizReviewPage() {
             </div>
 
             {mode === "retry" ? (
-              <RetryQuiz items={wrong} onDone={() => setMode("wrong")} />
+              <RetryQuiz
+                items={wrong.map((quiz) => ({ quiz }))}
+                onExit={() => setMode("wrong")}
+                exitLabel="틀린 문제 다시 보기"
+              />
             ) : (
               <div className="grid gap-4">
                 {(mode === "wrong" ? wrong : answered).map((item) => (
@@ -242,117 +247,3 @@ function ReviewCard({ item }: { item: QuizReviewItemResponse }) {
   );
 }
 
-/**
- * 틀린 문제만 다시 풀어 보는 연습.
- *
- * <p>서버를 부르지 않는다. 정답은 이미 받아 둔 값으로 화면에서 맞춰 본다 —
- * 기록에 남기지 않는 연습이므로 저장할 것이 없다.
- */
-function RetryQuiz({ items, onDone }: { items: QuizReviewItemResponse[]; onDone: () => void }) {
-  const [index, setIndex] = useState(0);
-  const [picked, setPicked] = useState<number | null>(null);
-  const [hits, setHits] = useState(0);
-  const [finished, setFinished] = useState(false);
-
-  const item = items[index];
-
-  const pick = (option: number) => {
-    if (picked !== null) return;
-    setPicked(option);
-    if (option === item.correctIndex) setHits((n) => n + 1);
-  };
-
-  const next = () => {
-    if (index + 1 >= items.length) {
-      setFinished(true);
-      return;
-    }
-    setIndex((n) => n + 1);
-    setPicked(null);
-  };
-
-  const restart = () => {
-    setIndex(0);
-    setPicked(null);
-    setHits(0);
-    setFinished(false);
-  };
-
-  if (finished) {
-    const all = hits === items.length;
-    return (
-      <section className="rounded-[18px] border border-[#FFE0C4] bg-[#FFFDFB] px-6 py-10 text-center">
-        <Ghost width={130} mood={all ? "happy" : "smile"} />
-        <h2 className="font-jua mb-2 mt-5 text-[26px]">
-          {all ? "이번엔 전부 맞혔어요!" : `${items.length}문제 중 ${hits}문제`}
-        </h2>
-        <p className="mb-7 text-[14px] leading-[1.7] text-[#666]">
-          연습이라 점수에는 반영되지 않아요.
-          <br />
-          처음 푼 기록은 그대로 남아 있어요.
-        </p>
-        <div className="flex flex-wrap justify-center gap-3">
-          <PrimaryButton onClick={restart}>한 번 더 풀기</PrimaryButton>
-          <SecondaryButton onClick={onDone}>틀린 문제 다시 보기</SecondaryButton>
-        </div>
-      </section>
-    );
-  }
-
-  return (
-    <section className="rounded-[18px] border border-[#eee] px-5 py-6 sm:px-7">
-      <div className="mb-4 flex items-center justify-between">
-        <span className="text-[12.5px] font-bold text-[#888]">
-          {index + 1} / {items.length}
-        </span>
-        <span className="rounded-full bg-[#FFF3E8] px-2.5 py-1 text-[11px] font-bold text-[#E85D00]">
-          연습 · 기록되지 않아요
-        </span>
-      </div>
-
-      <h2 className="mb-5 text-[16.5px] font-bold leading-[1.55]">{item.question}</h2>
-
-      <div className="grid gap-2">
-        {item.options.map((option, optionIndex) => {
-          const isCorrect = optionIndex === item.correctIndex;
-          const isPicked = optionIndex === picked;
-          const revealed = picked !== null;
-          return (
-            <button
-              key={optionIndex}
-              type="button"
-              disabled={revealed}
-              onClick={() => pick(optionIndex)}
-              className={`flex items-start gap-2.5 rounded-xl border px-4 py-3.5 text-left text-[14px] leading-[1.5] transition-colors ${
-                !revealed
-                  ? "cursor-pointer border-[#eee] bg-white hover:border-[#FFE0C4]"
-                  : isCorrect
-                    ? "border-[#FF7A00] bg-[#FFF3E8] font-bold"
-                    : isPicked
-                      ? "border-[#F5C2C7] bg-[#FDECEE]"
-                      : "border-[#eee] bg-[#fafafa] text-[#999]"
-              }`}
-            >
-              <span className="shrink-0">{OPTION_MARKS[optionIndex]}</span>
-              <span className="min-w-0 flex-1 break-keep">{option}</span>
-              {revealed && isCorrect && <CheckMini size={13} />}
-            </button>
-          );
-        })}
-      </div>
-
-      {picked !== null && (
-        <>
-          {item.explanation && (
-            <p className="mt-4 rounded-xl bg-[#FFFDFB] px-4 py-3.5 text-[13.5px] leading-[1.7] text-[#666]">
-              {item.explanation}
-            </p>
-          )}
-          <PrimaryButton className="mt-5 w-full" onClick={next}>
-            {index + 1 >= items.length ? "결과 보기" : "다음 문제"}
-          </PrimaryButton>
-        </>
-      )}
-    </section>
-  );
-}

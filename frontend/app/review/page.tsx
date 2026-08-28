@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppHeader, Ghost, PrimaryButton, SecondaryButton } from "@/app/_components/ui";
+import { RetryQuiz } from "@/app/_components/quiz-retry";
 import { useSessionStore } from "@/app/_components/session-store";
 import { useHydrated } from "@/app/_components/use-hydrated";
 import {
@@ -89,6 +90,44 @@ export default function ReviewPage() {
     [studySteps],
   );
 
+  /*
+   * 다시 풀 문제를 STEP 을 가로질러 모은다.
+   *
+   * STEP 순서, 그 안에서는 문제 순서다. 자료를 읽은 차례대로 나와야 앞 STEP 에서
+   * 나온 개념이 뒤 STEP 문제의 전제가 되는 흐름이 유지된다.
+   *
+   * 어느 STEP 의 문제인지 꼬리표를 붙인다. 여러 STEP 을 섞어 풀면 문제만 보고는
+   * 무엇에 대한 질문인지 잡기 어렵다.
+   */
+  const toRetryItems = (steps: StepReviewResponse[], pick: (step: StepReviewResponse) => QuizReviewItemResponse[]) =>
+    steps.flatMap((step) =>
+      pick(step).map((quiz) => ({ quiz, stepLabel: `STEP ${step.stepOrder} · ${step.topicTitle ?? step.title}` })),
+    );
+
+  const allRetryItems = useMemo(() => toRetryItems(stepsWithAnswers, answeredOf), [stepsWithAnswers]);
+  const wrongRetryItems = useMemo(() => toRetryItems(stepsWithWrong, wrongOf), [stepsWithWrong]);
+
+  /* 어느 갈래를 다시 풀고 있는지. null 이면 목록을 본다. */
+  const [retrying, setRetrying] = useState<"all" | "wrong" | null>(null);
+  const retryItems = retrying === "all" ? allRetryItems : retrying === "wrong" ? wrongRetryItems : [];
+
+  // 탭을 옮기면 풀던 것을 접는다. 다른 갈래를 보러 간 사람에게 앞 갈래의 문제를 계속 물을 수 없다.
+  const selectTab = (next: Tab) => {
+    setTab(next);
+    setRetrying(null);
+  };
+
+  /*
+   * 이 갈래를 화면에 보일지.
+   *
+   * 종이에는 언제나 세 갈래를 모두 찍는다 — 정리를 저장하는 사람은 셋 다 한 파일에
+   * 있기를 바란다. 그래서 화면에서 감출 때도 print:block 을 남긴다.
+   *
+   * 다시 풀고 있는 동안에는 목록을 화면에서 걷어 낸다. 풀고 있는 문제 바로 아래에
+   * 그 문제의 정답이 적힌 목록이 있으면 연습이 되지 않는다.
+   */
+  const visible = (key: Tab) => (tab === key && !retrying ? "" : "hidden print:block");
+
   if (error) {
     return (
       <div className="min-h-screen bg-white text-[#222]">
@@ -147,7 +186,7 @@ export default function ReviewPage() {
               <button
                 key={item.key}
                 type="button"
-                onClick={() => setTab(item.key)}
+                onClick={() => selectTab(item.key)}
                 className={`cursor-pointer rounded-full border px-4 py-2 text-[13px] font-bold transition-colors ${
                   tab === item.key
                     ? "border-[#FF7A00] bg-[#FFF3E8] text-[#E85D00]"
@@ -158,20 +197,45 @@ export default function ReviewPage() {
               </button>
             ))}
           </div>
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="cursor-pointer rounded-xl border border-[#FFE0C4] bg-white px-4 py-2.5 text-[13px] font-bold text-[#E85D00] transition-colors hover:border-[#FF7A00]"
-          >
-            인쇄 · PDF 로 저장
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {/*
+              문제를 보는 갈래에서만 다시 풀 수 있다. 요약 갈래에는 풀 문제가 없다.
+              STEP 을 가로질러 모아 풀기 때문에, 마지막 STEP 을 끝낸 뒤 전체를 훑는
+              용도가 된다 — STEP 마다 들어가 따로 풀 필요가 없다.
+            */}
+            {(tab === "all" || tab === "wrong") && !retrying && (
+              <RetryButton
+                count={(tab === "all" ? allRetryItems : wrongRetryItems).length}
+                onClick={() => setRetrying(tab)}
+                label={tab === "all" ? "전체 다시 풀기" : "틀린 문제 다시 풀기"}
+              />
+            )}
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="cursor-pointer rounded-xl border border-[#FFE0C4] bg-white px-4 py-2.5 text-[13px] font-bold text-[#E85D00] transition-colors hover:border-[#FF7A00]"
+            >
+              인쇄 · PDF 로 저장
+            </button>
+          </div>
         </div>
+
+        {/*
+          다시 풀기는 목록 위에 얹는다. 목록을 지우지 않는 이유는 인쇄 때문이다 —
+          종이에 찍히는 내용은 아래 목록들이라, 풀이 중이라고 그것을 걷어 내면
+          인쇄 결과가 비어 버린다.
+        */}
+        {retrying && (
+          <div className="mb-8 print:hidden">
+            <RetryQuiz items={retryItems} onExit={() => setRetrying(null)} exitLabel="정리로 돌아가기" />
+          </div>
+        )}
 
         {/*
           화면에서는 고른 탭 하나만, 종이에는 세 갈래를 모두 찍는다.
           정리를 저장하는 사람은 셋 다 한 파일에 있기를 바란다 — 탭마다 세 번 인쇄하게 할 수는 없다.
         */}
-        <div className={tab === "summary" ? "" : "hidden print:block"}>
+        <div className={visible("summary")}>
           <PrintHeading>STEP 별 요약</PrintHeading>
           {studySteps.length === 0 ? (
             <Empty>정리할 STEP 이 없어요.</Empty>
@@ -184,7 +248,7 @@ export default function ReviewPage() {
           )}
         </div>
 
-        <div className={tab === "all" ? "" : "hidden print:block"}>
+        <div className={visible("all")}>
           <PrintHeading>푼 문제 전체</PrintHeading>
           {stepsWithAnswers.length === 0 ? (
             <Empty>아직 푼 문제가 없어요.</Empty>
@@ -197,7 +261,7 @@ export default function ReviewPage() {
           )}
         </div>
 
-        <div className={tab === "wrong" ? "" : "hidden print:block"}>
+        <div className={visible("wrong")}>
           <PrintHeading>틀린 문제만</PrintHeading>
           {stepsWithWrong.length === 0 ? (
             <Empty>틀린 문제가 없어요. 전부 맞혔습니다!</Empty>
@@ -216,6 +280,35 @@ export default function ReviewPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+/**
+ * 다시 풀기 버튼.
+ *
+ * <p>몇 문제를 풀게 되는지 버튼에 적는다. 40문제짜리인지 3문제짜리인지 모르고
+ * 누르면 중간에 그만두게 된다.
+ */
+function RetryButton({
+  count,
+  label,
+  onClick,
+}: {
+  count: number;
+  label: string;
+  onClick: () => void;
+}) {
+  // 풀 문제가 없으면 누를 것이 없다. 눌리는데 아무 일도 없으면 고장으로 보인다.
+  if (count === 0) return null;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="cursor-pointer rounded-xl border border-[#FF7A00] bg-[#FFF3E8] px-4 py-2.5 text-[13px] font-bold text-[#E85D00] transition-colors hover:bg-[#FFE9D6]"
+    >
+      {label} {count}문제
+    </button>
   );
 }
 
