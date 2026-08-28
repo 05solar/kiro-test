@@ -211,14 +211,9 @@ export default function CurriculumPage() {
         {plan.cutStepIds.length > 0 && <CutBanner cutStepIds={plan.cutStepIds} />}
 
         <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-          {/*
-            맵은 900px 고정이다. 좁은 화면에서는 가로로 밀어서 본다.
-            화면 폭에 맞춰 줄이면 STEP 이름이 읽히지 않는 크기가 된다.
-            대신 밀 수 있다는 것을 알려 준다 — 모르면 왼쪽 끝만 보고 만다.
-          */}
+          {/* 맵은 자리 폭에 맞춰 스스로 줄어든다(MapCanvas). 가로 스크롤이 필요 없다. */}
           <div>
-            <p className="mb-2 text-[12.5px] text-[#888] xl:hidden">맵을 좌우로 밀어서 볼 수 있어요.</p>
-            <div className="overflow-x-auto rounded-[22px] border border-[#eee] bg-[linear-gradient(#FFFDFB,#FFF9F3)]">
+            <div className="overflow-hidden rounded-[22px] border border-[#eee] bg-[linear-gradient(#FFFDFB,#FFF9F3)]">
             <MapCanvas
               steps={orderedSteps.map((step) => ({
                 id: step.id,
@@ -391,10 +386,29 @@ function stepProgressAt(index: number, count: number): number {
  */
 function MapCanvas({ steps, completedStepIds, currentStep, weakSteps, goalReached, rewardAfter, onNavigateStep }: MapCanvasProps) {
   const maskId = useId();
-  const roadGradientId = useId();
   const fullPathRef = useRef<SVGPathElement>(null);
   const [length, setLength] = useState(0);
   const [hasMeasured, setHasMeasured] = useState(false);
+
+  /*
+   * 들어갈 자리의 폭을 재서 배율을 정한다.
+   *
+   * 1 을 넘기지 않는다 — 넓은 화면에서 늘리면 선과 글씨가 흐려진다.
+   * 좁은 화면에서만 줄어든다.
+   */
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    const observer = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width ?? 0;
+      if (width > 0) setScale(Math.min(1, width / VIEW_W));
+    });
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const el = fullPathRef.current;
@@ -477,15 +491,28 @@ function MapCanvas({ steps, completedStepIds, currentStep, weakSteps, goalReache
       : `STEP ${currentStep} 진행 중`;
 
   return (
-    <div className="relative" style={{ width: VIEW_W, height: VIEW_H }}>
+    /*
+     * 맵은 900×700 으로 그려 두고, 들어갈 자리에 맞춰 통째로 줄인다.
+     *
+     * 안쪽 요소들이 픽셀 좌표로 절대 배치돼 있어(left: node.x …) SVG 만 늘리고 줄일 수 없다.
+     * 바깥에서 한 번에 scale 하면 길·노드·캐릭터가 같은 비율로 따라온다.
+     *
+     * 예전에는 좁은 화면에서 가로로 밀어서 봤다. 그러면 전체 여정이 한눈에 안 들어오는데,
+     * 이 화면이 존재하는 이유가 바로 그 "한눈에"다.
+     */
+    <div
+      ref={frameRef}
+      className="relative w-full overflow-hidden"
+      // 높이를 비율로 잡는다. 배율을 잰 뒤에 높이를 정하면 첫 그림에서 700px 였다가
+      // 줄어들며 아래 내용이 한 번 튄다. 비율은 CSS 가 폭만 보고 바로 정한다.
+      style={{ aspectRatio: `${VIEW_W} / ${VIEW_H}`, maxWidth: VIEW_W }}
+    >
+      <div
+        className="absolute left-0 top-0 origin-top-left"
+        style={{ width: VIEW_W, height: VIEW_H, transform: `scale(${scale})` }}
+      >
       <svg width={VIEW_W} height={VIEW_H} viewBox={`0 ${-PAD_TOP} ${VIEW_W} ${VIEW_H}`} className="absolute inset-0" aria-hidden="true">
         <defs>
-          {/* 길 표면의 세로 그라데이션 — 위가 밝고 아래가 짙은 찰흙 질감의 바탕 */}
-          <linearGradient id={roadGradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#FFE7CC" />
-            <stop offset="55%" stopColor="#FFD9B4" />
-            <stop offset="100%" stopColor="#F8C48D" />
-          </linearGradient>
           <mask id={maskId} maskUnits="userSpaceOnUse" x={0} y={-PAD_TOP} width={VIEW_W} height={VIEW_H}>
             <rect x={0} y={-PAD_TOP} width={VIEW_W} height={VIEW_H} fill="black" />
             {length > 0 && (
@@ -504,23 +531,19 @@ function MapCanvas({ steps, completedStepIds, currentStep, weakSteps, goalReache
         </defs>
 
         {/*
-          클레이모피즘 길 — 4겹으로 찰흙 튜브를 흉내낸다.
-          1) 바닥 그림자: 살짝 아래로 밀린 짙은 주황  2) 몸통: 그라데이션
-          3) 윗면 하이라이트: 좁고 밝은 선  4) 진행/점선 오버레이(기존 유지)
+          평평한 길.
+          예전에는 그림자·그라데이션·하이라이트를 겹쳐 찰흙 튜브처럼 그렸는데,
+          겹칠수록 길과 그 위의 노드가 서로 묻혔다. 지나온 길과 남은 길의 구분이
+          이 화면에서 읽어야 할 전부라, 색 두 가지로만 나눈다.
+
+          1) 남은 길: 연한 주황  2) 지나온 길: 진한 주황  3) 흐르는 점선
         */}
-        <g transform="translate(0,6)">
-          <path d={TRACK_PATH_D} stroke="rgba(214,112,18,0.30)" strokeWidth={32} fill="none" strokeLinecap="round" />
-        </g>
-        <path ref={fullPathRef} d={TRACK_PATH_D} stroke={`url(#${roadGradientId})`} strokeWidth={30} fill="none" strokeLinecap="round" />
-        <g transform="translate(0,-7)">
-          <path d={TRACK_PATH_D} stroke="rgba(255,255,255,0.65)" strokeWidth={7} fill="none" strokeLinecap="round" />
-        </g>
+        <path ref={fullPathRef} d={TRACK_PATH_D} stroke="#FFE0C4" strokeWidth={26} fill="none" strokeLinecap="round" />
         {length > 0 && (
           <path
             d={TRACK_PATH_D}
             stroke="#FF7A00"
-            strokeOpacity={0.26}
-            strokeWidth={30}
+            strokeWidth={26}
             fill="none"
             strokeLinecap="round"
             strokeDasharray={length}
@@ -622,6 +645,7 @@ function MapCanvas({ steps, completedStepIds, currentStep, weakSteps, goalReache
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
