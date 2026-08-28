@@ -198,7 +198,7 @@ export function AppHeader() {
           <span className="absolute inset-0 animate-pulse-ring rounded-full bg-[#FF7A00]" />
           <span className="absolute inset-0 rounded-full bg-[#FF7A00]" />
         </span>
-        <span className="hidden text-xs text-[#888] sm:inline">시험까지</span>
+        <span className="hidden text-xs text-[#666] sm:inline">시험까지</span>
         <span className="text-sm font-bold sm:text-[15px]"><Countdown compact /></span>
       </div>
     </header>
@@ -209,7 +209,7 @@ function NavButton({ children, onClick }: { children: React.ReactNode; onClick: 
   return (
     <button
       type="button"
-      className="cursor-pointer rounded-lg border-0 bg-transparent px-[13px] py-[7px] text-[13px] font-medium text-[#888] transition-colors hover:bg-[#FFF3E8] hover:text-[#E85D00]"
+      className="cursor-pointer rounded-lg border-0 bg-transparent px-[13px] py-[7px] text-[13px] font-medium text-[#666] transition-colors hover:bg-[#FFF3E8] hover:text-[#E85D00]"
       onClick={onClick}
     >
       {children}
@@ -252,7 +252,7 @@ export function SecondaryButton({
     <button
       type="button"
       aria-expanded={ariaExpanded}
-      className={`cursor-pointer rounded-xl border border-[#eee] bg-white px-6 py-4 text-[15px] text-[#888] transition-colors hover:border-[#FFE0C4] hover:text-[#E85D00] ${className}`}
+      className={`cursor-pointer rounded-xl border border-[#eee] bg-white px-6 py-4 text-[15px] text-[#666] transition-colors hover:border-[#FFE0C4] hover:text-[#E85D00] ${className}`}
       onClick={onClick}
     >
       {children}

@@ -168,11 +168,11 @@ function QuizView({
       <main className="mx-auto max-w-[820px] px-6 pb-[90px] pt-12 sm:px-10">
         <div className="mb-3.5 flex items-center justify-between">
           <span className="text-[13px] font-bold text-[#FF7A00]">STEP {stepId} 확인 퀴즈</span>
-          <span className="text-[13px] text-[#888]">
+          <span className="text-[13px] text-[#666]">
             {currentIndex + 1} / {questions.length}
           </span>
         </div>
-        <div className="mb-2 text-[13px] text-[#888]">{topicTitle}</div>
+        <div className="mb-2 text-[13px] text-[#666]">{topicTitle}</div>
         <div className="mb-9 h-2 overflow-hidden rounded-full bg-[#FFF3E8]">
           <div className="h-full rounded-full bg-[#FF7A00] transition-[width] duration-300" style={{ width: `${progress}%` }} />
         </div>
@@ -189,7 +189,7 @@ function QuizView({
               let stateClass = "border-[#eee] bg-white text-[#222] hover:border-[#FFE0C4]";
               if (isAnswer) stateClass = "border-[#FF7A00] bg-[#FFF3E8] font-bold text-[#E85D00]";
               else if (isWrongPick) stateClass = "border-[#E03131] border-2 bg-[#FDECEE] text-[#B02A37]";
-              else if (answered) stateClass = "border-[#eee] bg-white text-[#888]";
+              else if (answered) stateClass = "border-[#eee] bg-white text-[#666]";
               return (
                 <button
                   key={option}
@@ -228,7 +228,7 @@ function QuizView({
           )}
         </section>
 
-        <p className="mt-5 text-center text-[13px] text-[#888]">
+        <p className="mt-5 text-center text-[13px] text-[#666]">
           맞힌 문제 {correctCount} / {questions.length}
         </p>
       </main>
@@ -255,7 +255,7 @@ function QuizLoading({ generating = false }: { generating?: boolean }) {
                 <div key={item} className="h-16 rounded-[14px] bg-[#fafafa]" />
               ))}
             </div>
-            {!generating && <p className="mt-6 text-center text-sm text-[#888]">문제 불러오는 중…</p>}
+            {!generating && <p className="mt-6 text-center text-sm text-[#666]">문제 불러오는 중…</p>}
           </div>
         </div>
 
@@ -280,7 +280,7 @@ function QuizError({ stepId, message, onRetry }: { stepId: number; message: stri
       <main className="mx-auto max-w-[720px] px-6 py-24 text-center">
         <Ghost width={92} mood="sad" className="animate-bob-small mx-auto mb-5" />
         <h1 className="font-jua mb-3 text-3xl">퀴즈를 준비하지 못했어요</h1>
-        <p className="mb-8 text-[14.5px] leading-7 text-[#888]">{message}</p>
+        <p className="mb-8 text-[14.5px] leading-7 text-[#666]">{message}</p>
         <div className="flex flex-wrap justify-center gap-3">
           <PrimaryButton onClick={onRetry}>다시 시도</PrimaryButton>
           <SecondaryButton onClick={() => router.push(`/study/${stepId}`)}>학습 화면으로</SecondaryButton>
@@ -298,7 +298,7 @@ function EmptyQuiz({ stepId }: { stepId: number }) {
       <main className="mx-auto max-w-[720px] px-6 py-24 text-center">
         <Ghost width={92} className="animate-bob-small mx-auto mb-5" />
         <h1 className="font-jua mb-3 text-3xl">이 STEP은 퀴즈가 없어요</h1>
-        <p className="mb-8 text-[14.5px] leading-7 text-[#888]">복습 단계이거나 아직 학습을 마치지 않은 단계입니다.</p>
+        <p className="mb-8 text-[14.5px] leading-7 text-[#666]">복습 단계이거나 아직 학습을 마치지 않은 단계입니다.</p>
         <PrimaryButton onClick={() => router.push(`/study/${stepId}`)}>학습 화면으로 돌아가기</PrimaryButton>
       </main>
     </div>

@@ -151,7 +151,7 @@ export default function AnalysisPage() {
           </div>
           <div className="mb-2.5 text-[13px] font-bold text-[#E85D00]">AI 자료 분석</div>
           <h1 className="font-jua mb-3 text-[34px] tracking-[-1px] sm:text-[40px]">{heading}</h1>
-          <p className="mb-7 text-[14.5px] leading-[1.7] text-[#888]">
+          <p className="mb-7 text-[14.5px] leading-[1.7] text-[#666]">
             {phase === "done"
               ? `학습 주제 ${topicCount ?? 0}개 · STEP ${stepCount ?? 0}개`
               : phase === "failed"
@@ -167,7 +167,7 @@ export default function AnalysisPage() {
                 style={{ width: `${barPercent}%` }}
               />
             </div>
-            <div className="mt-2 flex items-center justify-between text-[12.5px] text-[#888]">
+            <div className="mt-2 flex items-center justify-between text-[12.5px] text-[#666]">
               <span>{running ? progressDetail(server) : phase === "done" ? "완료" : "중단됨"}</span>
               <span className="font-jua text-[15px] text-[#E85D00]">{barPercent}%</span>
             </div>
@@ -183,11 +183,11 @@ export default function AnalysisPage() {
                   className={`flex items-center gap-3 rounded-xl border px-4 py-3.5 ${done || active ? "border-[#FFE0C4] bg-white" : "border-transparent bg-white/50"}`}
                 >
                   <span
-                    className={`flex size-6 shrink-0 items-center justify-center rounded-full text-xs ${done ? "bg-[#FF7A00]" : active ? "animate-pulse bg-[#FFF3E8] text-[#E85D00]" : "bg-[#eee] text-[#aaa]"}`}
+                    className={`flex size-6 shrink-0 items-center justify-center rounded-full text-xs ${done ? "bg-[#FF7A00]" : active ? "animate-pulse bg-[#FFF3E8] text-[#E85D00]" : "bg-[#eee] text-[#8a8a8a]"}`}
                   >
                     {done ? <CheckMini size={11} color="#fff" /> : index + 1}
                   </span>
-                  <span className={`text-[13.5px] ${done || active ? "font-bold text-[#222]" : "text-[#aaa]"}`}>
+                  <span className={`text-[13.5px] ${done || active ? "font-bold text-[#222]" : "text-[#8a8a8a]"}`}>
                     {task.label}
                   </span>
                 </div>

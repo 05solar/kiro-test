@@ -9,7 +9,7 @@
   --brand-soft: #fff3e8;
   --brand-border: #ffe0c4;
   --line: #eeeeee;
-  --muted: #888888;
+  --muted: #666666;
 }
 
 @theme inline {
@@ -168,5 +168,5 @@ textarea {
    기본값을 미리 채워 두면 사용자가 자기 값으로 착각한 채 넘어간다. */
 .form-input::placeholder,
 textarea.form-input::placeholder {
-  color: #B5B5B5;
+  color: #9a9a9a;
 }

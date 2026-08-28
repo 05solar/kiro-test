@@ -80,7 +80,7 @@ function triggerClass(invalid: boolean, placeholder: boolean): string {
   return [
     "form-input flex w-full cursor-pointer items-center justify-between rounded-full text-left",
     invalid ? "form-input-error" : "",
-    placeholder ? "text-[#B5B5B5]" : "",
+    placeholder ? "text-[#9a9a9a]" : "",
   ].join(" ");
 }
 
@@ -92,7 +92,7 @@ function ChevronDown({ open }: { open: boolean }) {
       viewBox="0 0 24 24"
       fill="none"
       aria-hidden="true"
-      className={`shrink-0 text-[#B5B5B5] transition-transform ${open ? "rotate-180" : ""}`}
+      className={`shrink-0 text-[#9a9a9a] transition-transform ${open ? "rotate-180" : ""}`}
     >
       <path d="m5 9 7 7 7-7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
@@ -127,7 +127,7 @@ export function DatePickerField({ value, onChange, invalid = false, triggerRef }
           aria-label="시험 날짜 선택"
           className="absolute left-0 top-[calc(100%+8px)] z-40 w-full min-w-[300px] rounded-[22px] border border-[#FFE0C4] bg-white p-4 shadow-[0_14px_36px_rgba(255,122,0,.18)]"
         >
-          <div className="mb-3 px-1 text-[12.5px] font-bold text-[#888]">
+          <div className="mb-3 px-1 text-[12.5px] font-bold text-[#666]">
             오늘부터 일주일 안에서 골라 주세요
           </div>
           <div className="grid grid-cols-4 gap-2">
@@ -147,11 +147,11 @@ export function DatePickerField({ value, onChange, invalid = false, triggerRef }
                       : "border-[#f2e4d5] bg-[#FFFDFB] text-[#555] hover:border-[#FFD3A8] hover:bg-[#FFF3E8]"
                   }`}
                 >
-                  <span className={`text-[11px] ${isSelected ? "text-white/85" : date.weekday === "일" ? "text-[#E03131]" : "text-[#aaa]"}`}>
+                  <span className={`text-[11px] ${isSelected ? "text-white/85" : date.weekday === "일" ? "text-[#E03131]" : "text-[#8a8a8a]"}`}>
                     {date.offset === 0 ? "오늘" : date.offset === 1 ? "내일" : date.weekday}
                   </span>
                   <span className="font-jua text-[17px] leading-none">{date.day}</span>
-                  <span className={`text-[10.5px] ${isSelected ? "text-white/85" : "text-[#bbb]"}`}>{date.month}월</span>
+                  <span className={`text-[10.5px] ${isSelected ? "text-white/85" : "text-[#9a9a9a]"}`}>{date.month}월</span>
                 </button>
               );
             })}
@@ -204,7 +204,7 @@ export function TimePickerField({ value, onChange, invalid = false, triggerRef }
           aria-label="시험 시간 선택"
           className="absolute left-0 top-[calc(100%+8px)] z-40 w-full min-w-[300px] rounded-[22px] border border-[#FFE0C4] bg-white p-4 shadow-[0_14px_36px_rgba(255,122,0,.18)]"
         >
-          <div className="mb-2.5 px-1 text-[12.5px] font-bold text-[#888]">시</div>
+          <div className="mb-2.5 px-1 text-[12.5px] font-bold text-[#666]">시</div>
           <div className="mb-4 grid grid-cols-6 gap-1.5">
             {HOURS.map((hour) => {
               const hh = String(hour).padStart(2, "0");
@@ -225,7 +225,7 @@ export function TimePickerField({ value, onChange, invalid = false, triggerRef }
               );
             })}
           </div>
-          <div className="mb-2.5 px-1 text-[12.5px] font-bold text-[#888]">분 · 정각과 30분만 가능해요</div>
+          <div className="mb-2.5 px-1 text-[12.5px] font-bold text-[#666]">분 · 정각과 30분만 가능해요</div>
           <div className="grid grid-cols-2 gap-2">
             {MINUTES.map((minute) => {
               const isSelected = value !== "" && selectedMinute === minute;
@@ -240,7 +240,7 @@ export function TimePickerField({ value, onChange, invalid = false, triggerRef }
                     isSelected
                       ? "border-[#FF7A00] bg-[#FF7A00] text-white"
                       : disabled
-                        ? "cursor-not-allowed border-[#f2e4d5] bg-[#fafafa] text-[#ccc]"
+                        ? "cursor-not-allowed border-[#f2e4d5] bg-[#fafafa] text-[#b3b3b3]"
                         : "cursor-pointer border-[#f2e4d5] bg-[#FFFDFB] text-[#555] hover:border-[#FFD3A8] hover:bg-[#FFF3E8]"
                   }`}
                 >

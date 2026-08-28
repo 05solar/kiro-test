@@ -157,7 +157,7 @@ export default function ExamInfoPage() {
         <FlowSteps current={0} />
         <div className="mb-2.5 text-[13px] font-bold text-[#FF7A00]">STEP 1 / 2</div>
         <h1 className="font-jua mb-2 text-4xl tracking-[-1px]">시험 정보를 알려주세요</h1>
-        <p className="mb-9 text-[15px] text-[#888]">
+        <p className="mb-9 text-[15px] text-[#666]">
           남은 시간은 자동으로 계산됩니다. <span className="font-bold text-[#E03131]">*</span> 는 필수 입력이에요.
         </p>
         <div className="grid items-start gap-6 lg:grid-cols-[1fr_340px]">
@@ -220,7 +220,7 @@ export default function ExamInfoPage() {
                   onChange={(event) => setRange(event.target.value)}
                   className="form-input"
                 />
-                <span className="mt-2 block text-[12.5px] text-[#888]">교재 목차나 강의 슬라이드 제목을 그대로 붙여도 됩니다.</span>
+                <span className="mt-2 block text-[12.5px] text-[#666]">교재 목차나 강의 슬라이드 제목을 그대로 붙여도 됩니다.</span>
               </label>
               <fieldset>
                 <legend className="mb-[11px] text-[13.5px] font-bold">지금 준비 상태</legend>
@@ -230,7 +230,7 @@ export default function ExamInfoPage() {
                       key={item.value}
                       type="button"
                       onClick={() => setPrepState(item.value)}
-                      className={`cursor-pointer rounded-full border px-[18px] py-[11px] text-sm transition-colors ${prepState === item.value ? "border-[#FF7A00] bg-[#FFF3E8] font-bold text-[#E85D00]" : "border-[#eee] bg-white text-[#888] hover:border-[#FFE0C4] hover:text-[#E85D00]"}`}
+                      className={`cursor-pointer rounded-full border px-[18px] py-[11px] text-sm transition-colors ${prepState === item.value ? "border-[#FF7A00] bg-[#FFF3E8] font-bold text-[#E85D00]" : "border-[#eee] bg-white text-[#666] hover:border-[#FFE0C4] hover:text-[#E85D00]"}`}
                     >
                       {item.label}
                     </button>
@@ -256,7 +256,7 @@ export default function ExamInfoPage() {
             <div className="rounded-[18px] border border-[#FFE0C4] bg-[#FFF3E8] p-7 text-center">
               <div className="mb-3.5 text-[13px] font-bold text-[#E85D00]">시험까지 남은 시간</div>
               <div className="text-[40px]"><Countdown /></div>
-              <div className="mt-4 border-t border-[#FFE0C4] pt-4 text-[13px] leading-[1.7] text-[#888]">
+              <div className="mt-4 border-t border-[#FFE0C4] pt-4 text-[13px] leading-[1.7] text-[#666]">
                 휴식·수면 시간을 빼고 <b className="text-[#222]">실제 공부 가능 시간</b>만 플랜에 반영합니다.
               </div>
             </div>

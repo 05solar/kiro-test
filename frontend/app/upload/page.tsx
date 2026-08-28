@@ -187,7 +187,7 @@ export default function UploadPage() {
         <FlowSteps current={1} />
         <div className="mb-2.5 text-[13px] font-bold text-[#FF7A00]">STEP 2 / 2</div>
         <h1 className="font-jua mb-2 text-4xl tracking-[-1px]">공부할 자료를 올려주세요</h1>
-        <p className="mb-9 text-[15px] text-[#888]">
+        <p className="mb-9 text-[15px] text-[#666]">
           강의 자료를 읽고, 시험에 나올 핵심만 골라 플랜으로 만들게요.{" "}
           <span className="font-bold text-[#E03131]">*</span> 는 필수 입력이에요.
         </p>
@@ -221,7 +221,7 @@ export default function UploadPage() {
                 </svg>
               </div>
               <strong className="mb-2 text-[17px]">파일을 끌어다 놓거나 클릭해서 선택</strong>
-              <span className="text-[13px] leading-6 text-[#888]">PDF, DOCX, TXT · 개당 최대 {MAX_FILE_MB}MB</span>
+              <span className="text-[13px] leading-6 text-[#666]">PDF, DOCX, TXT · 개당 최대 {MAX_FILE_MB}MB</span>
             </button>
             <input
               ref={inputRef}
@@ -243,7 +243,7 @@ export default function UploadPage() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-bold">{doc.originalFileName}</div>
-                    <div className="mt-1 text-xs text-[#888]">
+                    <div className="mt-1 text-xs text-[#666]">
                       {formatSize(doc.fileSize)} · {statusLabel(doc.status)}
                       {doc.characterCount ? ` · ${doc.characterCount.toLocaleString()}자` : ""}
                     </div>
@@ -253,7 +253,7 @@ export default function UploadPage() {
                     disabled={busy}
                     onClick={() => void removeDocument(doc.id)}
                     aria-label={`${doc.originalFileName} 삭제`}
-                    className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-transparent text-[#c9a888] transition-colors hover:border-[#F5C2C7] hover:bg-[#FDECEE] hover:text-[#B02A37] disabled:cursor-not-allowed disabled:opacity-40"
+                    className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-transparent text-[#a8886a] transition-colors hover:border-[#F5C2C7] hover:bg-[#FDECEE] hover:text-[#B02A37] disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <path d="M5 5l14 14M19 5 5 19" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
@@ -276,9 +276,9 @@ export default function UploadPage() {
             <div className="mt-8 border-t border-[#eee] pt-7">
               <div className="mb-1.5 flex items-baseline gap-2">
                 <h2 className="text-[15px] font-bold">아는 걸 더 알려주면 더 잘 맞춰요</h2>
-                <span className="rounded-full bg-[#F4F4F4] px-2 py-0.5 text-[11.5px] font-bold text-[#888]">선택</span>
+                <span className="rounded-full bg-[#F4F4F4] px-2 py-0.5 text-[11.5px] font-bold text-[#666]">선택</span>
               </div>
-              <p className="mb-5 text-[13px] leading-[1.7] text-[#888]">
+              <p className="mb-5 text-[13px] leading-[1.7] text-[#666]">
                 자료에는 없는 정보예요. 채우면 그쪽 내용을 먼저 배치하고 문제도 그 방향으로 냅니다.
                 비워 두셔도 됩니다.
               </p>
@@ -327,7 +327,7 @@ export default function UploadPage() {
                     maxLength={2000}
                     className="form-input resize-y"
                   />
-                  <span className="mt-2 block text-[12.5px] text-[#888]">
+                  <span className="mt-2 block text-[12.5px] text-[#666]">
                     여기 적은 범위는 시간이 모자라도 플랜에서 빼지 않아요.
                     {range && !mustStudyAreas.trim() ? ` 비워 두면 시험 범위(${range})를 씁니다.` : ""}
                   </span>
@@ -359,7 +359,7 @@ export default function UploadPage() {
             </div>
             <div className="rounded-[18px] border border-[#eee] p-5">
               <h2 className="mb-3 text-[13.5px] font-bold">분석할 내용</h2>
-              <ul className="grid gap-2.5 text-[13px] text-[#888]">
+              <ul className="grid gap-2.5 text-[13px] text-[#666]">
                 {["단원별 핵심 개념", "시험 출제 가능성", "남은 시간별 학습 순서", "STEP별 확인 퀴즈"].map((item) => (
                   <li key={item} className="flex items-center gap-2">
                     <CheckMini />

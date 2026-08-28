@@ -97,7 +97,7 @@ export default function QuizResultPage() {
         <main className="mx-auto max-w-[720px] px-6 py-24 text-center">
           <Ghost width={92} mood="sad" className="animate-bob-small mx-auto mb-5" />
           <h1 className="font-jua mb-3 text-3xl">결과를 불러오지 못했어요</h1>
-          <p className="mb-8 text-[14.5px] leading-7 text-[#888]">{error}</p>
+          <p className="mb-8 text-[14.5px] leading-7 text-[#666]">{error}</p>
           <PrimaryButton onClick={() => router.push("/curriculum")}>커리큘럼으로 돌아가기</PrimaryButton>
         </main>
       </div>
@@ -130,7 +130,7 @@ export default function QuizResultPage() {
             <div className="mb-[9px] text-[13px] font-bold text-[#E85D00]">STEP {stepId} 퀴즈 결과</div>
             <div className="font-jua mb-2 text-[38px] tracking-[-1.2px]">
               {score} / {total} 정답 · {percentage}% ·{" "}
-              <span className={passed ? "text-[#E85D00]" : "text-[#888]"}>{passed ? "통과" : "재도전"}</span>
+              <span className={passed ? "text-[#E85D00]" : "text-[#666]"}>{passed ? "통과" : "재도전"}</span>
             </div>
             <p className="text-[15px] leading-[1.6]">
               {passed
@@ -150,7 +150,7 @@ export default function QuizResultPage() {
                     <div className="mb-1.5 text-[14.5px] font-bold">
                       {item.quiz!.order}. {item.quiz!.question}
                     </div>
-                    <div className="text-[13px] leading-[1.7] text-[#888]">
+                    <div className="text-[13px] leading-[1.7] text-[#666]">
                       내가 고른 답 — {item.quiz!.options[item.selectedIndex] ?? "-"}
                     </div>
                   </div>
@@ -161,12 +161,12 @@ export default function QuizResultPage() {
             </div>
           </section>
           <section className="rounded-[18px] border border-[#eee] p-7">
-            <h2 className="mb-4 text-[13px] font-bold text-[#888]">맞힌 문제</h2>
+            <h2 className="mb-4 text-[13px] font-bold text-[#666]">맞힌 문제</h2>
             <div className="grid gap-2.5">
               {strongQuestions.map((item) => (
                 <div key={item.quizId} className="flex items-start gap-[11px] rounded-xl border border-[#eee] px-4 py-3.5">
                   <span className="mt-1"><CheckMini size={12} /></span>
-                  <span className="text-[14.5px] text-[#888]">{item.quiz!.question}</span>
+                  <span className="text-[14.5px] text-[#666]">{item.quiz!.question}</span>
                 </div>
               ))}
             </div>
@@ -190,7 +190,7 @@ export default function QuizResultPage() {
           <SecondaryButton onClick={() => router.push("/curriculum")}>커리큘럼으로 돌아가기</SecondaryButton>
           <SecondaryButton onClick={() => router.push(`/study/${stepId}`)}>학습 내용 다시 보기</SecondaryButton>
         </div>
-        <p className="mt-3 text-[12.5px] leading-[1.7] text-[#888]">
+        <p className="mt-3 text-[12.5px] leading-[1.7] text-[#666]">
           같은 학습 범위에서 <b>이번과 다른 문제</b>를 새로 만듭니다. 지금까지 푼 기록은 그대로 남아요.
         </p>
       </main>
@@ -204,7 +204,7 @@ function ResultLoading() {
       <AppHeader />
       <main className="mx-auto flex max-w-[900px] items-center justify-center px-10 py-24">
         <Ghost width={116} mood="progress" className="animate-bob" />
-        <span className="ml-4 text-sm text-[#888]">결과 불러오는 중…</span>
+        <span className="ml-4 text-sm text-[#666]">결과 불러오는 중…</span>
       </main>
     </div>
   );

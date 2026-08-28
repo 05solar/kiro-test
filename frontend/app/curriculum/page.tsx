@@ -152,7 +152,7 @@ export default function CurriculumPage() {
           <div>
             <div className="mb-[9px] text-[13px] font-bold text-[#FF7A00]">자료구조 · 3장 ~ 7장</div>
             <h1 className="font-jua mb-[7px] text-4xl tracking-[-1px]">오늘 밤 벼락치기 맵</h1>
-            <p className="text-[15px] text-[#888]">STEP {totalSteps}개 · 상자 {rewardAfter.length}개</p>
+            <p className="text-[15px] text-[#666]">STEP {totalSteps}개 · 상자 {rewardAfter.length}개</p>
             {prepState === "review" && (
               <p className="mt-1 text-[13px] font-bold text-[#E85D00]">복습 모드 · 퀴즈 위주로 빠르게</p>
             )}
@@ -179,14 +179,14 @@ export default function CurriculumPage() {
           {hydrated ? (
             <>
               <span className="font-bold text-[#E85D00]">선택: {PREP_LABEL[prepState]}</span>
-              <span className="text-[#888]">·</span>
+              <span className="text-[#666]">·</span>
               <span className="text-[#222]">예상 {formatMinutes(plan.totalMinutes)}</span>
               {plan.reductionPct > 0 && (
                 <span className="font-bold text-[#FF7A00]">(기본 대비 -{plan.reductionPct}%)</span>
               )}
             </>
           ) : (
-            <span className="text-[#888]">플랜 요약 계산 중…</span>
+            <span className="text-[#666]">플랜 요약 계산 중…</span>
           )}
         </div>
 
@@ -219,14 +219,14 @@ export default function CurriculumPage() {
             <div className="rounded-[18px] border border-[#eee] p-[26px]">
               <div className="mb-3 flex items-baseline justify-between"><span className="text-[13.5px] font-bold">전체 진행률</span><span className="font-jua text-[22px] text-[#FF7A00]">{percent}%</span></div>
               <div className="h-2.5 overflow-hidden rounded-full bg-[#FFF3E8]"><div className="h-full rounded-full bg-[#FF7A00] transition-[width] duration-300" style={{ width: `${percent}%` }} /></div>
-              <div className="mt-2.5 text-[12.5px] text-[#888]">
+              <div className="mt-2.5 text-[12.5px] text-[#666]">
                 STEP {completedCount} / {totalSteps} 완료 ·{" "}
                 {remainingMinutes > 0 ? `남은 예상 ${formatMinutes(remainingMinutes)}` : "모든 STEP 완료!"}
               </div>
             </div>
             <div className="rounded-[18px] border border-[#eee] p-[26px]">
               <div className="mb-4 text-[13.5px] font-bold">보상</div>
-              <div className="mb-3.5 flex items-center gap-3"><div className="flex size-11 items-center justify-center rounded-xl bg-[#FFF3E8]">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/reward/coin.png" alt="" width={30} height={30} className="object-contain" /></div><div><div className="text-[15px] font-bold">코인 {openedRewardCount}개</div><div className="text-[12.5px] text-[#888]">상자 {rewardAfter.length}개 중 {openedRewardCount}개 개봉</div></div></div>
+              <div className="mb-3.5 flex items-center gap-3"><div className="flex size-11 items-center justify-center rounded-xl bg-[#FFF3E8]">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/reward/coin.png" alt="" width={30} height={30} className="object-contain" /></div><div><div className="text-[15px] font-bold">코인 {openedRewardCount}개</div><div className="text-[12.5px] text-[#666]">상자 {rewardAfter.length}개 중 {openedRewardCount}개 개봉</div></div></div>
               <div className="flex gap-2">
                 {rewardAfter.map((id, index) => (
                   <div key={id} className={`h-1.5 flex-1 rounded-full ${index < openedRewardCount ? "bg-[#FF7A00]" : "bg-[#eee]"}`} />
@@ -259,20 +259,20 @@ export default function CurriculumPage() {
                   })}
                 </div>
               ) : (
-                <p className="text-[12.5px] leading-5 text-[#888]">아직 표시한 개념이 없어요</p>
+                <p className="text-[12.5px] leading-5 text-[#666]">아직 표시한 개념이 없어요</p>
               )}
             </div>
             <div className="rounded-[18px] border border-[#eee] p-[26px]">
               <div className="mb-3.5 flex items-baseline justify-between">
                 <span className="text-[13.5px] font-bold">STEP 목록</span>
-                <span className="text-[12px] text-[#888]">{prepState === "skimmed" ? "핵심 우선 정렬" : prepState === "review" ? "퀴즈 우선" : "기본 순서"}</span>
+                <span className="text-[12px] text-[#666]">{prepState === "skimmed" ? "핵심 우선 정렬" : prepState === "review" ? "퀴즈 우선" : "기본 순서"}</span>
               </div>
               <div className="grid gap-[11px]">
                 {plan.steps.map((step) => {
                   const isDone = completedStepIds.includes(step.id);
                   const isCurrent = step.id === currentStepId;
                   return (
-                    <div key={step.id} className={`flex items-center gap-2.5 text-[13.5px] ${isCurrent ? "font-bold text-[#E85D00]" : "text-[#888]"}`}>
+                    <div key={step.id} className={`flex items-center gap-2.5 text-[13.5px] ${isCurrent ? "font-bold text-[#E85D00]" : "text-[#666]"}`}>
                       {isDone ? (
                         <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[#FFE0C4]"><CheckMini size={10} /></span>
                       ) : isCurrent ? (
@@ -283,8 +283,8 @@ export default function CurriculumPage() {
                       <span className="flex-1 truncate">{step.title}</span>
                       <span className="flex shrink-0 items-center gap-1.5">
                         {step.quizFirst && <span className="rounded-full bg-[#FFF3E8] px-1.5 py-0.5 text-[10.5px] font-bold text-[#E85D00]">퀴즈</span>}
-                        {step.mode === "skim" && <span className="rounded-full bg-[#F4F4F4] px-1.5 py-0.5 text-[10.5px] text-[#888]">{MODE_LABEL.skim}</span>}
-                        <span className="tabular-nums text-[12px] text-[#aaa]">{step.minutes}분</span>
+                        {step.mode === "skim" && <span className="rounded-full bg-[#F4F4F4] px-1.5 py-0.5 text-[10.5px] text-[#666]">{MODE_LABEL.skim}</span>}
+                        <span className="tabular-nums text-[12px] text-[#8a8a8a]">{step.minutes}분</span>
                       </span>
                     </div>
                   );
@@ -297,7 +297,7 @@ export default function CurriculumPage() {
                     type="button"
                     onClick={() => setShowCut((value) => !value)}
                     aria-expanded={showCut}
-                    className="flex w-full items-center justify-between text-[12.5px] font-bold text-[#888] transition-colors hover:text-[#E85D00]"
+                    className="flex w-full items-center justify-between text-[12.5px] font-bold text-[#666] transition-colors hover:text-[#E85D00]"
                   >
                     <span>제외된 STEP {cutSteps.length}개 보기</span>
                     <span className={`transition-transform duration-300 ${showCut ? "rotate-180" : ""}`} aria-hidden="true">⌄</span>
@@ -665,7 +665,7 @@ function StepNode({
           className={`absolute rounded-full ${weakRing} ${
             isDone
               ? "clay-done cursor-pointer"
-              : `clay-circle text-[17px] ${isLocked ? "cursor-default text-[#b9b9b9]" : "cursor-pointer text-[#8a6a4d]"}`
+              : `clay-circle text-[17px] ${isLocked ? "cursor-default text-[#9a9a9a]" : "cursor-pointer text-[#8a6a4d]"}`
           }`}
         >
           {isDone ? (
@@ -679,16 +679,16 @@ function StepNode({
       {/* 라벨은 평소에 숨긴다. 길에는 숫자와 상자만 보이고, 자세한 제목은 올려다볼 때만. */}
       <div
         className={`pointer-events-none absolute z-20 w-[150px] text-center text-[12.5px] opacity-0 transition-opacity duration-150 group-hover:opacity-100 ${
-          isCurrent ? "font-bold text-[#E85D00]" : isDone ? "font-bold text-[#888]" : "text-[#888]"
+          isCurrent ? "font-bold text-[#E85D00]" : isDone ? "font-bold text-[#666]" : "text-[#666]"
         }`}
         style={{ left: x, top: labelTop, transform: "translate(-50%, 0)" }}
       >
-        <span className={`inline-block rounded-full px-3 py-[5px] text-[12px] font-bold ${isCurrent ? "bg-[#FF7A00] text-white" : "bg-white/85 text-[#888]"}`}>
+        <span className={`inline-block rounded-full px-3 py-[5px] text-[12px] font-bold ${isCurrent ? "bg-[#FF7A00] text-white" : "bg-white/85 text-[#666]"}`}>
           STEP {stepId}
         </span>
         <div className="mt-[5px] flex items-center justify-center gap-1 font-medium text-[#222]">
           <span className="max-w-[140px] truncate rounded-md bg-white/85 px-1.5 py-0.5">{title}</span>
-          {mode === "skim" && <span className="rounded-full bg-[#F4F4F4] px-1.5 py-0.5 text-[10px] text-[#888]">훑기</span>}
+          {mode === "skim" && <span className="rounded-full bg-[#F4F4F4] px-1.5 py-0.5 text-[10px] text-[#666]">훑기</span>}
           {mode === "review" && <span className="rounded-full bg-[#FFF3E8] px-1.5 py-0.5 text-[10px] font-bold text-[#E85D00]">퀴즈</span>}
         </div>
       </div>

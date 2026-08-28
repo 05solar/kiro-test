@@ -77,7 +77,7 @@ export default function HomePage() {
             <h1 className="font-jua m-0 mb-[22px] text-[48px] leading-[1.14] tracking-[-2px] text-[#222] sm:text-[66px]">
               내일까지<br />해야 하는데<span className="text-[#FF7A00]">.</span>
             </h1>
-            <p className="mb-[38px] max-w-[500px] text-[17px] leading-[1.65] text-[#888] sm:text-[19px]">
+            <p className="mb-[38px] max-w-[500px] text-[17px] leading-[1.65] text-[#666] sm:text-[19px]">
               시험 자료와 남은 시간을 알려주면 벼락치기 로드맵과 퀴즈를 만들어줄께!
             </p>
 
@@ -121,7 +121,7 @@ export default function HomePage() {
                     className={`form-input font-mono tracking-[2px] ${error ? "form-input-error" : ""}`}
                   />
                 </label>
-                <p className="mt-2 text-[12.5px] leading-[1.6] text-[#888]">
+                <p className="mt-2 text-[12.5px] leading-[1.6] text-[#666]">
                   벼락치기를 시작할 때 받은 8자리 코드예요. 다른 기기에서도 같은 코드로 이어집니다.
                 </p>
 
