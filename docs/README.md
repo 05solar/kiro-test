@@ -10,6 +10,7 @@
 | [database.md](database.md) | DB 스키마와 ERD |
 | [backend-anatomy.html](backend-anatomy.html) | 백엔드 동작 원리 — 도면과 흐름도 (브라우저로 연다) |
 | [deployment.html](deployment.html) | AWS 배포 점검표 — 고친 것, 남은 제약, 절차 |
+| [frontend-integration-test.md](frontend-integration-test.md) | 프론트 연동 테스트 과정과 결과 |
 | [schema.sql](schema.sql) | 운영 DB 초기 스키마 (ddl-auto=validate 용) |
 | [live-e2e-report.md](live-e2e-report.md) | 실제 강의자료 라이브 E2E 기록 |
 
