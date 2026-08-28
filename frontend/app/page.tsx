@@ -62,15 +62,15 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-white text-[#222]">
       <AppHeader />
-      <main className="relative overflow-x-clip">
+      <main className="relative overflow-clip">
         {/*
           배경 반구 — 중심을 화면 오른쪽 맨끝에 두고 절반만 안으로 들어오게 한다.
-          지름을 화면 높이보다 훨씬 크게 잡아 캐릭터 뒤 배경을 통째로 덮는다.
-          overflow-x-clip 이 없으면 바깥 절반이 가로 스크롤을 만든다.
+          지름을 화면 너비(105vw)로 잡아 반구의 끝이 화면 가로 중앙을 살짝 넘어온다.
+          overflow-clip 이 없으면 바깥 절반이 스크롤을 만들고 위아래로 삐져나온다.
         */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute right-0 top-1/2 size-[780px] -translate-y-1/2 translate-x-1/2 rounded-full bg-[#FFF3E8] md:size-[1050px] lg:size-[1250px]"
+          className="pointer-events-none absolute right-0 top-1/2 size-[105vw] -translate-y-1/2 translate-x-1/2 rounded-full bg-[#FFF3E8]"
         />
         <section className="relative mx-auto grid max-w-[1240px] items-center gap-10 px-6 py-16 md:grid-cols-[1.15fr_.85fr] md:px-10 md:pb-24 md:pt-[88px]">
           <div>
