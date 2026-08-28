@@ -14,6 +14,8 @@ API를 바꾸면 같은 커밋에서 이 폴더의 문서도 고친다.
 | [analysis-api.md](analysis-api.md) | AI 분석 실행 / Topic 조회 API |
 | [curriculum-api.md](curriculum-api.md) | 학습 계획 생성 / 조회 API |
 | [study-step-api.md](study-step-api.md) | 학습 단계 시작 / 완료 API |
+| [quiz-api.md](quiz-api.md) | 퀴즈 생성 / 조회 / 채점 API |
+| [wrong-answer-summary-api.md](wrong-answer-summary-api.md) | 오답 기반 복습 요약 API |
 | [error-codes.md](error-codes.md) | 공통 에러 응답 형식과 코드 목록 |
 
 ## 공통 규약
@@ -45,8 +47,14 @@ API를 바꾸면 같은 커밋에서 이 폴더의 문서도 고친다.
 | POST | `/api/sessions/{sessionCode}/steps/{stepId}/start` | 구현 완료 |
 | POST | `/api/sessions/{sessionCode}/steps/{stepId}/complete` | 구현 완료 |
 | GET | `/api/sessions/{sessionCode}/steps/{stepId}` | 만들지 않음 — 계획 조회로 충분 |
-| GET | `/api/sessions/{sessionCode}/topics/{topicId}/quizzes` | 예정 (STEP 9) |
-| POST | `/api/sessions/{sessionCode}/quizzes/{quizId}/answer` | 예정 (STEP 9) |
+| POST | `/api/sessions/{sessionCode}/topics/{topicId}/quizzes` | 구현 완료 |
+| GET | `/api/sessions/{sessionCode}/topics/{topicId}/quizzes` | 구현 완료 |
+| GET | `/api/sessions/{sessionCode}/topics/{topicId}/quiz-results` | 구현 완료 |
+| POST | `/api/sessions/{sessionCode}/quizzes/{quizId}/answer` | 구현 완료 |
+| POST | `/api/sessions/{sessionCode}/wrong-answer-summary` | 구현 완료 |
+| GET | `/api/sessions/{sessionCode}/wrong-answer-summary` | 구현 완료 |
 | GET | `/api/sessions/{sessionCode}/progress` | 만들지 않음 — 계획 조회에 포함 |
 
-예정 API의 최종 형태는 구현 시점에 확정한다. 위 표는 기획 문서 기준의 계획이다.
+"만들지 않음" 으로 적힌 두 개는 기획 문서에 있었지만 구현하지 않기로 한 것이다.
+같은 정보를 주는 API가 둘이면 어느 쪽이 맞는지 판단할 근거가 없어지기 때문에,
+학습 계획 조회 하나로 통일했다.
