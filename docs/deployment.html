@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="AWS 배포 전에 고친 것, 남은 제약, 배포 절차와 확인 항목.">
+<title>AWS 배포 점검표</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&display=swap">
+
+<style>
+/* 같은 프로젝트의 문서라 해부도와 같은 색·서체를 쓴다.
+   다만 이 문서는 읽는 글이 아니라 실행하는 절차라, 구조를 점검표로 짠다.
+   설명글은 전부 검정. 위계는 크기·굵기·자간으로 만든다. */
+:root {
+  --paper: #ffffff; --paper-2: #f4f7fa; --paper-3: #eaf0f6;
+  --rule: #d9e1ea; --rule-2: #b6c4d3;
+  --ink: #0d1117;
+  --blue: #16419e; --blue-soft: #e7edfb;
+  --amber: #a85f07; --amber-soft: #fdf1de;
+  --green: #0d6e46; --green-soft: #e3f2eb;
+  --red: #a81f28; --red-soft: #fbe9ea;
+  --sans: "IBM Plex Sans KR", "Malgun Gothic", -apple-system, system-ui, sans-serif;
+  --mono: "IBM Plex Mono", "D2Coding", Consolas, monospace;
+  --gut: clamp(20px, 4vw, 48px);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font-family: var(--sans); font-size: 15.5px; line-height: 1.75;
+  -webkit-font-smoothing: antialiased;
+}
+.sheet { max-width: 1000px; margin: 0 auto; padding: 0 var(--gut) 110px; }
+.prose { max-width: 66ch; }
+h1, h2, h3, h4 { margin: 0; font-weight: 600; letter-spacing: -.012em; text-wrap: balance; }
+h1 { font-size: clamp(32px, 5vw, 46px); line-height: 1.1; font-weight: 700; letter-spacing: -.03em; }
+h2 { font-size: clamp(22px, 2.8vw, 27px); line-height: 1.24; }
+h3 { font-size: 17.5px; }
+p { margin: 0; }
+.stack { display: flex; flex-direction: column; gap: 18px; }
+.stack-s { display: flex; flex-direction: column; gap: 10px; }
+.stack-l { display: flex; flex-direction: column; gap: 32px; }
+.eyebrow { font-family: var(--mono); font-size: 11.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--blue); }
+.small { font-size: 13.4px; line-height: 1.7; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+b, strong { font-weight: 600; }
+code { font-family: var(--mono); font-size: .88em; background: var(--paper-3); color: var(--blue); padding: 1px 5px; border-radius: 3px; }
+
+/* 상단 바 — 측면 마커 없음 */
+.topbar {
+  position: sticky; top: 0; z-index: 40; display: flex; align-items: center; gap: 18px;
+  height: 46px; padding: 0 var(--gut); background: rgba(255,255,255,.93);
+  backdrop-filter: blur(8px); border-bottom: 1px solid var(--rule);
+  overflow-x: auto; scrollbar-width: none;
+}
+.topbar::-webkit-scrollbar { display: none; }
+.topbar .mark { font-family: var(--mono); font-size: 11.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--blue); white-space: nowrap; }
+.topbar nav { display: flex; gap: 16px; }
+.topbar a { font-family: var(--mono); font-size: 11.5px; color: var(--ink); text-decoration: none; white-space: nowrap; border-bottom: 1.5px solid transparent; padding: 2px 0; }
+.topbar a:hover, .topbar a:focus-visible { color: var(--blue); border-bottom-color: var(--blue); }
+
+.hero { padding: clamp(52px, 8vw, 88px) 0 38px; }
+.hero .lede { font-size: 17px; line-height: 1.72; max-width: 62ch; }
+
+section { padding-top: 58px; scroll-margin-top: 58px; }
+.sec-head { display: flex; gap: 15px; align-items: baseline; border-bottom: 2px solid var(--ink); padding-bottom: 10px; margin-bottom: 24px; }
+.sec-head .num { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--blue); }
+.sec-head .t { flex: 1; }
+
+/* 판정 배지 */
+.verdict { display: flex; flex-wrap: wrap; gap: 0; border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; }
+.verdict .v { flex: 1 1 190px; padding: 15px 18px; border-right: 1px solid var(--rule); }
+.verdict .v:last-child { border-right: 0; }
+.verdict .v .s { font-family: var(--mono); font-size: 10.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; }
+.verdict .v .h { font-size: 15.5px; font-weight: 600; margin-top: 3px; }
+.verdict .v .d { font-size: 13px; margin-top: 4px; }
+.v.ok  { background: var(--green-soft); } .v.ok .s  { color: var(--green); }
+.v.warn{ background: var(--amber-soft); } .v.warn .s{ color: var(--amber); }
+.v.bad { background: var(--red-soft); }   .v.bad .s { color: var(--red); }
+
+/* 점검 항목 */
+.checks { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--rule); border-radius: 4px; }
+.check { display: grid; grid-template-columns: 26px 1fr; gap: 13px; padding: 14px 16px; border-bottom: 1px solid var(--rule); align-items: start; }
+.check:last-child { border-bottom: 0; }
+.check .box {
+  width: 17px; height: 17px; border: 1.5px solid var(--rule-2); border-radius: 3px;
+  margin-top: 4px; position: relative; transition: background .4s ease, border-color .4s ease;
+}
+.check.done .box { background: var(--green); border-color: var(--green); }
+.check.done .box::after {
+  content: ""; position: absolute; left: 5px; top: 1px; width: 4px; height: 9px;
+  border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg);
+  opacity: 0; transition: opacity .3s ease .25s;
+}
+.on .check.done .box::after { opacity: 1; }
+.check .body { min-width: 0; }
+.check .t { font-weight: 600; font-size: 14.5px; display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+.check .d { font-size: 13.4px; line-height: 1.68; margin-top: 3px; }
+.tag { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: .06em; padding: 2px 7px; border-radius: 3px; white-space: nowrap; }
+.tag.fixed { background: var(--green-soft); color: var(--green); }
+.tag.todo  { background: var(--amber-soft); color: var(--amber); }
+.tag.risk  { background: var(--red-soft); color: var(--red); }
+
+/* 코드 블록 */
+pre {
+  margin: 0; padding: 13px 15px; background: var(--paper-2); border: 1px solid var(--rule);
+  border-radius: 4px; overflow-x: auto; font-family: var(--mono); font-size: 12.4px;
+  line-height: 1.72; color: var(--ink);
+}
+pre .c { color: var(--blue); }
+pre .w { color: var(--amber); }
+
+/* 표 */
+.tbl { overflow-x: auto; border: 1px solid var(--rule); border-radius: 4px; }
+table { border-collapse: collapse; width: 100%; font-size: 13.2px; min-width: 560px; }
+th, td { text-align: left; padding: 9px 13px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; background: var(--paper-2); font-weight: 600; }
+tr:last-child td { border-bottom: 0; }
+td.mono { font-family: var(--mono); font-size: 12.2px; white-space: nowrap; }
+
+/* 전후 비교 */
+.ba { display: grid; grid-template-columns: 1fr auto 1fr; gap: 14px; align-items: center; }
+.ba .card { border: 1px solid var(--rule); border-radius: 4px; padding: 13px 15px; }
+.ba .card.before { border-color: var(--red); background: var(--red-soft); }
+.ba .card.after  { border-color: var(--green); background: var(--green-soft); }
+.ba .lab { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; }
+.ba .card.before .lab { color: var(--red); }
+.ba .card.after .lab { color: var(--green); }
+.ba .val { font-family: var(--mono); font-size: 19px; font-weight: 600; margin-top: 4px; }
+.ba .arw { font-family: var(--mono); font-size: 17px; }
+@media (max-width: 620px) { .ba { grid-template-columns: 1fr; } .ba .arw { display: none; } }
+
+/* 절차 */
+ol.steps { list-style: none; counter-reset: s; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 16px; }
+ol.steps > li { counter-increment: s; position: relative; padding-left: 38px; }
+ol.steps > li::before {
+  content: counter(s, decimal-leading-zero); position: absolute; left: 0; top: 2px;
+  width: 26px; height: 20px; font-family: var(--mono); font-size: 11px; font-weight: 600;
+  color: var(--blue); border: 1px solid var(--blue); border-radius: 2px;
+  display: flex; align-items: center; justify-content: center;
+}
+ol.steps .h { font-weight: 600; font-size: 15px; margin-bottom: 6px; }
+ol.steps .n { font-size: 13.4px; line-height: 1.68; margin-top: 7px; }
+
+ul.clean { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 7px; }
+ul.clean li { position: relative; padding-left: 17px; font-size: 14px; line-height: 1.64; }
+ul.clean li::before { content: ""; position: absolute; left: 3px; top: 10px; width: 5px; height: 1.5px; background: var(--blue); }
+
+.note { border-left: 3px solid var(--amber); background: var(--amber-soft); padding: 13px 17px; border-radius: 0 4px 4px 0; }
+.note .lab { font-family: var(--mono); font-size: 10.5px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); }
+.note.blue { border-left-color: var(--blue); background: var(--blue-soft); }
+.note.blue .lab { color: var(--blue); }
+
+.grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.card { border: 1px solid var(--rule); border-radius: 4px; padding: 15px 16px; }
+.card h4 { margin-bottom: 5px; }
+
+[data-anim] { opacity: 0; transform: translateY(13px); transition: opacity .55s ease, transform .55s ease; }
+[data-anim].on { opacity: 1; transform: none; }
+
+.foot { padding-top: 56px; }
+.foot .line { border-top: 2px solid var(--ink); padding-top: 16px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: .001s !important; }
+  [data-anim] { opacity: 1; transform: none; }
+  .check.done .box::after { opacity: 1; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <span class="mark">배포 점검표</span>
+  <nav>
+    <a href="#verdict">현재 상태</a>
+    <a href="#fixed">고친 것</a>
+    <a href="#remain">남은 제약</a>
+    <a href="#deploy">배포 절차</a>
+    <a href="#env">환경변수</a>
+    <a href="#check">배포 후 확인</a>
+  </nav>
+</header>
+
+<main class="sheet">
+
+  <div class="hero stack">
+    <div class="eyebrow">내일까지 해야 하는데 &middot; AWS 배포</div>
+    <h1>서버에 올리기 전에<br>확인할 것</h1>
+    <p class="lede">
+      개발 PC는 한국 시간대라 드러나지 않던 문제가 있었다. AWS는 UTC로 돈다.
+      이 문서는 그것을 포함해 배포 전에 손봐야 했던 것과, 아직 남아 있는 제약을 적는다.
+    </p>
+  </div>
+
+  <!-- ===== 현재 상태 ===== -->
+  <section id="verdict">
+    <div class="sec-head"><span class="num">00</span><h2 class="t">현재 상태</h2></div>
+
+    <div class="verdict" data-anim>
+      <div class="v ok">
+        <div class="s">해결</div>
+        <div class="h">시간대</div>
+        <div class="d">UTC 서버에서도 한국 시간 기준으로 계산한다. 도커로 실제 확인했다.</div>
+      </div>
+      <div class="v ok">
+        <div class="s">준비됨</div>
+        <div class="h">이미지 · 헬스체크</div>
+        <div class="d">Dockerfile, 운영 프로파일, <code>/actuator/health</code>.</div>
+      </div>
+      <div class="v warn">
+        <div class="s">제약 있음</div>
+        <div class="h">파일 저장</div>
+        <div class="d">로컬 디스크다. 인스턴스 1대 + 영구 볼륨이어야 한다.</div>
+      </div>
+      <div class="v warn">
+        <div class="s">설정 필요</div>
+        <div class="h">AI 요청 시간</div>
+        <div class="d">동기 호출이라 로드밸런서 타임아웃을 늘려야 한다.</div>
+      </div>
+    </div>
+
+    <div class="prose stack" style="margin-top:22px" data-anim>
+      <p>
+        <b>단일 인스턴스로는 지금 올려도 된다.</b> 파일 저장과 AI 요청 시간 두 가지가
+        여러 대로 늘릴 때 걸린다. 아래 &ldquo;남은 제약&rdquo;에 조건을 적었다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== 고친 것 ===== -->
+  <section id="fixed">
+    <div class="sec-head"><span class="num">01</span><h2 class="t">이번에 고친 것</h2></div>
+
+    <div class="stack-l">
+
+      <div class="stack" data-anim>
+        <h3>시간대 &mdash; 가장 심각했다</h3>
+        <p class="prose">
+          시각을 <code>LocalDateTime</code>(시간대 없음)으로 저장하는데 현재 시각은
+          OS 기본 시간대로 잡고 있었다. 개발 PC는 KST라 맞았지만 AWS는 UTC다.
+          사용자가 넣은 시험 시각은 한국 시간이므로 남은 시간이 <b>9시간 부풀려진다.</b>
+        </p>
+        <div class="ba">
+          <div class="card before">
+            <div class="lab">UTC 서버 &mdash; 고치기 전</div>
+            <div class="val">33시간</div>
+            <div class="small" style="margin-top:5px">실행할 수 없는 분량으로 계획이 잡힌다</div>
+          </div>
+          <div class="arw">&rarr;</div>
+          <div class="card after">
+            <div class="lab">고친 뒤</div>
+            <div class="val">24시간</div>
+            <div class="small" style="margin-top:5px">서버 시간대와 무관하게 같은 값</div>
+          </div>
+        </div>
+        <p class="prose small">
+          예외가 나지 않고 조용히 틀린 답을 낸다. 배포 후에 알아채기 가장 어려운 종류다.
+          그래서 OS 설정에 기대지 않고 <code>app.timezone</code>(기본 <code>Asia/Seoul</code>)으로 못박고,
+          JVM 기본 시간대도 함께 맞췄다. 회귀를 막는 테스트도 넣었다.
+        </p>
+        <pre><span class="c"># 실제 확인 — 컨테이너를 UTC로 강제하고 띄웠다</span>
+docker run -e TZ=UTC ... naeil-backend
+
+컨테이너 OS : Fri Aug 28 <span class="w">01:49:34 AM UTC</span> 2026
+애플리케이션: timezone fixed: Asia/Seoul (now=<span class="w">2026-08-28T10:49:25</span>)
+
+<span class="c"># 시험 3시간 뒤 · 예산 600분 →</span> remainingStudyMinutes: <span class="w">179</span>  <span class="c">← 정확</span></pre>
+      </div>
+
+      <div class="checks" data-anim>
+        <div class="check done">
+          <span class="box"></span>
+          <div class="body">
+            <div class="t">운영 프로파일 <span class="tag fixed">application-prod.yml</span></div>
+            <div class="d">
+              <code>ddl-auto</code>를 <code>validate</code>로 바꿨다. 운영에서 <code>update</code>는
+              컬럼 삭제나 타입 변경을 반영하지 않아 코드와 스키마가 조용히 어긋난다.
+              SQL 로깅을 끄고, 로그 레벨을 <code>INFO</code>로 내리고, 오류 응답에서 스택트레이스를 뺐다.
+              프록시 뒤에서 원래 프로토콜을 인식하도록 <code>forward-headers-strategy</code>도 켰다.
+            </div>
+          </div>
+        </div>
+        <div class="check done">
+          <span class="box"></span>
+          <div class="body">
+            <div class="t">헬스체크 <span class="tag fixed">/actuator/health</span></div>
+            <div class="d">
+              actuator를 넣고 <b>health만</b> 열었다. <code>env</code>·<code>beans</code>는 내부 구조를 노출한다.
+              DB 상태를 함께 본다 &mdash; 200만 보고 살았다고 판단하면 DB가 죽어도 트래픽이 계속 들어온다.
+            </div>
+          </div>
+        </div>
+        <div class="check done">
+          <span class="box"></span>
+          <div class="body">
+            <div class="t">Dockerfile <span class="tag fixed">멀티 스테이지</span></div>
+            <div class="d">
+              JDK로 빌드하고 JRE에만 담는다. root로 돌리지 않는다.
+              힙은 <code>MaxRAMPercentage</code>로 컨테이너 메모리에 맞춘다.
+              <code>gradle.properties</code>의 <code>MS949</code>는 한글 경로 대응용 Windows 전용이라
+              빌드 시 UTF-8로 덮어쓴다 &mdash; 그대로 두면 CloudWatch 로그의 한글이 깨진다.
+            </div>
+          </div>
+        </div>
+        <div class="check done">
+          <span class="box"></span>
+          <div class="body">
+            <div class="t">만료 세션 정리 <span class="tag fixed">매일 04:00</span></div>
+            <div class="d">
+              &ldquo;30일 후 삭제&rdquo;라고 안내하면서 지우는 쪽이 없었다. 디스크와 DB가 무한정 늘어난다.
+              <b>파일을 먼저 지우고 DB를 지운다</b> &mdash; 순서가 반대면 삭제에 실패한 파일의 위치를 잃는다.
+              한 번에 200건씩만 처리해 첫 실행이 DB를 오래 잠그지 않게 했다.
+            </div>
+          </div>
+        </div>
+        <div class="check done">
+          <span class="box"></span>
+          <div class="body">
+            <div class="t">없는 주소가 500이었다 <span class="tag fixed">→ 404 / 405</span></div>
+            <div class="d">
+              매핑되지 않은 경로가 전부 <code>500 INTERNAL_ERROR</code>로 나갔다.
+              인터넷에 붙는 순간부터 스캐너 요청이 끊임없이 들어오는데, 그게 다 오류로 잡히면
+              모니터링이 시끄러워져 <b>정작 진짜 장애를 놓친다.</b> 로그도 error에서 debug로 내렸다.
+            </div>
+          </div>
+        </div>
+        <div class="check done">
+          <span class="box"></span>
+          <div class="body">
+            <div class="t">CORS <span class="tag fixed">기본은 닫힘</span></div>
+            <div class="d">
+              프론트를 다른 도메인에 올릴 때만 <code>CORS_ALLOWED_ORIGINS</code>에 채운다.
+              비어 있으면 <b>아무것도 등록하지 않는다.</b> 기본값을 열어 두면 배포하는 사람이
+              눈치채지 못한 채 아무 도메인에서나 호출할 수 있게 된다.
+            </div>
+          </div>
+        </div>
+        <div class="check done">
+          <span class="box"></span>
+          <div class="body">
+            <div class="t">스키마 파일 <span class="tag fixed">docs/schema.sql</span></div>
+            <div class="d">
+              <code>validate</code>는 스키마를 만들지 않는다. 새 DB에 처음 올릴 때 적용할
+              테이블 9개 · 제약 28개를 <code>pg_dump</code>로 뽑아 두었다.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 남은 제약 ===== -->
+  <section id="remain">
+    <div class="sec-head"><span class="num">02</span><h2 class="t">남은 제약</h2></div>
+
+    <div class="stack-l">
+      <div class="checks" data-anim>
+        <div class="check">
+          <span class="box"></span>
+          <div class="body">
+            <div class="t">업로드 파일이 로컬 디스크에 있다 <span class="tag risk">인스턴스 1대</span></div>
+            <div class="d">
+              Fargate는 재시작하면 디스크가 사라진다. 2대로 늘리면 1번에 올린 파일을
+              2번이 못 찾아 <code>STORED_FILE_NOT_FOUND</code>가 난다.
+              <br><br>
+              <b>지금 올리려면</b> &mdash; EC2 한 대 + EBS, 또는 ECS에 EFS를 마운트하고
+              <code>STORAGE_ROOT_PATH</code>를 그쪽으로 준다.
+              <br>
+              <b>제대로 하려면</b> &mdash; <code>StorageService</code> 인터페이스에 S3 구현을 추가한다.
+              도메인 코드는 건드리지 않는다. 그러라고 감싸 둔 자리다.
+            </div>
+          </div>
+        </div>
+        <div class="check">
+          <span class="box"></span>
+          <div class="body">
+            <div class="t">AI 요청이 동기다 <span class="tag todo">타임아웃 설정</span></div>
+            <div class="d">
+              <code>POST /analysis</code>는 요청 안에서 AI를 다 부르고 응답한다.
+              청크 N개 + 병합 1회라 실제 강의자료면 분 단위가 나온다.
+              <b>ALB 기본 유휴 타임아웃은 60초다.</b> 클라이언트는 504를 받는데 백엔드는 계속 돌아
+              Topic을 저장하고, 사용자가 재요청하면 <code>409 ANALYSIS_ALREADY_RUNNING</code>으로 막힌다.
+              <br><br>
+              <b>당장</b> &mdash; ALB 유휴 타임아웃을 <code>300</code>초로 올린다.
+              <br>
+              <b>제대로</b> &mdash; 202를 먼저 주고 상태를 폴링하게 바꾼다. 퀴즈 생성과 오답 요약도 같은 구조다.
+            </div>
+          </div>
+        </div>
+        <div class="check">
+          <span class="box"></span>
+          <div class="body">
+            <div class="t">마이그레이션 도구가 없다 <span class="tag todo">Flyway</span></div>
+            <div class="d">
+              지금은 <code>docs/schema.sql</code>을 사람이 적용한다. 엔티티를 고치면
+              스키마를 다시 뽑아 갱신해야 하고, 그 절차를 잊으면 <code>validate</code>가 기동을 막는다.
+              기동 실패가 조용한 불일치보다 낫지만, 변경이 잦아지면 Flyway를 넣는다.
+            </div>
+          </div>
+        </div>
+        <div class="check">
+          <span class="box"></span>
+          <div class="body">
+            <div class="t">세션 코드에 레이트리밋이 없다 <span class="tag todo">WAF</span></div>
+            <div class="d">
+              32의 8제곱, 약 1.1조라 전수 대입은 비현실적이지만, 시도 자체에 비용이 없다.
+              ALB 앞에 WAF 요청 제한을 두는 것이 가장 싸게 막는 방법이다.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="note blue" data-anim>
+        <div class="lab">키 관리</div>
+        <p style="margin-top:6px">
+          <code>.env</code> 파일은 로컬 개발용이다. <code>spring.config.import</code>에
+          <code>optional:</code>이 붙어 있어 파일이 없으면 건너뛰고 환경변수를 읽는다.
+          운영에서는 <b>파일을 올리지 말고</b> ECS 태스크 정의의 secrets나
+          Secrets Manager로 <code>GEMINI_API_KEY</code>를 주입한다.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 배포 절차 ===== -->
+  <section id="deploy">
+    <div class="sec-head"><span class="num">03</span><h2 class="t">배포 절차</h2></div>
+
+    <ol class="steps" data-anim>
+      <li>
+        <div class="h">RDS PostgreSQL을 만들고 스키마를 적용한다</div>
+        <pre>createdb naeil_study
+psql -h &lt;rds-endpoint&gt; -U &lt;user&gt; -d naeil_study -f docs/schema.sql</pre>
+        <div class="n">
+          운영 프로파일은 <code>validate</code>라 스키마를 자동으로 만들지 않는다.
+          이 단계를 건너뛰면 애플리케이션이 기동에 실패한다 &mdash; 조용히 잘못된 스키마로 도는 것보다 낫다.
+        </div>
+      </li>
+      <li>
+        <div class="h">이미지를 만들어 ECR에 올린다</div>
+        <pre>cd backend
+docker build -t naeil-backend:1.0 .
+docker tag naeil-backend:1.0 &lt;account&gt;.dkr.ecr.ap-northeast-2.amazonaws.com/naeil-backend:1.0
+docker push &lt;account&gt;.dkr.ecr.ap-northeast-2.amazonaws.com/naeil-backend:1.0</pre>
+        <div class="n">
+          이미지 빌드는 테스트를 돌리지 않는다(<code>-x test</code>). 테스트는 CI에서 따로 돌린다.
+          리전은 서울(<code>ap-northeast-2</code>)을 쓴다 &mdash; 사용자가 국내이고 시간대도 KST다.
+        </div>
+      </li>
+      <li>
+        <div class="h">파일 저장 위치를 정한다</div>
+        <div class="n">
+          EC2라면 EBS 경로를, ECS라면 EFS 마운트 지점을 <code>STORAGE_ROOT_PATH</code>로 준다.
+          이걸 정하지 않고 올리면 <b>재배포할 때마다 사용자가 올린 강의자료가 사라진다.</b>
+          컨테이너 안 <code>/app/uploads</code>가 기본값이며 볼륨으로 선언되어 있다.
+        </div>
+      </li>
+      <li>
+        <div class="h">환경변수를 넣고 태스크를 띄운다</div>
+        <div class="n">아래 &ldquo;환경변수&rdquo; 표 참고. <code>GEMINI_API_KEY</code>는 평문으로 넣지 않는다.</div>
+      </li>
+      <li>
+        <div class="h">ALB를 붙인다</div>
+        <pre>대상 그룹 헬스체크 경로 : <span class="c">/actuator/health</span>
+정상 임계값             : 2
+간격                    : 30초
+<span class="w">유휴 타임아웃           : 300초  ← 기본 60초로 두면 AI 요청이 끊긴다</span></pre>
+        <div class="n">
+          HTTPS는 ACM 인증서로 ALB에서 끊는다. 애플리케이션은 <code>forward-headers-strategy</code>로
+          원래 프로토콜을 인식한다.
+        </div>
+      </li>
+      <li>
+        <div class="h">확인한다</div>
+        <div class="n">아래 &ldquo;배포 후 확인&rdquo; 항목을 순서대로 실행한다.</div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ===== 환경변수 ===== -->
+  <section id="env">
+    <div class="sec-head"><span class="num">04</span><h2 class="t">환경변수</h2></div>
+
+    <div class="stack" data-anim>
+      <h3 style="font-size:15px">반드시 넣는 것</h3>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>변수</th><th>값</th><th>비고</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">DB_URL</td><td class="mono">jdbc:postgresql://&lt;rds&gt;:5432/naeil_study</td><td></td></tr>
+            <tr><td class="mono">DB_USERNAME</td><td class="mono">&mdash;</td><td></td></tr>
+            <tr><td class="mono">DB_PASSWORD</td><td class="mono">&mdash;</td><td>Secrets Manager</td></tr>
+            <tr><td class="mono">GEMINI_API_KEY</td><td class="mono">&mdash;</td><td><b>Secrets Manager.</b> 평문 금지</td></tr>
+            <tr><td class="mono">STORAGE_ROOT_PATH</td><td class="mono">/app/uploads</td><td>영구 볼륨을 여기 마운트</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 style="font-size:15px; margin-top:14px">이미지에 이미 들어 있는 것</h3>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>변수</th><th>값</th><th>왜</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">SPRING_PROFILES_ACTIVE</td><td class="mono">prod</td><td>validate · 로그 축소</td></tr>
+            <tr><td class="mono">APP_TIMEZONE</td><td class="mono">Asia/Seoul</td><td>시각 계산 기준</td></tr>
+            <tr><td class="mono">TZ</td><td class="mono">Asia/Seoul</td><td>로그 타임스탬프</td></tr>
+            <tr><td class="mono">JAVA_OPTS</td><td class="mono">-XX:MaxRAMPercentage=75</td><td>컨테이너 메모리에 맞춤</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 style="font-size:15px; margin-top:14px">상황에 따라</h3>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>변수</th><th>기본값</th><th>언제 바꾸나</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">CORS_ALLOWED_ORIGINS</td><td class="mono">(비어 있음)</td><td>프론트가 다른 도메인일 때만</td></tr>
+            <tr><td class="mono">DB_POOL_SIZE</td><td class="mono">10</td><td>RDS 최대 커넥션에 맞춰</td></tr>
+            <tr><td class="mono">SESSION_CLEANUP_CRON</td><td class="mono">0 0 4 * * *</td><td>정리 시각</td></tr>
+            <tr><td class="mono">SESSION_CLEANUP_ENABLED</td><td class="mono">true</td><td>여러 대로 늘리면 한 대만 켠다</td></tr>
+            <tr><td class="mono">LOG_LEVEL</td><td class="mono">INFO</td><td>문제 추적 시 DEBUG</td></tr>
+            <tr><td class="mono">AI_TIMEOUT_SECONDS</td><td class="mono">180</td><td>ALB 타임아웃보다 작게</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 배포 후 확인 ===== -->
+  <section id="check">
+    <div class="sec-head"><span class="num">05</span><h2 class="t">배포 후 확인</h2></div>
+
+    <div class="stack-l">
+      <div class="stack" data-anim>
+        <pre><span class="c"># 1. 시간대 — 이것부터 본다</span>
+docker logs &lt;container&gt; | grep "timezone fixed"
+→ application timezone fixed: <span class="w">Asia/Seoul</span>
+
+<span class="c"># 2. 프로파일</span>
+→ The following 1 profile is active: <span class="w">"prod"</span>
+
+<span class="c"># 3. 헬스체크</span>
+curl https://&lt;domain&gt;/actuator/health
+→ {"status":"UP","groups":["liveness","readiness"]}
+
+<span class="c"># 4. 관리 엔드포인트가 막혔는지</span>
+curl -o /dev/null -w "%{http_code}" https://&lt;domain&gt;/actuator/env
+→ <span class="w">404</span>   <span class="c">(200이면 즉시 내린다)</span>
+
+<span class="c"># 5. 시간 계산 — 지금부터 3시간 뒤를 시험 시각으로</span>
+POST /api/sessions                → 8자리 코드
+PUT  /api/sessions/{code}/exam    → availableStudyMinutes: 600
+→ remainingStudyMinutes: <span class="w">약 180</span>   <span class="c">(720이 나오면 시간대가 안 잡힌 것)</span></pre>
+      </div>
+
+      <div class="note" data-anim>
+        <div class="lab">5번이 핵심이다</div>
+        <p style="margin-top:6px">
+          나머지가 다 정상이어도 이 값이 틀리면 서비스가 실행 불가능한 계획을 내놓는다.
+          <b>에러 없이 틀린 답이 나오므로</b> 배포할 때마다 이 한 줄은 직접 확인한다.
+        </p>
+      </div>
+
+      <div class="grid" data-anim>
+        <div class="card">
+          <h4>재배포 전에</h4>
+          <ul class="clean">
+            <li>엔티티를 고쳤다면 <code>docs/schema.sql</code>을 다시 뽑았는가</li>
+            <li>스키마를 RDS에 적용했는가 &mdash; 안 하면 기동 실패</li>
+            <li>업로드 볼륨이 그대로 붙어 있는가</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>이런 증상이면</h4>
+          <ul class="clean">
+            <li>기동 실패 &mdash; 스키마 미적용 또는 엔티티와 불일치</li>
+            <li>분석이 504 &mdash; ALB 유휴 타임아웃</li>
+            <li>파일을 못 찾음 &mdash; 볼륨 미마운트 또는 인스턴스 2대</li>
+            <li>계획이 이상하게 김 &mdash; 시간대</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="foot">
+    <div class="line">
+      <div class="eyebrow">요약</div>
+      <div class="grid" style="margin-top:18px" data-anim>
+        <div class="stack-s">
+          <h3>지금 올릴 수 있는 형태</h3>
+          <p class="small">
+            EC2 한 대 + EBS + RDS + ALB(유휴 타임아웃 300초). 이 조합이면 지금 코드로 정상 동작한다.
+            도커로 실제 띄워 시간대·헬스체크·404 처리·시간 계산까지 확인했다.
+          </p>
+        </div>
+        <div class="stack-s">
+          <h3>여러 대로 늘리기 전에</h3>
+          <p class="small">
+            S3 저장소 구현과 비동기 분석이 필요하다. 둘 다 인터페이스와 상태 필드가
+            이미 자리를 잡아 두어서, 도메인 로직을 바꾸지 않고 얹을 수 있다.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+(function () {
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var targets = document.querySelectorAll("[data-anim]");
+  if (reduce || !("IntersectionObserver" in window)) {
+    targets.forEach(function (el) { el.classList.add("on"); });
+    return;
+  }
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      e.target.classList.add("on");
+      io.unobserve(e.target);
+    });
+  }, { rootMargin: "0px 0px -10% 0px", threshold: .12 });
+  targets.forEach(function (el) { io.observe(el); });
+})();
+</script>
+</body>
+</html>

@@ -79,6 +79,7 @@ DB 접속 정보는 환경변수로 주입한다. 자세한 내용은 [backend/R
 - [docs/api/error-codes.md](docs/api/error-codes.md) — 공통 에러 코드
 - [docs/database.md](docs/database.md) — DB 구조
 - [docs/backend-anatomy.html](docs/backend-anatomy.html) — 백엔드 동작 원리 (도면·흐름도, 브라우저로 연다)
+- [docs/deployment.html](docs/deployment.html) — AWS 배포 점검표
 
 ## 알려진 환경 이슈
 
