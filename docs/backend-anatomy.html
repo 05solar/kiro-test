@@ -456,75 +456,225 @@ hr.rule { border: 0; border-top: 1px solid var(--rule); margin: 0; }
       </p>
     </div>
 
+    <!-- ── 2-1. 층 ── -->
     <div class="plate" data-anim>
-      <div class="plate-title">com.naeil.study &mdash; 도메인 11개, 클래스 228개</div>
-      <div class="tbl-wrap">
-        <table>
-          <thead>
-            <tr><th>패키지</th><th>클래스</th><th>맡은 일</th></tr>
-          </thead>
-          <tbody>
-            <tr><td class="mono">session</td><td class="mono">18</td><td>8자리 코드 발급·복구, 시험 정보, 만료 정리</td></tr>
-            <tr><td class="mono">document</td><td class="mono">31</td><td>업로드, PDF/DOCX/TXT 텍스트 추출</td></tr>
-            <tr><td class="mono">studycontext</td><td class="mono">7</td><td>교수님 강조·기출·약점 (사용자가 아는 것)</td></tr>
-            <tr><td class="mono">analysis</td><td class="mono">32</td><td>자료를 학습 주제로 쪼개는 AI 호출</td></tr>
-            <tr><td class="mono">topic</td><td class="mono">8</td><td>학습 주제 조회</td></tr>
-            <tr><td class="mono">curriculum</td><td class="mono">39</td><td>시간 배분, 단계 진행, 재조정</td></tr>
-            <tr><td class="mono">quiz</td><td class="mono">33</td><td>문제 생성(회차), 채점, 결과 집계</td></tr>
-            <tr><td class="mono">wronganswer</td><td class="mono">22</td><td>오답 기반 복습 요약</td></tr>
-            <tr><td class="mono">chat</td><td class="mono">24</td><td>학습 챗봇</td></tr>
-            <tr><td class="mono">storage</td><td class="mono">5</td><td>파일 저장 추상화 (로컬 → S3 교체 지점)</td></tr>
-            <tr><td class="mono">common</td><td class="mono">8</td><td>예외 처리, 시간대, CORS</td></tr>
-          </tbody>
-        </table>
-      </div>
+      <div class="plate-title">요청 하나가 지나는 층</div>
+      <pre class="mono small">           브라우저
+              │  POST /api/sessions/7K2M9QXF/topics/{id}/quizzes
+              ▼
+    ┌───────────────────┐
+    │  Controller       │  HTTP 만 안다. 경로·상태코드·요청 검증
+    │  QuizController   │  도메인 규칙을 여기 두지 않는다
+    └─────────┬─────────┘
+              ▼
+    ┌───────────────────┐        ┌──────────────────────┐
+    │  Service          │───────▶│  AiQuizClient        │  ← 인터페이스
+    │  QuizGeneration   │        │   Gemini / Claude /  │
+    │  Service          │◀───────│   Mock / Unavailable │
+    └─────────┬─────────┘        └──────────────────────┘
+              │                   바깥 세계는 여기서만 닿는다
+              ▼
+    ┌───────────────────┐
+    │  Validator        │  AI 응답을 그대로 믿지 않는다
+    │  AiQuizResponse   │  보기 4개? 정답 0~3? 프롬프트가 새지 않았나?
+    │  Validator        │
+    └─────────┬─────────┘
+              ▼
+    ┌───────────────────┐
+    │  Repository       │  Spring Data JPA
+    │  QuizRepository   │
+    └─────────┬─────────┘
+              ▼
+         PostgreSQL</pre>
+      <p class="caption">
+        <b>검증이 별도 층인 것이 이 그림의 요점이다.</b> 구조화 출력을 써도 "보기가 4개인지",
+        "정답 번호가 범위 안인지"까지는 보장되지 않는다. 그 판단을 서비스에 섞으면
+        AI 를 바꿀 때마다 같은 규칙을 다시 쓰게 된다.
+      </p>
     </div>
 
+    <!-- ── 2-2. 도메인 지도 ── -->
     <div class="plate" data-anim>
-      <div class="plate-title">한 도메인 안의 모양 &mdash; chat 을 예로</div>
-      <pre class="mono small">chat/
-├── controller/   ChatController          HTTP 표면
-├── dto/          ChatRequest/Response     밖으로 나가는 모양
-├── service/      ChatService              흐름
-├── context/      StudyContextProvider     근거를 고른다 ← 인터페이스
-├── client/       AiChatClient             AI 호출     ← 인터페이스
-│                 ├── GeminiChatClient
-│                 ├── ClaudeChatClient
-│                 ├── MockAiChatClient     과금 없음
-│                 └── UnavailableAiChatClient  키 없을 때
-├── prompt/       ChatPrompts             프롬프트 조립
-├── entity/       ChatMessage             대화 한 줄
-├── repository/   ChatMessageRepository
-├── exception/    ChatFailedException 등
-└── config/       AiChatClientConfig      어떤 구현을 붙일지</pre>
+      <div class="plate-title">도메인 11개와 의존 방향 &mdash; 화살표는 "아는 쪽 → 알려지는 쪽"</div>
+      <pre class="mono small">  ┌──────────────────────────────────────────────────────────┐
+  │  기능 도메인 — 사용자가 누르는 것들                        │
+  │                                                          │
+  │   analysis      chat      quiz      wronganswer          │
+  │   자료→주제     챗봇      출제·채점   오답 요약            │
+  │      │           │         │            │                │
+  │      └───────────┴────┬────┴────────────┘                │
+  └───────────────────────┼──────────────────────────────────┘
+                          ▼
+  ┌──────────────────────────────────────────────────────────┐
+  │  학습 도메인 — 무엇을·언제 공부하는가                       │
+  │                                                          │
+  │        curriculum ──────▶ topic                          │
+  │        시간 배분·진행       학습 주제                       │
+  └───────────────────────┬──────────────────────────────────┘
+                          ▼
+  ┌──────────────────────────────────────────────────────────┐
+  │  입력 도메인 — 사용자가 준 것                              │
+  │                                                          │
+  │     document ◀──▶ session ◀──── studycontext             │
+  │     자료·추출      8자리 코드      강조·기출·약점            │
+  └───────────────────────┬──────────────────────────────────┘
+                          ▼
+  ┌──────────────────────────────────────────────────────────┐
+  │  받침 — 도메인을 모른다                                    │
+  │        storage (파일)        common (예외·시각·CORS)       │
+  └──────────────────────────────────────────────────────────┘</pre>
       <p class="caption">
-        <b>바깥 세계와 닿는 곳은 전부 인터페이스다.</b> AI 공급자도, 근거를 고르는 방법도,
-        파일 저장소도 구현을 갈아 끼울 수 있다. 도메인 코드는 무엇이 붙었는지 모른다.
+        <b>화살표가 위로 올라가지 않는다.</b> <code>topic</code> 은 자기를 누가 쓰는지 모르고,
+        <code>session</code> 은 퀴즈가 있는지도 모른다. 그래서 퀴즈를 통째로 들어내도
+        아래 세 층은 컴파일된다.
       </p>
     </div>
 
     <div class="grid g2" data-anim>
+      <div class="card warn">
+        <h4>예외 하나 &mdash; analysis → quiz</h4>
+        <p class="small">
+          위 그림대로면 없어야 할 화살표다. <b>재분석</b> 때문에 생겼다: 주제를 다시 만들면
+          그 주제에 매달린 퀴즈·답안·계획이 남아 외래키를 물고 늘어진다.
+          <code>AnalysisStateWriter</code> 가 자식부터 지운 뒤 주제를 교체한다.
+        </p>
+        <pre class="mono small">답안 → 퀴즈 → 학습단계 → 계획 → 오답요약 → Topic</pre>
+      </div>
+      <div class="card warn">
+        <h4>또 하나 &mdash; session ↔ document</h4>
+        <p class="small">
+          <code>document</code> 는 자기가 어느 세션 것인지 알아야 하고(소유),
+          <code>session</code> 은 만료된 세션의 파일을 지워야 한다(정리).
+          방향이 양쪽인 유일한 자리다. 정리 쪽은 <code>SessionPurgeRepository</code> 한 곳에
+          모아 두어 다른 곳으로 번지지 않게 했다.
+        </p>
+      </div>
+    </div>
+
+    <!-- ── 2-3. 도메인 내부 ── -->
+    <div class="plate" data-anim>
+      <div class="plate-title">도메인 하나의 표준 구성 &mdash; 열한 도메인이 같은 모양이다</div>
+      <pre class="mono small">chat/
+├── controller/   ChatController              HTTP 표면. 경로와 상태코드
+├── dto/          ChatRequest / ChatResponse   밖으로 나가는 모양
+│                                             (엔티티를 그대로 내보내지 않는다)
+├── service/      ChatService                  흐름. "무엇을 어떤 순서로"
+│
+├── context/      StudyContextProvider  ◀── 인터페이스
+│                 └ SimpleStudyContextProvider   지금은 키워드
+│                                                나중에 벡터 검색
+├── client/       AiChatClient          ◀── 인터페이스
+│                 ├ GeminiChatClient          실제 호출
+│                 ├ ClaudeChatClient          공급자 교체
+│                 ├ MockAiChatClient          과금 없음 (기본값)
+│                 └ UnavailableAiChatClient   키 없을 때
+├── prompt/       ChatPrompts                  프롬프트 조립
+│
+├── entity/       ChatMessage                  DB 한 줄
+├── repository/   ChatMessageRepository        조회·저장
+├── exception/    ChatFailedException 등       도메인 실패
+└── config/       AiChatClientConfig           어떤 구현을 붙일지 고른다</pre>
+      <div class="layers">
+        <div class="layer"><span class="side">표면</span><span class="body">controller · dto &mdash; 밖과 주고받는 모양. 바뀌면 프론트가 깨진다</span></div>
+        <div class="layer"><span class="side">흐름</span><span class="body">service &mdash; 순서와 판단. 이 도메인의 이야기가 여기 있다</span></div>
+        <div class="layer"><span class="side">경계</span><span class="body">client · context &mdash; <b>바깥 세계와 닿는 유일한 자리.</b> 전부 인터페이스</span></div>
+        <div class="layer"><span class="side">저장</span><span class="body">entity · repository &mdash; DB 모양</span></div>
+        <div class="layer tx"><span class="side">조립</span><span class="body">config &mdash; 설정을 보고 어떤 구현을 끼울지 정한다</span></div>
+      </div>
+    </div>
+
+    <!-- ── 2-4. 교체 지점 ── -->
+    <div class="plate" data-anim>
+      <div class="plate-title">인터페이스를 둔 자리 &mdash; 갈아 끼울 것을 미리 안 곳</div>
+      <pre class="mono small">                    ┌─────────────────────────┐
+   도메인 코드 ────▶ │  AiChatClient (계약)     │
+   (무엇이 붙었는지   └────────────┬────────────┘
+    모른다)                       │  AiChatClientConfig 가 고른다
+                 ┌───────────┬────┴────┬──────────────┐
+                 ▼           ▼         ▼              ▼
+            Gemini      Claude      Mock         Unavailable
+            실제 호출    공급자 교체  과금 없음      키가 없을 때
+                                    (기본값)      기동은 시키고
+                                                 부를 때만 실패</pre>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>인터페이스</th><th>지금 구현</th><th>바뀔 것을 아는 이유</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">AiAnalysisClient<br>AiQuizClient<br>AiChatClient</td><td>Gemini / Claude / Mock / Unavailable</td><td>모델과 공급자는 계속 바뀐다. 도메인이 그걸 알 이유가 없다</td></tr>
+            <tr><td class="mono">StudyContextProvider</td><td>Simple (키워드 문단 선택)</td><td>규모가 커지면 벡터 검색으로. 호출부는 그대로다</td></tr>
+            <tr><td class="mono">StorageService</td><td>로컬 디스크</td><td>인스턴스를 늘리려면 S3 여야 한다</td></tr>
+            <tr><td class="mono">DocumentParser</td><td>PDF · DOCX · TXT</td><td>확장자가 늘면 구현만 더한다</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="caption">
+        <b>네 자리 모두 "지금 필요해서"가 아니라 "바뀔 것을 알아서" 열어 뒀다.</b>
+        나머지는 인터페이스를 만들지 않았다 &mdash; 구현이 하나뿐인데 계약부터 만들면
+        읽는 사람이 없는 갈림길을 따라가게 된다.
+      </p>
+    </div>
+
+    <!-- ── 2-5. 트랜잭션 경계 ── -->
+    <div class="plate" data-anim>
+      <div class="plate-title">클래스에 트랜잭션을 걸지 않는 이유</div>
+      <pre class="mono small">✗ 이렇게 하면                        ✓ 이렇게 나눈다
+
+@Transactional                      beginAnalysis()      ← 짧게
+class AnalysisService {               상태 = ANALYZING
+  analyze() {                         커밋
+    상태 = ANALYZING                        │
+    ─────────────────────                   │  ← 트랜잭션 밖
+    AI 호출 (30~90초)  ← 이 동안             │     AI 호출 (30~90초)
+    커넥션을 잡고 있다                       │
+    ─────────────────────                   ▼
+    결과 저장                          completeAnalysis()  ← 짧게
+  }                                     결과 저장
+}                                       커밋
+
+커넥션 풀 10개 →                    커넥션은 필요한 순간에만
+동시 10명이면 11번째부터 대기</pre>
+      <div class="focus">
+        <span class="lab">대가</span>
+        중간에 서버가 죽으면 <code>ANALYZING</code> 상태로 남는다. 그래서 재분석을 허용하고,
+        같은 세션의 분석이 이미 돌고 있으면 409 로 막는다. 한 트랜잭션의 원자성 대신
+        <b>상태와 재시도</b>로 푼 것이다.
+      </div>
+    </div>
+
+    <!-- ── 2-6. 문서 ── -->
+    <div class="grid g2" data-anim>
       <div class="card key">
-        <h4>인터페이스를 둔 자리</h4>
-        <ul class="small">
-          <li><code>AiAnalysisClient</code> / <code>AiQuizClient</code> / <code>AiChatClient</code>
-            &mdash; Gemini · Claude · Mock · Unavailable</li>
-          <li><code>StudyContextProvider</code> &mdash; 지금은 키워드, 나중에 벡터 검색</li>
-          <li><code>StorageService</code> &mdash; 지금은 로컬 디스크, 나중에 S3</li>
-          <li><code>DocumentParser</code> &mdash; 확장자별 구현</li>
-        </ul>
+        <h4>문서를 코드 옆에 둔다</h4>
+        <p class="small">
+          패키지마다 <code>README.md</code>(왜 이렇게 짰나), <code>PROCESS.md</code>(고칠 때 절차),
+          <code>AGENT.md</code>(하지 말 것)를 둔다. 코드에서 멀리 떨어진 위키가 아니라
+          <b>고칠 때 눈에 들어오는 자리</b>여야 읽힌다.
+        </p>
       </div>
       <div class="card">
-        <h4>문서도 코드 옆에</h4>
-        <p class="small">
-          패키지마다 <code>README.md</code>, <code>PROCESS.md</code>, <code>AGENT.md</code> 를 둔다.
-          왜 그렇게 짰는지를 코드에서 멀리 떨어진 위키가 아니라 <b>고칠 때 눈에 들어오는 자리</b>에 남긴다.
-        </p>
+        <h4>클래스 228개의 분포</h4>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>도메인</th><th>수</th><th>왜 큰가 / 작은가</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">curriculum</td><td class="mono">39</td><td>배분·재조정·진행. 규칙이 가장 많다</td></tr>
+              <tr><td class="mono">quiz</td><td class="mono">33</td><td>생성·채점·회차 세 갈래</td></tr>
+              <tr><td class="mono">analysis</td><td class="mono">32</td><td>조각내기·통합·검증</td></tr>
+              <tr><td class="mono">document</td><td class="mono">31</td><td>형식별 파서와 실패 처리</td></tr>
+              <tr><td class="mono">chat</td><td class="mono">24</td><td>근거 선택이 따로 있다</td></tr>
+              <tr><td class="mono">wronganswer</td><td class="mono">22</td><td>오답 요약</td></tr>
+              <tr><td class="mono">session</td><td class="mono">18</td><td>코드 발급·만료 정리</td></tr>
+              <tr><td class="mono">topic</td><td class="mono">8</td><td>조회만 한다. 만드는 것은 analysis</td></tr>
+              <tr><td class="mono">common</td><td class="mono">8</td><td>예외·시각·CORS</td></tr>
+              <tr><td class="mono">studycontext</td><td class="mono">7</td><td>입력 저장뿐</td></tr>
+              <tr><td class="mono">storage</td><td class="mono">5</td><td>파일 넣고 빼기</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- ================= 기능 ================= -->
   <section id="features">
     <div class="sec-head"><span class="num">03</span><h2 class="t">어떤 기능이 있는가</h2></div>
 

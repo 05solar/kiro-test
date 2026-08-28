@@ -78,6 +78,9 @@ services:
   frontend:
     build:
       context: ./frontend
+      args:
+        # 링크 미리보기 이미지 주소에 쓴다. EC2 에 올릴 때 실제 도메인으로 바꾼다.
+        NEXT_PUBLIC_SITE_URL: ${SITE_URL:-http://localhost}
     restart: unless-stopped
     depends_on:
       backend:

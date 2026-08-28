@@ -13,6 +13,11 @@ COPY . .
 
 # 텔레메트리를 끈다. 빌드가 외부로 나가지 않게 한다.
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# 링크 미리보기의 og:image 는 절대 주소여야 한다. NEXT_PUBLIC_ 값은 빌드 시점에 코드로
+# 박히므로 실행 시 환경변수로는 못 바꾼다 — 배포 주소를 빌드 인자로 받는다.
+ARG NEXT_PUBLIC_SITE_URL=http://localhost
+ENV NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
 RUN npm run build
 
 # ── 실행 ────────────────────────────────────────────────────────────────────

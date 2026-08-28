@@ -204,7 +204,7 @@ function StudyView({
                   type="button"
                   disabled={cut}
                   onClick={() => !cut && router.push(`/study/${step.id}`)}
-                  className={`flex items-center gap-[11px] rounded-xl border p-3 text-left transition-colors ${
+                  className={`flex items-start gap-[11px] rounded-xl border p-3 text-left transition-colors ${
                     active
                       ? "border-[#FF7A00] bg-[#FFF3E8]"
                       : cut
@@ -219,7 +219,7 @@ function StudyView({
                   ) : (
                     <span className="size-6 shrink-0 rounded-full border-2 border-[#eee]" />
                   )}
-                  <span className={`min-w-0 flex-1 truncate text-[13.5px] ${active ? "font-bold text-[#E85D00]" : "text-[#666]"}`}>{step.id}. {step.title}</span>
+                  <span className={`mt-[3px] min-w-0 flex-1 break-keep [overflow-wrap:anywhere] text-[13.5px] leading-[1.45] ${active ? "font-bold text-[#E85D00]" : "text-[#666]"}`}>{step.id}. {step.title}</span>
                   {bookmarked && (
                     <svg width="12" height="14" viewBox="0 0 24 28" fill="none" aria-hidden="true" className="shrink-0">
                       <title>다시 볼 개념</title>
