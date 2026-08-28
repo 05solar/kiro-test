@@ -20,7 +20,7 @@ class StudyTimeCalculatorTest {
     /** available 과 examAt 만 세팅한 세션을 만든다. */
     private StudySession session(int availableMinutes, LocalDateTime examAt) {
         StudySession session = StudySession.create("7K2M9QXF", NOW.minusHours(5), 30L);
-        session.updateExamInfo("운영체제", examAt, availableMinutes, availableMinutes, NOW.minusHours(4));
+        session.updateExamInfo("운영체제", null, examAt, availableMinutes, availableMinutes, NOW.minusHours(4));
         return session;
     }
 

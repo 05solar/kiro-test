@@ -32,9 +32,17 @@ export type PriorityReason =
   | "WEAK_AREA"
   | "MUST_STUDY";
 
+export type StudySourceType = "USER_MATERIAL" | "GENERAL_KNOWLEDGE";
+
 export interface SessionResponse {
   sessionCode: string;
   subject: string | null;
+  /** 시험 범위. 자료가 없을 때 학습 내용을 만드는 유일한 근거가 된다. */
+  examScope: string | null;
+  /** 실제 강의자료에 근거했는지. 분석 전에는 false 다. */
+  grounded: boolean;
+  /** 무엇에 근거했는지. 분석 전에는 null 이다. */
+  sourceType: StudySourceType | null;
   examAt: string | null;
   availableStudyMinutes: number | null;
   remainingStudyMinutes: number | null;
@@ -44,9 +52,22 @@ export interface SessionResponse {
 
 export interface UpdateExamRequest {
   subject: string;
+  /** 시험 범위. 선택 입력이지만, 자료를 올리지 않을 거라면 반드시 있어야 한다. */
+  examScope: string | null;
   /** `2026-08-29T09:00:00` 형태. 시간대 표기를 붙이지 않는다. */
   examAt: string;
   availableStudyMinutes: number;
+}
+
+/** `PUT /exam` 응답. 세션 전체가 아니라 저장한 시험 정보만 돌려준다. */
+export interface ExamResponse {
+  sessionCode: string;
+  subject: string;
+  examScope: string | null;
+  examAt: string;
+  availableStudyMinutes: number;
+  remainingStudyMinutes: number;
+  status: SessionStatus;
 }
 
 export interface DocumentResponse {

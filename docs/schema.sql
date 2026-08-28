@@ -10,12 +10,13 @@
 -- 이 파일은 개발 DB 에서 pg_dump --schema-only 로 뽑았다.
 -- 엔티티를 고쳤으면 다시 뽑아 갱신한다. 손으로 편집하지 않는다.
 -- 마이그레이션 도구(Flyway)는 아직 도입하지 않았다.
+-- 이미 데이터가 있는 DB 에 적용할 변경분은 docs/migrations/ 에 따로 둔다.
 
 --
 -- PostgreSQL database dump
 --
 
-\restrict WxqCG2P9Kb2azXQ8j7pQ4VrW9lmDCk7Cu0QHp2NNDQBWd72GiwJfnbHjB8pPfaB
+\restrict h4DUhoF0rFnTG8a0OwlQ2EATEtCOG9zw0FgH7K4xQzf7qDbYFDgT5gURIbQQoSE
 
 -- Dumped from database version 16.15
 -- Dumped by pg_dump version 16.15
@@ -47,7 +48,7 @@ CREATE TABLE public.curriculums (
     total_allocated_minutes integer NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     session_id uuid NOT NULL,
-    CONSTRAINT curriculums_status_check CHECK (((status)::text = ANY ((ARRAY['CREATED'::character varying, 'IN_PROGRESS'::character varying, 'COMPLETED'::character varying])::text[])))
+    CONSTRAINT curriculums_status_check CHECK (((status)::text = ANY (ARRAY[('CREATED'::character varying)::text, ('IN_PROGRESS'::character varying)::text, ('COMPLETED'::character varying)::text])))
 );
 
 
@@ -70,8 +71,8 @@ CREATE TABLE public.documents (
     stored_file_name character varying(100) NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     session_id uuid NOT NULL,
-    CONSTRAINT documents_file_type_check CHECK (((file_type)::text = ANY ((ARRAY['PDF'::character varying, 'DOCX'::character varying, 'TXT'::character varying])::text[]))),
-    CONSTRAINT documents_status_check CHECK (((status)::text = ANY ((ARRAY['UPLOADED'::character varying, 'PARSING'::character varying, 'PARSED'::character varying, 'PARSE_FAILED'::character varying])::text[])))
+    CONSTRAINT documents_file_type_check CHECK (((file_type)::text = ANY (ARRAY[('PDF'::character varying)::text, ('DOCX'::character varying)::text, ('TXT'::character varying)::text]))),
+    CONSTRAINT documents_status_check CHECK (((status)::text = ANY (ARRAY[('UPLOADED'::character varying)::text, ('PARSING'::character varying)::text, ('PARSED'::character varying)::text, ('PARSE_FAILED'::character varying)::text])))
 );
 
 
@@ -106,7 +107,7 @@ CREATE TABLE public.quizzes (
     source_document_ids jsonb NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     topic_id uuid NOT NULL,
-    CONSTRAINT quizzes_difficulty_check CHECK (((difficulty)::text = ANY ((ARRAY['EASY'::character varying, 'MEDIUM'::character varying, 'HARD'::character varying])::text[])))
+    CONSTRAINT quizzes_difficulty_check CHECK (((difficulty)::text = ANY (ARRAY[('EASY'::character varying)::text, ('MEDIUM'::character varying)::text, ('HARD'::character varying)::text])))
 );
 
 
@@ -143,7 +144,9 @@ CREATE TABLE public.study_sessions (
     status character varying(20) NOT NULL,
     subject character varying(255),
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT study_sessions_status_check CHECK (((status)::text = ANY ((ARRAY['CREATED'::character varying, 'UPLOADING'::character varying, 'ANALYZING'::character varying, 'ANALYSIS_FAILED'::character varying, 'READY'::character varying, 'IN_PROGRESS'::character varying, 'COMPLETED'::character varying, 'EXPIRED'::character varying])::text[])))
+    exam_scope text,
+    source_type character varying(30),
+    CONSTRAINT study_sessions_status_check CHECK (((status)::text = ANY (ARRAY[('CREATED'::character varying)::text, ('UPLOADING'::character varying)::text, ('ANALYZING'::character varying)::text, ('ANALYSIS_FAILED'::character varying)::text, ('READY'::character varying)::text, ('IN_PROGRESS'::character varying)::text, ('COMPLETED'::character varying)::text, ('EXPIRED'::character varying)::text])))
 );
 
 
@@ -170,8 +173,8 @@ CREATE TABLE public.study_steps (
     curriculum_id uuid NOT NULL,
     topic_id uuid,
     CONSTRAINT study_steps_skip_reason_check CHECK (((skip_reason)::text = 'TIME_CONSTRAINT'::text)),
-    CONSTRAINT study_steps_status_check CHECK (((status)::text = ANY ((ARRAY['PENDING'::character varying, 'IN_PROGRESS'::character varying, 'COMPLETED'::character varying, 'SKIPPED'::character varying])::text[]))),
-    CONSTRAINT study_steps_type_check CHECK (((type)::text = ANY ((ARRAY['STUDY'::character varying, 'REVIEW'::character varying])::text[])))
+    CONSTRAINT study_steps_status_check CHECK (((status)::text = ANY (ARRAY[('PENDING'::character varying)::text, ('IN_PROGRESS'::character varying)::text, ('COMPLETED'::character varying)::text, ('SKIPPED'::character varying)::text]))),
+    CONSTRAINT study_steps_type_check CHECK (((type)::text = ANY (ARRAY[('STUDY'::character varying)::text, ('REVIEW'::character varying)::text])))
 );
 
 
@@ -195,7 +198,7 @@ CREATE TABLE public.topics (
     updated_at timestamp(6) without time zone NOT NULL,
     weak_area_matched boolean NOT NULL,
     session_id uuid NOT NULL,
-    CONSTRAINT topics_importance_check CHECK (((importance)::text = ANY ((ARRAY['VERY_HIGH'::character varying, 'HIGH'::character varying, 'MEDIUM'::character varying, 'LOW'::character varying])::text[])))
+    CONSTRAINT topics_importance_check CHECK (((importance)::text = ANY (ARRAY[('VERY_HIGH'::character varying)::text, ('HIGH'::character varying)::text, ('MEDIUM'::character varying)::text, ('LOW'::character varying)::text])))
 );
 
 
@@ -420,5 +423,5 @@ ALTER TABLE ONLY public.quiz_results
 -- PostgreSQL database dump complete
 --
 
-\unrestrict WxqCG2P9Kb2azXQ8j7pQ4VrW9lmDCk7Cu0QHp2NNDQBWd72GiwJfnbHjB8pPfaB
+\unrestrict h4DUhoF0rFnTG8a0OwlQ2EATEtCOG9zw0FgH7K4xQzf7qDbYFDgT5gURIbQQoSE
 

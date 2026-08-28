@@ -2,6 +2,7 @@ package com.naeil.study.session.dto;
 
 import com.naeil.study.session.entity.SessionStatus;
 import com.naeil.study.session.entity.StudySession;
+import com.naeil.study.session.entity.StudySourceType;
 import java.time.LocalDateTime;
 
 /**
@@ -15,11 +16,16 @@ import java.time.LocalDateTime;
 public record SessionResponse(
         String sessionCode,
         String subject,
+        String examScope,
         LocalDateTime examAt,
         Integer availableStudyMinutes,
         Integer remainingStudyMinutes,
         SessionStatus status,
         Integer currentStepOrder,
+        /** 실제 강의자료에 근거했는지. 분석 전에는 false 다. */
+        boolean grounded,
+        /** 무엇에 근거했는지. 분석 전에는 null 이다. */
+        StudySourceType sourceType,
         LocalDateTime createdAt,
         LocalDateTime lastAccessedAt,
         LocalDateTime expiresAt
@@ -29,11 +35,14 @@ public record SessionResponse(
         return new SessionResponse(
                 session.getSessionCode(),
                 session.getSubject(),
+                session.getExamScope(),
                 session.getExamAt(),
                 session.getAvailableStudyMinutes(),
                 session.getRemainingStudyMinutes(),
                 session.getStatus(),
                 session.getCurrentStepOrder(),
+                session.isGrounded(),
+                session.getSourceType(),
                 session.getCreatedAt(),
                 session.getLastAccessedAt(),
                 session.getExpiresAt()

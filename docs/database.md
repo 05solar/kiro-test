@@ -14,10 +14,12 @@ PostgreSQL. 스키마는 JPA(`ddl-auto`)로 생성한다. 아래 DDL은 실제 P
  id                      | uuid                           | not null
  session_code            | character varying(8)           | not null
  subject                 | character varying(255)         |
+ exam_scope              | text                           |
  exam_at                 | timestamp(6) without time zone |
  available_study_minutes | integer                        |
  remaining_study_minutes | integer                        |
  status                  | character varying(20)          | not null
+ source_type             | character varying(30)          |
  current_step_order      | integer                        |
  created_at              | timestamp(6) without time zone | not null
  updated_at              | timestamp(6) without time zone | not null
@@ -40,10 +42,12 @@ Check constraints:
 | `id` | 내부 식별자(UUID). 다른 테이블과의 FK에만 쓰고 **API 응답에 노출하지 않는다** |
 | `session_code` | 사용자가 입력하는 8자리 접근 키. UNIQUE |
 | `subject` | 과목명. 시험 정보 입력 시 채운다 |
+| `exam_scope` | 시험 범위. 선택 입력이지만, **강의자료를 올리지 않으면 학습 내용을 만드는 유일한 근거**가 된다 |
 | `exam_at` | 시험 일시. 시험 정보 입력 시 채운다 |
 | `available_study_minutes` | 사용자가 입력한 **전체** 학습 가능 시간(분). 진행 중 변경하지 않는다 |
 | `remaining_study_minutes` | 현재 **남아 있는** 학습 가능 시간(분). 시험 정보 입력 시 `min(입력값, 시험까지 남은 분)`으로 초기화되고, 이후 STEP 완료마다 감소한다 |
 | `status` | 세션 상태 Enum (문자열 저장) |
+| `source_type` | 학습 내용의 근거. `USER_MATERIAL` / `GENERAL_KNOWLEDGE`. 분석을 시작할 때 정해지고, 그 전에는 NULL |
 | `current_step_order` | 현재 진행 중인 STEP 순번. 다른 기기에서 복구할 때 사용 |
 | `created_at` | 생성 시각 |
 | `updated_at` | 마지막 변경 시각 |

@@ -3,6 +3,7 @@ import type {
   AnalysisResponse,
   CurriculumResponse,
   DocumentResponse,
+  ExamResponse,
   QuizAnswerResponse,
   QuizListResponse,
   QuizResultsResponse,
@@ -30,7 +31,7 @@ export const createSession = () => request<SessionResponse>("/sessions", { metho
 export const getSession = (code: string) => request<SessionResponse>(s(code));
 
 export const updateExam = (code: string, body: UpdateExamRequest) =>
-  request<SessionResponse>(`${s(code)}/exam`, { method: "PUT", json: body });
+  request<ExamResponse>(`${s(code)}/exam`, { method: "PUT", json: body });
 
 /* ── 강의자료 ─────────────────────────────────────────── */
 

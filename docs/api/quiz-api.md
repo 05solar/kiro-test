@@ -34,7 +34,7 @@ Request Body가 없다. 출제 근거(강의자료, Topic, 학습 맥락)는 이
 | 세션이 존재한다 | 404 `SESSION_NOT_FOUND` |
 | Topic이 이 세션 소유다 | 404 `TOPIC_NOT_FOUND` |
 | 해당 Topic의 학습 단계가 `COMPLETED`다 | 409 `TOPIC_STUDY_NOT_COMPLETED` |
-| 근거로 쓸 강의자료 텍스트가 있다 | 400 `NO_QUIZ_SOURCE_CONTEXT` |
+| 근거로 쓸 강의자료 텍스트가 있다(자료 기반 세션만) | 400 `NO_QUIZ_SOURCE_CONTEXT` |
 | AI 생성과 응답 검증에 성공한다 | 502 `QUIZ_GENERATION_FAILED` |
 
 계획에 들어가지 못한 Topic(시간 부족으로 미선택)과 `SKIPPED` 단계의 Topic도
@@ -198,6 +198,19 @@ StudyContext             출제 방향 조절 힌트. 사실의 출처가 아니
 일반 지식으로 강의자료에 없는 수치·정의·예외를 문제로 만들지 않는다.
 프롬프트에서 시스템 규칙과 데이터를 태그로 분리하고, 자료 안의 지시문형 문장은
 명령으로 취급하지 않는다(분석 단계와 같은 주입 방어).
+
+### 자료가 없는 세션은 Topic 자체가 근거다
+
+세션의 `sourceType` 이 `GENERAL_KNOWLEDGE` 면 대조할 강의자료가 없다. 이때는 거절하지 않고
+**과목명·시험 범위·Topic 의 제목·요약·핵심 개념**을 근거로 문제를 만든다.
+그 Topic 자체가 일반 지식에서 만들어진 것이므로, 출제 범위는 여전히 Topic 안으로 묶인다.
+
+```
+sourceType = USER_MATERIAL      →  자료 추출 구간이 없으면 NO_QUIZ_SOURCE_CONTEXT
+sourceType = GENERAL_KNOWLEDGE  →  Topic 의 제목·요약·핵심 개념으로 만든다
+```
+
+프론트엔드는 이렇게 만든 퀴즈 화면에 `일반 지식 기반` 표시와 안내 문구를 함께 띄운다.
 
 ### 관련 구간만 보낸다
 

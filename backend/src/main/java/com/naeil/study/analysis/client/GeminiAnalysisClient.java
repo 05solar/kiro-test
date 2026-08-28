@@ -1,6 +1,7 @@
 package com.naeil.study.analysis.client;
 
 import com.naeil.study.analysis.client.dto.AiChunkAnalysisRequest;
+import com.naeil.study.analysis.client.dto.AiGeneralKnowledgeRequest;
 import com.naeil.study.analysis.client.dto.AiTopicAnalysisResult;
 import com.naeil.study.analysis.client.dto.AiTopicCandidates;
 import com.naeil.study.analysis.client.dto.AiTopicMergeRequest;
@@ -76,6 +77,23 @@ public class GeminiAnalysisClient implements AiAnalysisClient {
             throw e;
         } catch (RuntimeException e) {
             throw new AiAnalysisException("ai call failed: topic merge - " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public AiTopicAnalysisResult generateFromGeneralKnowledge(AiGeneralKnowledgeRequest request) {
+        try {
+            // 반환 형식은 병합 경로와 같다. 이후 검증·저장이 같은 길을 지난다.
+            return client.generate(
+                    AnalysisPrompts.generalKnowledgeSystemPrompt(),
+                    AnalysisPrompts.generalKnowledgeUserMessage(request) + MERGE_OUTPUT_FORMAT,
+                    AiTopicAnalysisResult.class,
+                    "general knowledge topics");
+        } catch (AiAnalysisException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            throw new AiAnalysisException(
+                    "ai call failed: general knowledge topics - " + e.getMessage(), e);
         }
     }
 }

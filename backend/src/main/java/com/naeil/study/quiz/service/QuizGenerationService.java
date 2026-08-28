@@ -198,7 +198,8 @@ public class QuizGenerationService {
                 studyContext,
                 sourceContext,
                 questionsPerTopic,
-                previousQuestions);
+                previousQuestions,
+                session.isGrounded());
 
         List<ValidatedQuizQuestion> validated = generateValidated(session, topic, request);
 
@@ -283,9 +284,22 @@ public class QuizGenerationService {
      * 출처 기록이 비어 있으면(참조값이 검증에서 버려진 경우) 세션의 파싱된 문서 전체로
      * 넓혀서라도 근거를 찾는다.
      */
+    /**
+     * 문제의 근거가 될 내용을 모은다.
+     *
+     * <p>강의자료가 있으면 그 안의 관련 구간을 쓴다. 없으면 분석 단계에서 만든 Topic 자체가
+     * 근거다 — 요약과 핵심 개념이 곧 학습 내용이기 때문이다.
+     *
+     * <p>예전에는 자료가 없으면 무조건 실패했다. 그러면 자료를 준비하지 못한 사용자는
+     * 계획까지 받고도 퀴즈를 풀 수 없다.
+     */
     private String extractSourceContext(StudySession session, Topic topic) {
         List<Document> parsed = documentRepository
                 .findAllByStudySessionIdAndStatusOrderByCreatedAtAsc(session.getId(), DocumentStatus.PARSED);
+
+        if (parsed.isEmpty()) {
+            return generalKnowledgeContext(session, topic);
+        }
 
         List<UUID> sourceIds = topic.getSourceDocumentIds();
         List<Document> sources = sourceIds.isEmpty()
@@ -301,6 +315,24 @@ public class QuizGenerationService {
             throw new NoQuizSourceContextException();
         }
         return context;
+    }
+
+    /**
+     * 자료가 없을 때의 근거. Topic 의 요약과 핵심 개념, 그리고 시험 범위다.
+     *
+     * <p>이 값들도 결국 AI 가 만든 것이라 강의자료만큼의 근거는 아니다. 그래서
+     * 프롬프트에서 "표준 교과 지식"임을 명시하고, 화면에도 일반 지식 기반이라고 표시한다.
+     */
+    private String generalKnowledgeContext(StudySession session, Topic topic) {
+        StringBuilder context = new StringBuilder();
+        context.append("과목: ").append(session.getSubject()).append('\n');
+        if (session.getExamScope() != null && !session.getExamScope().isBlank()) {
+            context.append("시험 범위: ").append(session.getExamScope()).append('\n');
+        }
+        context.append("학습 주제: ").append(topic.getTitle()).append('\n');
+        context.append("요약: ").append(topic.getSummary()).append('\n');
+        context.append("핵심 개념: ").append(String.join(", ", topic.getKeyPoints())).append('\n');
+        return context.toString();
     }
 
     private AiStudyContext loadStudyContext(StudySession session) {

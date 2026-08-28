@@ -51,10 +51,13 @@ Request Body 없음. 사용자가 코드를 지정할 수 없다.
 
 ```
 subject                = null
+examScope              = null
 examAt                 = null
 availableStudyMinutes  = null
 remainingStudyMinutes  = null
 currentStepOrder       = null
+sourceType             = null
+grounded               = false
 ```
 
 시각 필드는 다음과 같이 채워진다.
@@ -114,11 +117,14 @@ updatedAt      = now
 {
   "sessionCode": "7K2M9QXF",
   "subject": null,
+  "examScope": null,
   "examAt": null,
   "availableStudyMinutes": null,
   "remainingStudyMinutes": null,
   "status": "CREATED",
   "currentStepOrder": null,
+  "grounded": false,
+  "sourceType": null,
   "createdAt": "2026-08-27T15:30:00",
   "lastAccessedAt": "2026-08-27T15:35:00",
   "expiresAt": "2026-09-26T15:35:00"
@@ -126,6 +132,10 @@ updatedAt      = now
 ```
 
 값이 없는 필드도 키는 그대로 내려간다. 내부 식별자(`id`, UUID)는 **응답에 포함하지 않는다.**
+
+`grounded` 와 `sourceType` 은 <b>학습 내용을 무엇에 근거해 만들었는지</b>를 알려준다.
+분석을 실행하기 전에는 근거가 아직 없으므로 `sourceType` 은 `null`, `grounded` 는 `false` 다.
+자세한 값은 [필드 정의](#필드-정의)를 본다.
 
 ### 오류
 
@@ -168,6 +178,7 @@ Content-Type: application/json
 ```json
 {
   "subject": "운영체제",
+  "examScope": "3장 프로세스 ~ 7장 교착상태",
   "examAt": "2026-08-28T10:00:00",
   "availableStudyMinutes": 360
 }
@@ -176,6 +187,7 @@ Content-Type: application/json
 | 필드 | 타입 | 필수 | 제약 |
 | --- | --- | --- | --- |
 | `subject` | string | 예 | 공백만 입력 불가, 최대 100자 |
+| `examScope` | string(nullable) | 아니오 | 최대 2000자. **강의자료를 올리지 않을 경우 학습 내용을 만드는 유일한 근거가 된다** |
 | `examAt` | datetime | 예 | 현재 시각보다 미래 |
 | `availableStudyMinutes` | int | 예 | 1 이상 10080 이하 (최대 7일) |
 
@@ -225,6 +237,7 @@ updatedAt      = now
 {
   "sessionCode": "7K2M9QXF",
   "subject": "운영체제",
+  "examScope": "3장 프로세스 ~ 7장 교착상태",
   "examAt": "2026-08-28T10:00:00",
   "availableStudyMinutes": 360,
   "remainingStudyMinutes": 360,
@@ -238,12 +251,17 @@ updatedAt      = now
 {
   "sessionCode": "7K2M9QXF",
   "subject": "운영체제",
+  "examScope": "3장 프로세스 ~ 7장 교착상태",
   "examAt": "2026-08-27T22:00:00",
   "availableStudyMinutes": 360,
   "remainingStudyMinutes": 240,
   "status": "CREATED"
 }
 ```
+
+세션 전체가 아니라 저장한 시험 정보만 돌려준다. 시험 범위도 함께 돌려주는 것은,
+자료를 올리지 않을 경우 그 값이 유일한 근거가 되므로 무엇이 저장됐는지 확인할 수
+있어야 하기 때문이다.
 
 ### 오류
 
@@ -310,11 +328,14 @@ DB 중복 확인 (existsBySessionCode)
 | --- | --- | --- | --- |
 | `sessionCode` | string(8) | 아니오 | 접근 키. 서버 발급, 변경 불가 |
 | `subject` | string | 예 | 과목명. STEP 3에서 입력 |
+| `examScope` | string | 예 | 시험 범위. STEP 3에서 입력(선택). 자료가 없을 때의 유일한 근거 |
 | `examAt` | datetime | 예 | 시험 일시. STEP 3에서 입력 |
 | `availableStudyMinutes` | int | 예 | 최초 입력한 **전체** 학습 가능 시간(분) |
 | `remainingStudyMinutes` | int | 예 | 현재 **남아 있는** 학습 가능 시간(분) |
 | `status` | enum | 아니오 | 세션 상태 |
 | `currentStepOrder` | int | 예 | 현재 진행 중인 STEP 순번 |
+| `grounded` | boolean | 아니오 | 실제 강의자료에 근거했는지. 분석 전에는 `false` |
+| `sourceType` | enum | 예 | 무엇에 근거했는지. 분석 전에는 `null` |
 | `createdAt` | datetime | 아니오 | 생성 시각 |
 | `lastAccessedAt` | datetime | 아니오 | 마지막 접근 시각 |
 | `expiresAt` | datetime | 아니오 | 보관 만료 시각 (`lastAccessedAt + 30일`) |
@@ -384,3 +405,31 @@ CREATED → UPLOADING → ANALYZING → READY → IN_PROGRESS → COMPLETED
 | 만료 세션 자동 삭제 스케줄러 | **미구현 (TODO)** |
 
 미구현 항목은 [README.md](README.md)의 TODO 목록에서 관리한다.
+
+---
+
+## sourceType — 학습 내용의 근거
+
+분석(`POST /api/sessions/{code}/analysis`)을 실행하는 시점에 서버가 정한다.
+한 번 정해지면 그 세션의 커리큘럼과 퀴즈 전체가 같은 근거를 따른다.
+
+| 값 | 조건 | 의미 |
+| --- | --- | --- |
+| `USER_MATERIAL` | 텍스트 추출에 성공한 강의자료가 하나 이상 있다 | 사용자가 올린 자료에서 뽑았다 |
+| `GENERAL_KNOWLEDGE` | 추출된 자료가 하나도 없다 | 과목명과 시험 범위만 보고 일반적인 교과 지식에서 만들었다 |
+| `null` | 아직 분석하지 않았다 | 근거가 아직 없다 |
+
+`grounded` 는 `sourceType == USER_MATERIAL` 과 같다. 화면에서 매번 비교하지 않도록 서버가 같이 내려준다.
+
+### 자료가 없는 경우
+
+자료 없이 분석하려면 **과목명과 시험 범위가 모두 있어야 한다.** 둘 중 하나라도 비어 있으면
+만들 근거가 아무것도 없으므로 분석은 `NO_PARSED_DOCUMENT` 로 실패한다.
+
+프론트엔드는 `GENERAL_KNOWLEDGE` 인 세션의 커리큘럼·퀴즈 화면에 다음을 표시한다.
+
+```
+[💡 일반 지식 기반]
+업로드된 학습자료가 없어 일반적인 교과 지식을 기준으로 생성되었습니다.
+실제 수업 범위와 일부 차이가 있을 수 있습니다.
+```

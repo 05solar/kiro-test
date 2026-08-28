@@ -3,6 +3,7 @@ import type { Question } from "@/lib/quiz";
 import type {
   CurriculumResponse,
   QuizListResponse,
+  SessionResponse,
   StudyStepResponse,
   TopicImportance,
   TopicResponse,
@@ -232,4 +233,31 @@ export function quizIdByNumber(list: QuizListResponse): Map<number, string> {
  */
 export function toExamAt(examDate: string, examTime: string): string {
   return `${examDate}T${examTime.length === 5 ? `${examTime}:00` : examTime}`;
+}
+
+/**
+ * 학습 내용이 무엇에 근거해 만들어졌는지.
+ *
+ * <p>자료를 올리지 않으면 서버는 과목명과 시험 범위만 보고 일반적인 교과 지식으로
+ * 주제를 만든다. 그렇게 만든 계획과 퀴즈는 실제 수업 범위와 다를 수 있다.
+ * 화면이 이 차이를 감추면 사용자는 자기 강의자료에서 뽑은 내용이라고 믿게 된다.
+ *
+ * <p>분석 전에는 근거가 아직 없으므로 null 을 준다 — 아무것도 표시하지 않는다.
+ */
+export type SourceLabel = {
+  grounded: boolean;
+  /** 화면에 붙이는 짧은 표시. */
+  label: string;
+  /** 일반 지식으로 만들었을 때만 있는 안내 문구. 자료 기반이면 null. */
+  notice: string | null;
+};
+
+const GENERAL_KNOWLEDGE_NOTICE =
+  "업로드된 학습자료가 없어 일반적인 교과 지식을 기준으로 생성되었습니다. 실제 수업 범위와 일부 차이가 있을 수 있습니다.";
+
+export function toSourceLabel(session: SessionResponse | null | undefined): SourceLabel | null {
+  if (!session?.sourceType) return null;
+  return session.sourceType === "USER_MATERIAL"
+    ? { grounded: true, label: "학습자료 기반", notice: null }
+    : { grounded: false, label: "일반 지식 기반", notice: GENERAL_KNOWLEDGE_NOTICE };
 }

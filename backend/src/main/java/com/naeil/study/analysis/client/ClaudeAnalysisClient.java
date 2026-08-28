@@ -5,6 +5,7 @@ import com.anthropic.errors.AnthropicServiceException;
 import com.anthropic.models.messages.MessageCreateParams;
 import com.anthropic.models.messages.StructuredMessageCreateParams;
 import com.naeil.study.analysis.client.dto.AiChunkAnalysisRequest;
+import com.naeil.study.analysis.client.dto.AiGeneralKnowledgeRequest;
 import com.naeil.study.analysis.client.dto.AiTopicAnalysisResult;
 import com.naeil.study.analysis.client.dto.AiTopicCandidates;
 import com.naeil.study.analysis.client.dto.AiTopicMergeRequest;
@@ -67,6 +68,20 @@ public class ClaudeAnalysisClient implements AiAnalysisClient {
                 .build();
 
         return call(params, "topic merge");
+    }
+
+    @Override
+    public AiTopicAnalysisResult generateFromGeneralKnowledge(AiGeneralKnowledgeRequest request) {
+        // 반환 형식은 병합 경로와 같다. 이후 검증·저장이 같은 길을 지난다.
+        StructuredMessageCreateParams<AiTopicAnalysisResult> params = MessageCreateParams.builder()
+                .model(model)
+                .maxTokens(MAX_TOKENS)
+                .system(AnalysisPrompts.generalKnowledgeSystemPrompt())
+                .outputConfig(AiTopicAnalysisResult.class)
+                .addUserMessage(AnalysisPrompts.generalKnowledgeUserMessage(request))
+                .build();
+
+        return call(params, "general knowledge topics");
     }
 
     /**

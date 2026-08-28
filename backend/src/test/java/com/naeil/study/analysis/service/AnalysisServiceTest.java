@@ -84,7 +84,9 @@ class AnalysisServiceTest {
     }
 
     private AnalysisTarget target(AiStudyContext context, AnalysisDocument... documents) {
-        return new AnalysisTarget(SESSION_ID, "운영체제", context, List.of(documents));
+        return new AnalysisTarget(SESSION_ID, "운영체제", "3장 ~ 5장",
+                com.naeil.study.session.entity.StudySourceType.USER_MATERIAL,
+                context, List.of(documents));
     }
 
     private AnalysisDocument document(UUID id, String reference, String fileName, String text) {
@@ -362,5 +364,71 @@ class AnalysisServiceTest {
 
         assertThat(aiClient.chunkRequests().get(0).documentReference()).isEqualTo("DOC_1");
         assertThat(aiClient.chunkRequests().get(0).text()).doesNotContain(DOC_1_ID.toString());
+    }
+
+    /**
+     * 강의자료 없이 과목명과 시험 범위만으로 만드는 경로.
+     *
+     * <p>자료를 준비하지 못한 사용자에게도 학습 순서를 줄 수 있어야 한다.
+     * 다만 무엇에 근거했는지가 분명해야 한다.
+     */
+    @org.junit.jupiter.api.Nested
+    @DisplayName("자료가 없는 경우")
+    class GeneralKnowledge {
+
+        private AnalysisTarget generalKnowledgeTarget() {
+            return new AnalysisTarget(
+                    SESSION_ID,
+                    "자료구조",
+                    "정렬부터 이진트리까지",
+                    com.naeil.study.session.entity.StudySourceType.GENERAL_KNOWLEDGE,
+                    AiStudyContext.empty(),
+                    List.of());
+        }
+
+        @Test
+        @DisplayName("과목명과 시험 범위로 주제를 만든다")
+        void generatesFromSubjectAndScope() {
+            givenSessionFound();
+            givenAnalysisTarget(generalKnowledgeTarget());
+            givenSaveSucceeds();
+
+            analysisService.analyze(SESSION_CODE);
+
+            assertThat(aiClient.generalKnowledgeRequests()).hasSize(1);
+            var request = aiClient.generalKnowledgeRequests().get(0);
+            assertThat(request.subject()).isEqualTo("자료구조");
+            assertThat(request.examScope()).isEqualTo("정렬부터 이진트리까지");
+        }
+
+        @Test
+        @DisplayName("조각 분석을 하지 않는다 — 나눌 자료가 없다")
+        void skipsChunkAnalysis() {
+            // 자료 기반은 조각 수만큼 AI 를 부른다. 이 경로는 한 번이다.
+            givenSessionFound();
+            givenAnalysisTarget(generalKnowledgeTarget());
+            givenSaveSucceeds();
+
+            analysisService.analyze(SESSION_CODE);
+
+            assertThat(aiClient.chunkRequests()).isEmpty();
+            assertThat(aiClient.mergeRequests()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("AI 가 출처 문서를 지어내도 버린다")
+        void discardsInventedSourceDocuments() {
+            // 자료가 없는데 출처가 붙어 있으면 그건 지어낸 것이다.
+            givenSessionFound();
+            givenAnalysisTarget(generalKnowledgeTarget());
+            givenSaveSucceeds();
+
+            analysisService.analyze(SESSION_CODE);
+
+            verify(stateWriter).completeAnalysis(
+                    org.mockito.ArgumentMatchers.eq(SESSION_ID), topicsCaptor.capture());
+            assertThat(topicsCaptor.getValue())
+                    .allSatisfy(topic -> assertThat(topic.sourceDocumentIds()).isEmpty());
+        }
     }
 }

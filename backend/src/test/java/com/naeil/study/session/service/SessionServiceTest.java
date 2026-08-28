@@ -200,7 +200,7 @@ class SessionServiceTest {
             // 현재 2026-08-27 15:30, 시험 2026-08-28 10:00 → 남은 시간 1110분
             givenSession();
             UpdateExamRequest request = new UpdateExamRequest(
-                    "운영체제", LocalDateTime.of(2026, 8, 28, 10, 0), 360);
+                    "운영체제", null, LocalDateTime.of(2026, 8, 28, 10, 0), 360);
 
             StudySession updated = sessionService.updateExamInfo("7K2M9QXF", request);
 
@@ -216,7 +216,7 @@ class SessionServiceTest {
             // 현재 15:30, 시험 19:30 → 남은 시간 240분, 입력 360분
             givenSession();
             UpdateExamRequest request = new UpdateExamRequest(
-                    "운영체제", NOW.plusMinutes(240), 360);
+                    "운영체제", null, NOW.plusMinutes(240), 360);
 
             StudySession updated = sessionService.updateExamInfo("7K2M9QXF", request);
 
@@ -228,7 +228,7 @@ class SessionServiceTest {
         @DisplayName("availableStudyMinutes는 사용자가 입력한 원본값을 그대로 유지한다")
         void keepsRequestedMinutesAsOriginalValue() {
             givenSession();
-            UpdateExamRequest request = new UpdateExamRequest("운영체제", NOW.plusMinutes(10), 360);
+            UpdateExamRequest request = new UpdateExamRequest("운영체제", null, NOW.plusMinutes(10), 360);
 
             StudySession updated = sessionService.updateExamInfo("7K2M9QXF", request);
 
@@ -243,7 +243,7 @@ class SessionServiceTest {
             given(studySessionRepository.findBySessionCode("7K2M9QXF")).willReturn(Optional.of(session));
             // 현재 15:30:00, 시험 19:29:59 → 239분 59초 → 239분
             UpdateExamRequest request = new UpdateExamRequest(
-                    "운영체제", NOW.plusMinutes(240).minusSeconds(1), 360);
+                    "운영체제", null, NOW.plusMinutes(240).minusSeconds(1), 360);
 
             StudySession updated = sessionService.updateExamInfo("7K2M9QXF", request);
 
@@ -255,11 +255,11 @@ class SessionServiceTest {
         void recalculatesOnUpdate() {
             StudySession session = givenSession();
             sessionService.updateExamInfo("7K2M9QXF",
-                    new UpdateExamRequest("운영체제", NOW.plusMinutes(240), 360));
+                    new UpdateExamRequest("운영체제", null, NOW.plusMinutes(240), 360));
             assertThat(session.getRemainingStudyMinutes()).isEqualTo(240);
 
             StudySession updated = sessionService.updateExamInfo("7K2M9QXF",
-                    new UpdateExamRequest("데이터베이스", NOW.plusMinutes(600), 420));
+                    new UpdateExamRequest("데이터베이스", null, NOW.plusMinutes(600), 420));
 
             assertThat(updated.getSubject()).isEqualTo("데이터베이스");
             assertThat(updated.getExamAt()).isEqualTo(NOW.plusMinutes(600));
@@ -273,7 +273,7 @@ class SessionServiceTest {
             givenSession();
 
             StudySession updated = sessionService.updateExamInfo("7K2M9QXF",
-                    new UpdateExamRequest("운영체제", NOW.plusMinutes(240), 360));
+                    new UpdateExamRequest("운영체제", null, NOW.plusMinutes(240), 360));
 
             assertThat(updated.getStatus()).isEqualTo(SessionStatus.CREATED);
         }
@@ -285,7 +285,7 @@ class SessionServiceTest {
             given(studySessionRepository.findBySessionCode("7K2M9QXF")).willReturn(Optional.of(session));
 
             StudySession updated = sessionService.updateExamInfo("7K2M9QXF",
-                    new UpdateExamRequest("운영체제", NOW.plusMinutes(240), 360));
+                    new UpdateExamRequest("운영체제", null, NOW.plusMinutes(240), 360));
 
             assertThat(updated.getLastAccessedAt()).isEqualTo(NOW);
             assertThat(updated.getExpiresAt()).isEqualTo(NOW.plusDays(EXPIRATION_DAYS));
@@ -298,7 +298,7 @@ class SessionServiceTest {
             givenSession();
 
             StudySession updated = sessionService.updateExamInfo("7K2M9QXF",
-                    new UpdateExamRequest("  운영체제  ", NOW.plusMinutes(240), 360));
+                    new UpdateExamRequest("  운영체제  ", null, NOW.plusMinutes(240), 360));
 
             assertThat(updated.getSubject()).isEqualTo("운영체제");
         }
@@ -307,7 +307,7 @@ class SessionServiceTest {
         @DisplayName("시험 시각이 과거면 InvalidExamTimeException이 발생한다")
         void throwsWhenExamTimeIsInThePast() {
             givenSession();
-            UpdateExamRequest request = new UpdateExamRequest("운영체제", NOW.minusMinutes(1), 360);
+            UpdateExamRequest request = new UpdateExamRequest("운영체제", null, NOW.minusMinutes(1), 360);
 
             assertThatThrownBy(() -> sessionService.updateExamInfo("7K2M9QXF", request))
                     .isInstanceOf(InvalidExamTimeException.class);
@@ -317,7 +317,7 @@ class SessionServiceTest {
         @DisplayName("시험 시각이 현재와 같아도 InvalidExamTimeException이 발생한다")
         void throwsWhenExamTimeEqualsNow() {
             givenSession();
-            UpdateExamRequest request = new UpdateExamRequest("운영체제", NOW, 360);
+            UpdateExamRequest request = new UpdateExamRequest("운영체제", null, NOW, 360);
 
             assertThatThrownBy(() -> sessionService.updateExamInfo("7K2M9QXF", request))
                     .isInstanceOf(InvalidExamTimeException.class);
@@ -327,7 +327,7 @@ class SessionServiceTest {
         @DisplayName("존재하지 않는 세션이면 SessionNotFoundException이 발생한다")
         void throwsWhenSessionNotFound() {
             given(studySessionRepository.findBySessionCode("ZZZZZZZZ")).willReturn(Optional.empty());
-            UpdateExamRequest request = new UpdateExamRequest("운영체제", NOW.plusMinutes(240), 360);
+            UpdateExamRequest request = new UpdateExamRequest("운영체제", null, NOW.plusMinutes(240), 360);
 
             assertThatThrownBy(() -> sessionService.updateExamInfo("ZZZZZZZZ", request))
                     .isInstanceOf(SessionNotFoundException.class);
@@ -336,7 +336,7 @@ class SessionServiceTest {
         @Test
         @DisplayName("코드 형식이 잘못되면 DB 조회 없이 InvalidSessionCodeException이 발생한다")
         void throwsWithoutQueryingDatabaseWhenCodeFormatIsInvalid() {
-            UpdateExamRequest request = new UpdateExamRequest("운영체제", NOW.plusMinutes(240), 360);
+            UpdateExamRequest request = new UpdateExamRequest("운영체제", null, NOW.plusMinutes(240), 360);
 
             assertThatThrownBy(() -> sessionService.updateExamInfo("ABC", request))
                     .isInstanceOf(InvalidSessionCodeException.class);

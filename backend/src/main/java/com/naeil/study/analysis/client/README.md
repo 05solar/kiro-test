@@ -6,17 +6,24 @@ AI 호출 추상화와 구현체.
 | --- | --- |
 | `AiAnalysisClient` | 인터페이스. 도메인은 이것만 안다 |
 | `ClaudeAnalysisClient` | Claude 구현체 (Anthropic Java SDK) |
+| `GeminiAnalysisClient` | Gemini 구현체 |
+| `MockAiAnalysisClient` | `ai.mode=mock` 일 때 등록되는 구현체. AI 를 부르지 않는다 |
 | `UnavailableAiAnalysisClient` | API 키가 없을 때 등록되는 구현체 |
 | `dto/` | 요청/응답 모델 |
 
 ## 인터페이스
 
 ```java
-AiTopicCandidates    analyzeChunk(AiChunkAnalysisRequest request);
+AiTopicCandidates     analyzeChunk(AiChunkAnalysisRequest request);
 AiTopicAnalysisResult mergeTopics(AiTopicMergeRequest request);
+AiTopicAnalysisResult generateFromGeneralKnowledge(AiGeneralKnowledgeRequest request);
 ```
 
-두 단계인 이유는 상위 `README.md` 참고.
+앞의 둘은 강의자료에서 뽑는 경로다. 두 단계인 이유는 상위 `README.md` 참고.
+
+세 번째는 **자료가 하나도 없을 때**의 경로다. 나눌 자료가 없으므로 조각 분석을 하지 않고
+과목명·시험 범위·학습 맥락만으로 한 번에 만든다. 이 경로로 만든 Topic 에는 근거로 삼을
+문서가 없으므로, AI 가 문서 ID 를 지어내도 검증 단계에서 전부 버린다.
 
 ## 구조화 출력
 

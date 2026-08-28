@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FlowSteps } from "@/app/_components/flow-steps";
-import { AppHeader, Ghost, PrimaryButton, RequiredMark, SecondaryButton, SpeechBubble } from "@/app/_components/ui";
+import { AppHeader, Ghost, PrimaryButton, SecondaryButton, SpeechBubble } from "@/app/_components/ui";
 import { useSessionStore } from "@/app/_components/session-store";
 import { useExamStore } from "@/app/_components/store";
 import { useHydrated } from "@/app/_components/use-hydrated";
@@ -118,12 +118,15 @@ export default function UploadPage() {
    *
    * 업로드와 추출을 나눠 둔 것은 서버 설계 그대로다. 20MB 파일 여러 개를 받으면서
    * 동시에 파싱까지 하면 업로드 응답이 한참 돌아오지 않는다.
+   *
+   * 자료가 하나도 없으면 추출할 것이 없으니 건너뛴다. 그 경우 서버는 과목명과
+   * 시험 범위만 보고 일반적인 교과 지식으로 주제를 만든다 — 그래서 시험 범위가 없으면
+   * 근거가 아무것도 남지 않는다. 그때는 넘기지 않고 앞 화면으로 돌려보낸다.
    */
   const parseAndContinue = async () => {
     if (!sessionCode) return;
 
-    // 자료가 없으면 분석할 것이 없다. 업로드 영역으로 데려가 표시한다.
-    if (!documents.length) {
+    if (!documents.length && !range.trim()) {
       setFileMissing(true);
       dropRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
@@ -147,12 +150,14 @@ export default function UploadPage() {
         mustStudyAreas: mustStudy || null,
       });
 
-      const parsed = await parseDocuments(sessionCode);
-      setDocuments(parsed);
+      if (documents.length) {
+        const parsed = await parseDocuments(sessionCode);
+        setDocuments(parsed);
 
-      if (!parsed.some((doc) => doc.status === "PARSED")) {
-        setError("자료에서 읽을 수 있는 텍스트를 찾지 못했습니다. 다른 파일을 올려 주세요.");
-        return;
+        if (!parsed.some((doc) => doc.status === "PARSED")) {
+          setError("자료에서 읽을 수 있는 텍스트를 찾지 못했습니다. 다른 파일을 올리거나, 자료 없이 진행해 주세요.");
+          return;
+        }
       }
       router.push("/analysis");
     } catch (e) {
@@ -170,14 +175,15 @@ export default function UploadPage() {
         <div className="mb-2.5 text-[13px] font-bold text-[#FF7A00]">STEP 2 / 2</div>
         <h1 className="font-jua mb-2 text-4xl tracking-[-1px]">공부할 자료를 올려주세요</h1>
         <p className="mb-9 text-[15px] text-[#888]">
-          강의 자료를 읽고, 시험에 나올 핵심만 골라 플랜으로 만들게요.{" "}
-          <span className="font-bold text-[#E03131]">*</span> 는 필수 입력이에요.
+          강의 자료를 읽고, 시험에 나올 핵심만 골라 플랜으로 만들게요.
+          자료가 없으면 과목명과 시험 범위만으로 만들어 드릴게요.
         </p>
 
         <div className="grid items-start gap-6 lg:grid-cols-[1fr_300px]">
           <section className="rounded-[18px] border border-[#eee] p-6 sm:p-[34px]">
-            <div ref={dropRef} className="mb-[9px] text-[13.5px] font-bold">
-              강의 자료<RequiredMark />
+            <div ref={dropRef} className="mb-[9px] flex items-baseline gap-2">
+              <span className="text-[13.5px] font-bold">강의 자료</span>
+              <span className="rounded-full bg-[#F4F4F4] px-2 py-0.5 text-[11.5px] font-bold text-[#888]">선택</span>
             </div>
             <button
               type="button"
@@ -223,9 +229,16 @@ export default function UploadPage() {
               ))}
             </div>
 
+            {!documents.length && !fileMissing && (
+              <p className="mt-4 rounded-xl border border-[#D7DDFF] bg-[#F5F7FF] px-4 py-3 text-[13px] leading-[1.7] text-[#3C3F8F]">
+                자료가 없어도 괜찮아요. 과목명과 <b>시험 범위</b>만으로 일반적인 교과 지식에 맞춰 플랜을 만듭니다.
+                다만 실제 수업 범위와는 일부 차이가 있을 수 있어요.
+              </p>
+            )}
+
             {fileMissing && (
               <p role="alert" className="mt-4 text-[13.5px] font-bold text-[#E03131]">
-                공부할 자료를 한 개 이상 올려 주세요.
+                자료를 올리거나, 앞 화면에서 시험 범위를 적어 주세요. 둘 다 없으면 만들 근거가 없습니다.
               </p>
             )}
 
@@ -303,7 +316,11 @@ export default function UploadPage() {
 
             <div className="mt-7 flex flex-wrap gap-3">
               <PrimaryButton className="flex-1" disabled={busy} onClick={() => void parseAndContinue()}>
-                {busy ? "처리하는 중…" : "자료 분석하고 플랜 만들기"}
+                {busy
+                  ? "처리하는 중…"
+                  : documents.length
+                    ? "자료 분석하고 플랜 만들기"
+                    : "자료 없이 플랜 만들기"}
               </PrimaryButton>
               <SecondaryButton onClick={() => router.push("/exam-info")}>이전</SecondaryButton>
             </div>

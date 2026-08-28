@@ -28,15 +28,17 @@
 
 ```
 kiro-project
-├── backend/          Spring Boot 백엔드 (현재 개발 중)
-├── frontend                   Next.js 프론트엔드
+├── backend/          Spring Boot 백엔드
+├── frontend/         Next.js 프론트엔드
 ├── docs/             기획·API·DB 문서
+├── scripts/          띄운 스택에 대고 돌리는 검증 스크립트
 ├── README.md         이 파일
 ├── PROCESS.md        전체 개발 진행 절차와 단계별 상태
 └── AGENT.md          AI 에이전트 작업 규칙
 ```
 
-프론트엔드(React + TypeScript + Vite)는 백엔드 세션 기능이 완성된 뒤 추가한다.
+프론트엔드는 Next.js(App Router) + React + TypeScript 다. 백엔드와는 같은 오리진의
+`/api` 프록시로 통신한다 — 자세한 내용은 [frontend/README.md](frontend/README.md).
 
 ## 현재 진행 상태
 
@@ -51,9 +53,12 @@ kiro-project
 | STEP 6 | AI 문서 분석 및 Topic 생성 | 완료 |
 | STEP 7 | 최초 학습 계획(Curriculum) 생성 | 완료 |
 | STEP 8 | 학습 단계 진행 및 실제 학습시간 기록 | 완료 |
-| STEP 9 | 동적 커리큘럼 재조정 | 예정 |
-| STEP 10 | 퀴즈 | 예정 |
-| STEP 11 | 다른 기기 세션 복구 검증 | 예정 |
+| STEP 9 | 동적 커리큘럼 재조정 | 완료 |
+| STEP 10 | 퀴즈 생성·채점·오답 요약 | 완료 |
+| STEP 11 | 프론트엔드 연동 및 Docker 배포 | 완료 |
+| 추가 1 | 같은 범위 신규 퀴즈 생성(회차) | 완료 |
+| 추가 2 | 자료 미업로드 시 일반 지식 기반 생성 | 완료 |
+| 추가 3 | 학습자료 기반 학습 챗봇 | 진행 중 |
 
 자세한 절차는 [PROCESS.md](PROCESS.md)를 참고한다.
 

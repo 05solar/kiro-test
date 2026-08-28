@@ -10,12 +10,14 @@ import {
   toImportance,
   toQuestions,
   toStudyContent,
+  toSourceLabel,
   toStepMode,
   topicIdByOrder,
 } from "./adapt";
 import type {
   CurriculumResponse,
   QuizListResponse,
+  SessionResponse,
   StudyStepResponse,
   TopicResponse,
 } from "./types";
@@ -344,5 +346,42 @@ describe("toStudyContent — 없는 값을 지어내지 않는다", () => {
 
   it("id 는 topicOrder 를 쓴다 — 라우트와 같은 기준", () => {
     expect(toStudyContent(base).id).toBe(2);
+  });
+});
+
+describe("toSourceLabel", () => {
+  function session(over: Partial<SessionResponse> = {}): SessionResponse {
+    return {
+      sessionCode: "A1B2C3D4",
+      subject: "자료구조",
+      examScope: "3장 스택 ~ 7장 그래프",
+      grounded: false,
+      sourceType: null,
+      examAt: "2026-08-29T09:00:00",
+      availableStudyMinutes: 180,
+      remainingStudyMinutes: 150,
+      status: "READY",
+      ...over,
+    };
+  }
+
+  it("분석 전에는 표시할 근거가 없다", () => {
+    expect(toSourceLabel(session())).toBeNull();
+    expect(toSourceLabel(null)).toBeNull();
+  });
+
+  it("자료 기반이면 안내 문구를 붙이지 않는다", () => {
+    const label = toSourceLabel(session({ sourceType: "USER_MATERIAL", grounded: true }));
+    expect(label).toEqual({ grounded: true, label: "학습자료 기반", notice: null });
+  });
+
+  it("일반 지식 기반이면 차이가 있을 수 있다고 알린다", () => {
+    const label = toSourceLabel(session({ sourceType: "GENERAL_KNOWLEDGE" }));
+    expect(label?.grounded).toBe(false);
+    expect(label?.label).toBe("일반 지식 기반");
+    // 문구를 바꾸면 이 테스트가 깨진다. 사용자에게 하는 고지라 조용히 사라지면 안 된다.
+    expect(label?.notice).toBe(
+      "업로드된 학습자료가 없어 일반적인 교과 지식을 기준으로 생성되었습니다. 실제 수업 범위와 일부 차이가 있을 수 있습니다."
+    );
   });
 });

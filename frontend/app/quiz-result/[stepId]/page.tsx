@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AppHeader, Ghost, PrimaryButton, SecondaryButton } from "@/app/_components/ui";
+import { AppHeader, Ghost, PrimaryButton, SecondaryButton, SourceBadge } from "@/app/_components/ui";
 import { useSessionStore } from "@/app/_components/session-store";
 import { useCurriculum } from "@/app/_components/use-curriculum";
+import { useSession } from "@/app/_components/use-session";
 import {
   getQuizResults,
   getQuizzes,
@@ -32,6 +33,8 @@ export default function QuizResultPage() {
   const sessionCode = useSessionStore((state) => state.sessionCode);
   const curriculum = useCurriculum();
   const topicId = curriculum.topicIds.get(stepId);
+  // 이 문제들이 강의자료에서 나온 것인지, 일반적인 교과 지식에서 나온 것인지.
+  const { source } = useSession();
 
   const [results, setResults] = useState<QuizResultsResponse | null>(null);
   const [quizzes, setQuizzes] = useState<QuizListResponse | null>(null);
@@ -127,7 +130,10 @@ export default function QuizResultPage() {
           <Ghost width={104} mood={passed ? "excited" : "worried"} className="animate-bob shrink-0 drop-shadow-[0_12px_18px_rgba(255,122,0,.22)]" />
           <div>
             {passed && <div className="mb-2 inline-block rounded-full bg-[#FF7A00] px-3 py-1 text-xs font-bold text-white">STEP {stepId} 완료!</div>}
-            <div className="mb-[9px] text-[13px] font-bold text-[#E85D00]">STEP {stepId} 퀴즈 결과</div>
+            <div className="mb-[9px] flex flex-wrap items-center justify-center gap-2.5 sm:justify-start">
+              <span className="text-[13px] font-bold text-[#E85D00]">STEP {stepId} 퀴즈 결과</span>
+              <SourceBadge source={source} />
+            </div>
             <div className="font-jua mb-2 text-[38px] tracking-[-1.2px]">
               {score} / {total} 정답 · {percentage}% ·{" "}
               <span className={passed ? "text-[#E85D00]" : "text-[#888]"}>{passed ? "통과" : "재도전"}</span>

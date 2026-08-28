@@ -107,8 +107,8 @@ class StudyStepServiceTest {
 
         session = StudySession.create(SESSION_CODE, START.minusHours(3), 30L);
         setId(StudySession.class, session, SESSION_ID);
-        session.updateExamInfo("운영체제", START.plusHours(4), 180, 180, START.minusHours(2));
-        session.startAnalyzing(START.minusMinutes(40));
+        session.updateExamInfo("운영체제", null, START.plusHours(4), 180, 180, START.minusHours(2));
+        session.startAnalyzing(com.naeil.study.session.entity.StudySourceType.USER_MATERIAL, START.minusMinutes(40));
         session.markReady(START.minusMinutes(20));
 
         curriculum = Curriculum.create(session, 180, 180, START.minusMinutes(10));

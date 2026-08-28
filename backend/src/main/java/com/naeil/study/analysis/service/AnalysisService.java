@@ -5,6 +5,7 @@ import com.naeil.study.analysis.chunk.DocumentChunker;
 import com.naeil.study.analysis.client.AiAnalysisClient;
 import com.naeil.study.analysis.client.dto.AiChunkAnalysisRequest;
 import com.naeil.study.analysis.client.dto.AiDocumentReference;
+import com.naeil.study.analysis.client.dto.AiGeneralKnowledgeRequest;
 import com.naeil.study.analysis.client.dto.AiSourcedTopicCandidate;
 import com.naeil.study.analysis.client.dto.AiTopicAnalysisResult;
 import com.naeil.study.analysis.client.dto.AiTopicCandidate;
@@ -100,7 +101,27 @@ public class AnalysisService {
         }
     }
 
+    /**
+     * 근거에 따라 두 갈래로 나뉜다.
+     *
+     * <pre>
+     * 자료 있음  조각 분석 → 통합 → 검증
+     * 자료 없음  과목명 + 시험 범위 → 주제 생성 → 검증
+     * </pre>
+     *
+     * <p>갈라지는 곳은 여기 하나다. 검증·저장·이후 계획 생성은 같은 길을 지난다.
+     * 두 경로를 끝까지 따로 만들면 한쪽만 고치는 실수가 난다.
+     */
     private List<Topic> runAnalysis(AnalysisTarget target) {
+        List<ValidatedTopic> validated = target.isGrounded()
+                ? fromDocuments(target)
+                : fromGeneralKnowledge(target);
+
+        return stateWriter.completeAnalysis(target.sessionId(), validated);
+    }
+
+    /** 강의자료에서 뽑는다. 조각별로 후보를 모으고 한 번에 통합한다. */
+    private List<ValidatedTopic> fromDocuments(AnalysisTarget target) {
         List<AiDocumentReference> references = toReferences(target.documents());
         List<AiSourcedTopicCandidate> candidates = collectCandidates(target);
 
@@ -111,9 +132,34 @@ public class AnalysisService {
 
         AiTopicMergeRequest mergeRequest = new AiTopicMergeRequest(
                 target.subject(), target.studyContext(), references, candidates, maxTopics);
-        List<ValidatedTopic> validated = mergeAndValidate(mergeRequest, references);
+        return mergeAndValidate(mergeRequest, references);
+    }
 
-        return stateWriter.completeAnalysis(target.sessionId(), validated);
+    /**
+     * 과목명과 시험 범위만으로 만든다.
+     *
+     * <p>출처 문서 참조가 없다. 검증기에 빈 목록을 넘기면 AI 가 지어낸 참조값이 전부 버려진다.
+     * 자료가 없는데 출처가 붙어 있으면 그건 지어낸 것이다.
+     *
+     * <p>조각 분석이 없어 AI 호출이 <b>한 번</b>이다. 자료 기반은 조각 수만큼 부른다.
+     */
+    private List<ValidatedTopic> fromGeneralKnowledge(AnalysisTarget target) {
+        AiGeneralKnowledgeRequest request = new AiGeneralKnowledgeRequest(
+                target.subject(), target.examScope(), target.studyContext(), maxTopics);
+
+        log.info("general knowledge analysis: sessionId={}, subject={}, scope chars={}",
+                target.sessionId(), target.subject(),
+                target.examScope() == null ? 0 : target.examScope().length());
+
+        try {
+            return validator.validate(
+                    aiAnalysisClient.generateFromGeneralKnowledge(request), List.of());
+        } catch (AiAnalysisException first) {
+            // 통합 경로와 같은 정책이다. 형식 오류는 한 번 더 물어본다.
+            log.warn("general knowledge result rejected, retrying once: reason={}", first.getReason());
+            return validator.validate(
+                    aiAnalysisClient.generateFromGeneralKnowledge(request), List.of());
+        }
     }
 
     /**

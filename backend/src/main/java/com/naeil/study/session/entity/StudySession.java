@@ -59,6 +59,25 @@ public class StudySession {
     private LocalDateTime examAt;
 
     /**
+     * 시험 범위. 사용자가 적은 그대로 둔다("3장 스택 ~ 7장 그래프").
+     *
+     * <p>강의자료가 없을 때는 이 값이 학습 내용을 만드는 <b>유일한 근거</b>가 된다.
+     * 자료가 있을 때도 분석의 힌트로 쓴다.
+     */
+    @Column(name = "exam_scope", columnDefinition = "TEXT")
+    private String examScope;
+
+    /**
+     * 이 세션의 학습 내용이 무엇에 근거했는지. 분석을 시작할 때 정해진다.
+     *
+     * <p>분석 전에는 비어 있다. Topic·계획·퀴즈가 모두 이 값을 따르므로
+     * 여러 곳에 복사하지 않는다.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source_type", length = 30)
+    private StudySourceType sourceType;
+
+    /**
      * 사용자가 시험 정보 입력 시 설정한 <b>전체</b> 학습 가능 시간(분).
      *
      * <p>최초 커리큘럼 생성의 기준값이며 학습이 진행되는 동안 변경하지 않는다.
@@ -159,12 +178,14 @@ public class StudySession {
      */
     public void updateExamInfo(
             String subject,
+            String examScope,
             LocalDateTime examAt,
             int availableStudyMinutes,
             int remainingStudyMinutes,
             LocalDateTime now
     ) {
         this.subject = subject;
+        this.examScope = examScope;
         this.examAt = examAt;
         this.availableStudyMinutes = availableStudyMinutes;
         this.remainingStudyMinutes = remainingStudyMinutes;
@@ -241,9 +262,32 @@ public class StudySession {
      * <p>분석은 언제든 다시 요청할 수 있으므로 어느 상태에서든 넘어간다.
      * 이미 분석 중인 경우를 막는 것은 서비스의 책임이다.
      */
-    public void startAnalyzing(LocalDateTime now) {
+    public void startAnalyzing(StudySourceType sourceType, LocalDateTime now) {
         this.status = SessionStatus.ANALYZING;
+        // 분석을 다시 하면 근거도 다시 정해진다. 자료를 올린 뒤 재분석하면
+        // 일반 지식에서 자료 기반으로 바뀌어야 한다.
+        this.sourceType = sourceType;
         this.updatedAt = now;
+    }
+
+    /**
+     * 실제 강의자료에 근거한 학습 내용인지.
+     *
+     * <p>분석 전에는 판단할 근거가 없으므로 false 다. 화면은 분석 후에만 이 값을 쓴다.
+     */
+    public boolean isGrounded() {
+        return sourceType != null && sourceType.isGrounded();
+    }
+
+    /**
+     * 자료 없이도 학습 내용을 만들 수 있는지.
+     *
+     * <p>과목명과 시험 범위가 둘 다 있어야 한다. 범위가 없으면 무엇을 공부해야 하는지
+     * 알 수 없어 일반 지식으로도 만들 수 없다.
+     */
+    public boolean canGenerateFromGeneralKnowledge() {
+        return subject != null && !subject.isBlank()
+                && examScope != null && !examScope.isBlank();
     }
 
     /** 분석에 성공해 학습을 시작할 수 있는 상태가 되었다. */

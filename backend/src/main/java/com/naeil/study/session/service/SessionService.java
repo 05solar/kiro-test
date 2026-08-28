@@ -103,6 +103,7 @@ public class SessionService {
 
         session.updateExamInfo(
                 request.subject().strip(),
+                request.examScope() == null ? null : request.examScope().strip(),
                 request.examAt(),
                 requestedMinutes,
                 effectiveStudyMinutes,

@@ -30,10 +30,27 @@ public class FakeAiAnalysisClient implements AiAnalysisClient {
     private Supplier<AiTopicCandidates> chunkResponse = FakeAiAnalysisClient::defaultCandidates;
     private Supplier<AiTopicAnalysisResult> mergeResponse = FakeAiAnalysisClient::defaultResult;
 
+    /** 일반 지식 경로로 들어온 요청. 시험 범위가 실제로 전달됐는지 확인할 때 쓴다. */
+    private final java.util.List<com.naeil.study.analysis.client.dto.AiGeneralKnowledgeRequest>
+            generalKnowledgeRequests = new ArrayList<>();
+
     @Override
     public AiTopicCandidates analyzeChunk(AiChunkAnalysisRequest request) {
         chunkRequests.add(request);
         return chunkResponse.get();
+    }
+
+    @Override
+    public AiTopicAnalysisResult generateFromGeneralKnowledge(
+            com.naeil.study.analysis.client.dto.AiGeneralKnowledgeRequest request) {
+        generalKnowledgeRequests.add(request);
+        return mergeResponse.get();
+    }
+
+    /** 일반 지식 경로로 들어온 요청. 시험 범위가 실제로 전달됐는지 확인할 때 쓴다. */
+    public java.util.List<com.naeil.study.analysis.client.dto.AiGeneralKnowledgeRequest>
+            generalKnowledgeRequests() {
+        return generalKnowledgeRequests;
     }
 
     @Override
@@ -68,6 +85,7 @@ public class FakeAiAnalysisClient implements AiAnalysisClient {
     public void reset() {
         chunkRequests.clear();
         mergeRequests.clear();
+        generalKnowledgeRequests.clear();
         mergeCallCount.set(0);
         chunkResponse = FakeAiAnalysisClient::defaultCandidates;
         mergeResponse = FakeAiAnalysisClient::defaultResult;

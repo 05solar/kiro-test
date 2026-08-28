@@ -126,6 +126,8 @@ export default function ExamInfoPage() {
       const available = useExamStore.getState().availableMinutes;
       await updateExam(code, {
         subject,
+        // 자료를 올리지 않으면 이 값이 학습 내용을 만드는 유일한 근거가 된다.
+        examScope: range.trim() || null,
         examAt: toExamAt(examDate, examTime),
         availableStudyMinutes: available ?? 180,
       });
@@ -227,7 +229,10 @@ export default function ExamInfoPage() {
                   onChange={(event) => setRange(event.target.value)}
                   className="form-input"
                 />
-                <span className="mt-2 block text-[12.5px] text-[#888]">교재 목차나 강의 슬라이드 제목을 그대로 붙여도 됩니다.</span>
+                <span className="mt-2 block text-[12.5px] text-[#888]">
+                  교재 목차나 강의 슬라이드 제목을 그대로 붙여도 됩니다.{" "}
+                  <b className="text-[#E85D00]">자료를 올리지 않고 진행하려면 이 칸을 채워 주세요.</b>
+                </span>
               </label>
               <fieldset>
                 <legend className="mb-[11px] text-[13.5px] font-bold">지금 준비 상태</legend>

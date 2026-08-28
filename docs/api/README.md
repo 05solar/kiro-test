@@ -7,7 +7,7 @@ API를 바꾸면 같은 커밋에서 이 폴더의 문서도 고친다.
 
 | 문서 | 내용 |
 | --- | --- |
-| [session-api.md](session-api.md) | 세션 생성 / 조회 / 시험 정보 API |
+| [session-api.md](session-api.md) | 세션 생성 / 조회 / 시험 정보 API. 학습 내용의 근거(`sourceType`) 정의도 여기 있다 |
 | [document-api.md](document-api.md) | 강의자료 업로드 / 목록 / 삭제 API |
 | [document-parsing-api.md](document-parsing-api.md) | 문서 텍스트 추출 API |
 | [study-context-api.md](study-context-api.md) | 학습 맥락 저장 / 조회 API |

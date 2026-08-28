@@ -37,7 +37,7 @@ public class GeminiQuizClient implements AiQuizClient {
     public AiQuizGenerationResult generate(AiQuizGenerationRequest request) {
         try {
             return client.generate(
-                    QuizPrompts.generationSystemPrompt(),
+                    QuizPrompts.generationSystemPrompt(request),
                     QuizPrompts.generationUserMessage(request) + OUTPUT_FORMAT,
                     AiQuizGenerationResult.class,
                     "quiz generation (" + request.topicTitle() + ")");

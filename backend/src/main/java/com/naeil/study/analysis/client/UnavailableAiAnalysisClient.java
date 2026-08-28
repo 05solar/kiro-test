@@ -1,6 +1,7 @@
 package com.naeil.study.analysis.client;
 
 import com.naeil.study.analysis.client.dto.AiChunkAnalysisRequest;
+import com.naeil.study.analysis.client.dto.AiGeneralKnowledgeRequest;
 import com.naeil.study.analysis.client.dto.AiTopicAnalysisResult;
 import com.naeil.study.analysis.client.dto.AiTopicCandidates;
 import com.naeil.study.analysis.client.dto.AiTopicMergeRequest;
@@ -22,6 +23,11 @@ public class UnavailableAiAnalysisClient implements AiAnalysisClient {
 
     @Override
     public AiTopicAnalysisResult mergeTopics(AiTopicMergeRequest request) {
+        throw notConfigured();
+    }
+
+    @Override
+    public AiTopicAnalysisResult generateFromGeneralKnowledge(AiGeneralKnowledgeRequest request) {
         throw notConfigured();
     }
 

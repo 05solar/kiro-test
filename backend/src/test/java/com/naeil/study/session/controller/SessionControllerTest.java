@@ -65,11 +65,15 @@ class SessionControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.sessionCode").value("7K2M9QXF"))
                 .andExpect(jsonPath("$.subject").value(nullValue()))
+                .andExpect(jsonPath("$.examScope").value(nullValue()))
                 .andExpect(jsonPath("$.examAt").value(nullValue()))
                 .andExpect(jsonPath("$.availableStudyMinutes").value(nullValue()))
                 .andExpect(jsonPath("$.remainingStudyMinutes").value(nullValue()))
                 .andExpect(jsonPath("$.status").value("CREATED"))
                 .andExpect(jsonPath("$.currentStepOrder").value(nullValue()))
+                // 아직 분석하지 않았으므로 근거가 없다. 화면은 이때 아무 표시도 하지 않는다.
+                .andExpect(jsonPath("$.sourceType").value(nullValue()))
+                .andExpect(jsonPath("$.grounded").value(false))
                 .andExpect(jsonPath("$.createdAt").value("2026-08-27T15:30:00"))
                 .andExpect(jsonPath("$.lastAccessedAt").value("2026-08-27T15:30:00"))
                 .andExpect(jsonPath("$.expiresAt").value("2026-09-26T15:30:00"))
@@ -121,7 +125,7 @@ class SessionControllerTest {
 
         private StudySession examRegisteredSession(int available, int remaining) {
             StudySession session = StudySession.create("7K2M9QXF", NOW, 30L);
-            session.updateExamInfo("운영체제", LocalDateTime.of(2026, 8, 28, 10, 0), available, remaining, NOW);
+            session.updateExamInfo("운영체제", null, LocalDateTime.of(2026, 8, 28, 10, 0), available, remaining, NOW);
             return session;
         }
 
@@ -141,6 +145,42 @@ class SessionControllerTest {
                     .andExpect(jsonPath("$.availableStudyMinutes").value(360))
                     .andExpect(jsonPath("$.remainingStudyMinutes").value(360))
                     .andExpect(jsonPath("$.status").value("CREATED"));
+        }
+
+        @Test
+        @DisplayName("저장한 시험 범위를 그대로 돌려준다 — 자료가 없을 때의 유일한 근거다")
+        void returnsExamScope() throws Exception {
+            StudySession session = StudySession.create("7K2M9QXF", NOW, 30L);
+            session.updateExamInfo("운영체제", "3장 프로세스 ~ 7장 교착상태",
+                    LocalDateTime.of(2026, 8, 28, 10, 0), 360, 360, NOW);
+            given(sessionService.updateExamInfo(eq("7K2M9QXF"), any(UpdateExamRequest.class)))
+                    .willReturn(session);
+
+            mockMvc.perform(put("/api/sessions/{sessionCode}/exam", "7K2M9QXF")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "subject": "운영체제",
+                                      "examScope": "3장 프로세스 ~ 7장 교착상태",
+                                      "examAt": "2026-08-28T10:00:00",
+                                      "availableStudyMinutes": 360
+                                    }
+                                    """))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.examScope").value("3장 프로세스 ~ 7장 교착상태"));
+        }
+
+        @Test
+        @DisplayName("시험 범위를 보내지 않아도 저장된다 — 선택 입력이다")
+        void acceptsMissingExamScope() throws Exception {
+            given(sessionService.updateExamInfo(eq("7K2M9QXF"), any(UpdateExamRequest.class)))
+                    .willReturn(examRegisteredSession(360, 360));
+
+            mockMvc.perform(put("/api/sessions/{sessionCode}/exam", "7K2M9QXF")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body("운영체제", "2026-08-28T10:00:00", 360)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.examScope").value(nullValue()));
         }
 
         @Test

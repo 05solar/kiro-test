@@ -10,6 +10,7 @@ import com.naeil.study.document.entity.Document;
 import com.naeil.study.document.entity.DocumentStatus;
 import com.naeil.study.document.repository.DocumentRepository;
 import com.naeil.study.session.entity.StudySession;
+import com.naeil.study.session.entity.StudySourceType;
 import com.naeil.study.session.repository.StudySessionRepository;
 import com.naeil.study.session.exception.SessionNotFoundException;
 import com.naeil.study.studycontext.entity.StudyContext;
@@ -87,15 +88,34 @@ public class AnalysisStateWriter {
 
         List<Document> parsed = documentRepository
                 .findAllByStudySessionIdAndStatusOrderByCreatedAtAsc(sessionId, DocumentStatus.PARSED);
-        if (parsed.isEmpty()) {
+
+        /*
+         * 자료가 없다고 바로 막지 않는다.
+         *
+         * 예전에는 여기서 실패했다. 하지만 시험 과목과 범위를 안다면 일반적인 교과 지식만으로도
+         * 학습 순서를 짜 줄 수 있다. 자료를 준비하지 못한 사람에게 아무것도 못 준다면
+         * 이 서비스가 가장 필요한 순간에 쓸 수 없다.
+         *
+         * 대신 무엇에 근거했는지를 세션에 남긴다. 일반 지식으로 만든 계획은 실제 수업 범위와
+         * 다를 수 있고, 사용자가 그걸 모르면 엉뚱한 것을 공부한다.
+         */
+        StudySourceType sourceType = parsed.isEmpty()
+                ? StudySourceType.GENERAL_KNOWLEDGE
+                : StudySourceType.USER_MATERIAL;
+
+        if (sourceType == StudySourceType.GENERAL_KNOWLEDGE
+                && !session.canGenerateFromGeneralKnowledge()) {
+            // 자료도 없고 시험 범위도 없으면 무엇을 공부해야 하는지 알 방법이 없다.
             throw new NoParsedDocumentException();
         }
 
-        session.startAnalyzing(now());
+        session.startAnalyzing(sourceType, now());
 
         return new AnalysisTarget(
                 sessionId,
                 session.getSubject(),
+                session.getExamScope(),
+                sourceType,
                 toAiStudyContext(sessionId),
                 toAnalysisDocuments(parsed));
     }

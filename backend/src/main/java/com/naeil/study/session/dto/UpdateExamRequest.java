@@ -22,6 +22,15 @@ public record UpdateExamRequest(
         @Size(max = 100, message = "과목명은 100자 이하로 입력해 주세요.")
         String subject,
 
+        /**
+         * 시험 범위. 선택 입력이다.
+         *
+         * <p>강의자료를 올리지 않은 경우에는 이 값이 학습 내용을 만드는 유일한 근거가 된다.
+         * 비어 있으면 자료 없이는 아무것도 만들 수 없다.
+         */
+        @Size(max = 2000, message = "시험 범위는 2000자 이하로 입력해 주세요.")
+        String examScope,
+
         @NotNull(message = "시험 일시를 입력해 주세요.")
         LocalDateTime examAt,
 

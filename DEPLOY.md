@@ -141,7 +141,19 @@ docker compose exec db pg_dump -U postgres -d naeil_study \
 ```
 
 `schema.sql` 은 **DB 볼륨이 비어 있을 때만** 자동 적용된다.
-이미 데이터가 있는 DB 에는 변경분을 직접 적용해야 한다.
+이미 데이터가 있는 DB 에는 변경분을 직접 적용해야 한다. 그 변경분은 `docs/migrations/`
+에 순번을 붙여 남긴다.
+
+```bash
+# 새 버전을 올리기 **전에** 먼저 적용한다. 순서가 바뀌면 기동 중 Schema-validation 으로 죽는다.
+docker compose exec -T db psql -U postgres -d naeil_study < docs/migrations/001-general-knowledge.sql
+```
+
+| 파일 | 내용 |
+| --- | --- |
+| `001-general-knowledge.sql` | `study_sessions.exam_scope`, `study_sessions.source_type` 추가 |
+
+마이그레이션 도구(Flyway)는 아직 도입하지 않았다. 파일 수가 늘어나면 그때 옮긴다.
 
 ## 알려진 제약
 

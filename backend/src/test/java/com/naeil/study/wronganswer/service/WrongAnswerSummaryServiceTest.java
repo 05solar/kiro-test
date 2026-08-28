@@ -106,7 +106,7 @@ class WrongAnswerSummaryServiceTest {
 
         session = StudySession.create(SESSION_CODE, NOW.minusHours(6), 30L);
         setId(StudySession.class, session, SESSION_ID);
-        session.updateExamInfo("운영체제", NOW.plusHours(3), 300, 300, NOW.minusHours(5));
+        session.updateExamInfo("운영체제", null, NOW.plusHours(3), 300, 300, NOW.minusHours(5));
 
         topic1 = topic("CPU 스케줄링", List.of(DOC_A_ID), 1);
         topic2 = topic("가상 메모리", List.of(DOC_A_ID), 2);

@@ -5,6 +5,7 @@ import com.anthropic.client.okhttp.AnthropicOkHttpClient;
 import com.naeil.study.analysis.client.AiAnalysisClient;
 import com.naeil.study.analysis.client.ClaudeAnalysisClient;
 import com.naeil.study.analysis.client.GeminiAnalysisClient;
+import com.naeil.study.analysis.client.MockAiAnalysisClient;
 import com.naeil.study.analysis.client.UnavailableAiAnalysisClient;
 import com.naeil.study.common.ai.GeminiTextClient;
 import java.time.Duration;
@@ -31,7 +32,20 @@ public class AiClientConfig {
     private static final Logger log = LoggerFactory.getLogger(AiClientConfig.class);
 
     @Bean
+    /**
+     * 분석 방식.
+     *
+     * <pre>
+     * mock    AI 를 부르지 않고 목 데이터를 만든다. 과금되지 않는다
+     * gemini  실제 AI 를 부른다. ai.provider 설정을 따른다
+     * </pre>
+     *
+     * <p><b>기본값이 mock 인 이유</b> — 분석은 자료 조각 수만큼 AI 를 부른다.
+     * 화면을 한 번 확인할 때마다 그만큼 과금된다.
+     * 실제 배포에서는 {@code LLM_MODE=gemini} 를 넣는다(docker-compose 에 이미 들어 있다).
+     */
     public AiAnalysisClient aiAnalysisClient(
+            @Value("${ai.mode:mock}") String aiMode,
             @Value("${ai.provider:anthropic}") String provider,
             @Value("${ai.api-key:}") String apiKey,
             @Value("${ai.model:claude-opus-5}") String model,
@@ -40,6 +54,13 @@ public class AiClientConfig {
             @Value("${ai.timeout-seconds:180}") long timeoutSeconds,
             @Value("${ai.max-retries:2}") int maxRetries
     ) {
+        if ("mock".equalsIgnoreCase(aiMode)) {
+            // 눈에 띄게 남긴다. 목 데이터가 나오는데 원인을 모르면 한참 헤맨다.
+            log.warn("ai.mode=mock — 강의자료를 AI 로 분석하지 않고 목 데이터를 돌려준다. "
+                    + "실제 분석이 필요하면 LLM_MODE=gemini 로 실행한다.");
+            return new MockAiAnalysisClient();
+        }
+
         if ("gemini".equalsIgnoreCase(provider)) {
             if (geminiApiKey == null || geminiApiKey.isBlank()) {
                 log.warn("ai.gemini.api-key is not configured. AI analysis will fail until it is set.");

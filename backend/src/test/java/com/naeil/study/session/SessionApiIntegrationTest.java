@@ -234,6 +234,43 @@ class SessionApiIntegrationTest {
     }
 
     @Test
+    @DisplayName("시험 범위를 함께 저장하면 응답과 세션 조회에 그대로 담긴다")
+    void registerExamScope() {
+        LocalDateTime now = LocalDateTime.of(2026, 8, 27, 18, 0);
+        testClock().setNow(now);
+
+        String sessionCode = (String) restTemplate
+                .exchange("/api/sessions", HttpMethod.POST, null, JSON_MAP).getBody().get("sessionCode");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8));
+        String body = """
+                {"subject":"운영체제","examScope":"3장 프로세스 ~ 7장 교착상태",\
+                "examAt":"2026-08-27T22:00:00","availableStudyMinutes":360}
+                """;
+
+        ResponseEntity<Map<String, Object>> exam = restTemplate.exchange(
+                "/api/sessions/" + sessionCode + "/exam", HttpMethod.PUT,
+                new HttpEntity<>(body, headers), JSON_MAP);
+
+        // 무엇이 저장됐는지 확인할 수 있어야 한다. 자료를 올리지 않으면 이 값이 유일한 근거다.
+        assertThat(exam.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(exam.getBody().get("examScope")).isEqualTo("3장 프로세스 ~ 7장 교착상태");
+
+        ResponseEntity<Map<String, Object>> found = restTemplate.exchange(
+                "/api/sessions/" + sessionCode, HttpMethod.GET, null, JSON_MAP);
+
+        assertThat(found.getBody().get("examScope")).isEqualTo("3장 프로세스 ~ 7장 교착상태");
+        // 아직 분석하지 않았으므로 근거는 정해지지 않았다.
+        assertThat(found.getBody().get("sourceType")).isNull();
+        assertThat(found.getBody().get("grounded")).isEqualTo(false);
+
+        StudySession stored = studySessionRepository.findBySessionCode(sessionCode).orElseThrow();
+        assertThat(stored.getExamScope()).isEqualTo("3장 프로세스 ~ 7장 교착상태");
+        assertThat(stored.canGenerateFromGeneralKnowledge()).isTrue();
+    }
+
+    @Test
     @DisplayName("시험 정보를 다시 등록하면 두 시간 값이 다시 계산된다")
     void updateExamInfoRecalculates() {
         LocalDateTime now = LocalDateTime.of(2026, 8, 27, 18, 0);

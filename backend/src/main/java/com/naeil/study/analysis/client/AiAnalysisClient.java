@@ -1,6 +1,7 @@
 package com.naeil.study.analysis.client;
 
 import com.naeil.study.analysis.client.dto.AiChunkAnalysisRequest;
+import com.naeil.study.analysis.client.dto.AiGeneralKnowledgeRequest;
 import com.naeil.study.analysis.client.dto.AiTopicAnalysisResult;
 import com.naeil.study.analysis.client.dto.AiTopicCandidates;
 import com.naeil.study.analysis.client.dto.AiTopicMergeRequest;
@@ -28,4 +29,15 @@ public interface AiAnalysisClient {
 
     /** 주제 후보들을 하나의 Topic 목록으로 합친다. */
     AiTopicAnalysisResult mergeTopics(AiTopicMergeRequest request);
+
+    /**
+     * 강의자료 없이 과목명과 시험 범위만으로 학습 주제를 만든다.
+     *
+     * <p>자료가 없는 사용자에게도 학습 순서를 줄 수 있어야 한다. 다만 특정 교수자의
+     * 강의나 특정 교재를 아는 것처럼 굴면 안 된다 — 표준 교과 지식만 쓴다.
+     *
+     * <p>반환 형식은 자료 기반 경로와 같다. 이후 검증·저장·계획 생성이 같은 길을 지난다.
+     * 출처 문서 참조만 비어 있다.
+     */
+    AiTopicAnalysisResult generateFromGeneralKnowledge(AiGeneralKnowledgeRequest request);
 }

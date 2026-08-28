@@ -28,7 +28,14 @@ public record AiQuizGenerationRequest(
         AiStudyContext studyContext,
         String sourceContext,
         int questionCount,
-        List<String> previousQuestions
+        List<String> previousQuestions,
+        /**
+         * 실제 강의자료에 근거하는지.
+         *
+         * <p>false 면 근거가 표준 교과 지식이다. "자료에 있다"고 말하지 않도록
+         * 프롬프트의 지시가 달라진다.
+         */
+        boolean grounded
 ) {
 
     /** 새 회차인지. 이전 문제가 있으면 프롬프트에 중복 방지 조건을 넣는다. */

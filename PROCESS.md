@@ -518,3 +518,58 @@ DB에서 다시 읽은 `...773419` 가 달랐다. DB 타임스탬프가 마이�
 - 해당 기능의 단위 테스트가 존재하고 통과한다
 - `./gradlew build` 가 성공한다
 - API 명세 문서(`docs/api/`)가 실제 구현과 일치한다
+
+---
+
+## 추가 2 — 자료 미업로드 시 일반 지식 기반 생성 (완료)
+
+> STEP 9~11(동적 재조정 / 퀴즈 / 프론트 연동·배포)의 절차 기록은 이 문서에 아직 없다.
+> 각 기능의 명세는 `docs/api/` 에, 검증 기록은 `docs/` 의 테스트 문서에 있다.
+
+### 무엇을 만들었나
+
+강의자료를 올리지 않아도 **과목명과 시험 범위만으로** 주제·계획·퀴즈를 만든다.
+자료가 손에 없거나 범위만 아는 상황이 실제로 흔한데, 그때 아무것도 못 하면 서비스가 멈춘다.
+
+### 설계 판단
+
+**표시를 감추지 않는 것이 이 기능의 절반이다.** 자료 없이 만든 내용은 실제 수업 범위와
+다를 수 있다. 화면이 그 차이를 감추면 사용자는 자기 강의자료에서 뽑은 내용이라고 믿고
+그대로 외운다. 그래서 근거를 세션에 남기고(`sourceType`), 커리큘럼·퀴즈 화면에 항상 띄운다.
+
+```
+추출된 자료 있음  →  USER_MATERIAL      [📚 학습자료 기반]
+추출된 자료 없음  →  GENERAL_KNOWLEDGE  [💡 일반 지식 기반] + 안내 문구
+분석 전           →  null               아무것도 그리지 않는다
+```
+
+`grounded` 는 `sourceType == USER_MATERIAL` 과 같은 값이지만 서버가 같이 내려준다.
+화면이 매번 enum 을 비교하게 두면 비교를 빠뜨린 화면이 하나 생긴다.
+
+### 진행 순서
+
+1. `StudySourceType` enum, `StudySession.examScope` / `sourceType` 추가
+2. `AnalysisStateWriter.beginAnalysis` — 자료가 없으면 거절하지 않고 근거를 정한다.
+   과목명·시험 범위마저 없을 때만 `NO_PARSED_DOCUMENT`
+3. `AiAnalysisClient.generateFromGeneralKnowledge` 추가 (Claude / Gemini / Mock / Unavailable)
+4. `AnalysisService` — 자료가 있으면 조각 분석, 없으면 한 번에 생성. 지어낸 출처 문서는 버린다
+5. `QuizGenerationService` — 자료가 없으면 Topic 의 제목·요약·핵심 개념을 근거로 삼는다
+6. `SessionResponse` / `ExamResponse` 에 필드 노출
+7. 프론트 — 시험 범위를 서버로 보내고, 자료 없이 넘어갈 수 있게 하고, 근거를 표시
+8. `docs/migrations/001-general-knowledge.sql`, `docs/schema.sql` 갱신
+9. 검증 (`scripts/gk-verify.sh`) → `docs/general-knowledge-test.md`
+
+### 겪은 문제
+
+| 문제 | 원인 | 조치 |
+| --- | --- | --- |
+| 새 이미지가 기동 중 죽음 | 운영 프로파일이 `ddl-auto=validate` 인데 컬럼 추가분을 적용하지 않았다 | `docs/migrations/` 신설. 배포 **전에** 적용하도록 `DEPLOY.md` 에 순서 명시 |
+| `PUT /exam` 응답에 시험 범위가 없다 | `ExamResponse` 에 필드를 더하지 않았다. 자료가 없을 땐 그 값이 유일한 근거인데 저장 결과를 확인할 방법이 없었다 | 필드 추가 + 슬라이스/통합 테스트 |
+| `NO_PARSED_DOCUMENT` 문구가 자료만 안내 | 빠져나갈 길이 두 개가 됐는데 문구는 하나만 말하고 있었다 | "강의자료를 올리거나, 시험 범위를 입력해 주세요"로 수정 |
+
+### 확인
+
+- `./gradlew test` — 전체 통과
+- `scripts/gk-verify.sh` — 19건 전부 통과 (`LLM_MODE=mock`)
+- 프론트 `npm test` / `npx tsc --noEmit` / `npm run build` 통과
+- 실제 Gemini 호출 검증은 무료 사용량을 아끼기 위해 마지막에 최소 횟수만 따로 한다

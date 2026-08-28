@@ -35,7 +35,7 @@ class CurriculumReallocationServiceTest {
                 new StudyTimeCalculator(), new CurriculumPlanner(5, 10, 45));
         session = StudySession.create("7K2M9QXF", NOW.minusHours(5), 30L);
         // 시험은 멀리 두어 사용자 예산(available - 실제학습)이 남은 시간을 결정하게 한다
-        session.updateExamInfo("운영체제", NOW.plusHours(10), 180, 180, NOW.minusHours(4));
+        session.updateExamInfo("운영체제", null, NOW.plusHours(10), 180, 180, NOW.minusHours(4));
         curriculum = Curriculum.create(session, 180, 180, NOW.minusHours(1));
         nextOrder = 1;
     }

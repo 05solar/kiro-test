@@ -2,9 +2,10 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AppHeader, CheckIcon, Ghost, PrimaryButton } from "@/app/_components/ui";
+import { AppHeader, CheckIcon, Ghost, PrimaryButton, SourceBadge, SourceNotice } from "@/app/_components/ui";
 import { useExamStore, usePlanStore } from "@/app/_components/store";
 import { useCurriculum } from "@/app/_components/use-curriculum";
+import { useSession } from "@/app/_components/use-session";
 import { useHydrated } from "@/app/_components/use-hydrated";
 import {
   formatMinutes,
@@ -63,6 +64,9 @@ export default function CurriculumPage() {
    * 그때 어느 쪽이 맞는지 판단할 근거가 없으므로 서버 하나로 정한다.
    */
   const curriculum = useCurriculum();
+  // 과목명·시험 범위와 "무엇에 근거해 만들었는지"는 서버가 안다.
+  // 로컬 스토어 값은 입력 프리필용이라 다른 기기에서 이어하면 비어 있다.
+  const { session, source } = useSession();
   const emptyPlan: CurriculumResult = {
     steps: [],
     totalMinutes: 0,
@@ -179,7 +183,13 @@ export default function CurriculumPage() {
       <main className="mx-auto max-w-[1440px] px-5 pb-20 pt-11 sm:px-10">
         <div className="mb-4 flex flex-wrap items-end justify-between gap-6">
           <div>
-            <div className="mb-[9px] text-[13px] font-bold text-[#FF7A00]">자료구조 · 3장 ~ 7장</div>
+            <div className="mb-[9px] flex flex-wrap items-center gap-2.5">
+              {/* 과목명과 시험 범위. 예전에는 "자료구조 · 3장 ~ 7장" 이 하드코딩되어 있었다. */}
+              <span className="text-[13px] font-bold text-[#FF7A00]">
+                {[session?.subject, session?.examScope].filter(Boolean).join(" · ") || "벼락치기 플랜"}
+              </span>
+              <SourceBadge source={source} />
+            </div>
             <h1 className="font-jua mb-[7px] text-4xl tracking-[-1px]">오늘 밤 벼락치기 맵</h1>
             <p className="text-[15px] text-[#888]">STEP {totalSteps}개 · 상자 {activeRewards.length}개</p>
             {prepState === "review" && (
@@ -203,6 +213,8 @@ export default function CurriculumPage() {
             </PrimaryButton>
           )}
         </div>
+
+        <SourceNotice source={source} className="mb-4" />
 
         <div className="mb-4 inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-full border border-[#FFE0C4] bg-[#FFF3E8] px-4 py-2 text-[13px]">
           {hydrated ? (

@@ -42,7 +42,7 @@ public class ClaudeQuizClient implements AiQuizClient {
         StructuredMessageCreateParams<AiQuizGenerationResult> params = MessageCreateParams.builder()
                 .model(model)
                 .maxTokens(MAX_TOKENS)
-                .system(QuizPrompts.generationSystemPrompt())
+                .system(QuizPrompts.generationSystemPrompt(request))
                 .outputConfig(AiQuizGenerationResult.class)
                 .addUserMessage(QuizPrompts.generationUserMessage(request))
                 .build();

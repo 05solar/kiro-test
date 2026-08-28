@@ -39,10 +39,31 @@ public final class QuizPrompts {
               맥락에만 있고 자료에서 근거를 찾을 수 없는 내용으로는 문제를 만들지 않는다.
             """;
 
-    /** 퀴즈 생성의 시스템 프롬프트. */
-    public static String generationSystemPrompt() {
+    /**
+     * 강의자료가 없을 때의 근거 규칙.
+     *
+     * <p>"자료에 있다"는 표현 자체를 쓰지 못하게 한다. 없는 자료를 있는 것처럼 말하면
+     * 사용자가 그것을 자기 수업 내용으로 믿는다.
+     */
+    private static final String GENERAL_KNOWLEDGE_RULE = """
+            사용자가 강의자료를 제공하지 않았다.
+            - 표준 교과 지식으로만 출제한다.
+            - 특정 교수자의 강의나 특정 교재에 있는 내용이라고 단정하지 않는다.
+            - "강의자료에 따르면" 같은 표현을 쓰지 않는다. 자료가 없다.
+            - 시험 범위를 벗어나지 않는다.
+            - 불확실한 내용을 확실한 사실처럼 쓰지 않는다.
+            - <user_study_context> 는 출제 방향 힌트일 뿐 사실의 출처가 아니다.
+            """;
+
+    /**
+     * 퀴즈 생성의 시스템 프롬프트.
+     *
+     * <p>근거에 따라 첫 줄과 근거 규칙이 갈린다. 자료가 없는데 "강의자료 기반"이라고 말하면
+     * AI 가 없는 자료를 있는 것처럼 다룬다.
+     */
+    public static String generationSystemPrompt(AiQuizGenerationRequest request) {
         return """
-                당신은 대학생의 시험 대비를 돕기 위해 강의자료 기반 4지선다 객관식 문제를 출제한다.
+                %s
 
                 # 규칙
                 %s
@@ -68,7 +89,18 @@ public final class QuizPrompts {
                 - 기출/예상 문제 정보가 있으면 유사한 개념·풀이 유형을 가능하면 포함한다. 기출을 그대로 복사하지 않는다.
                 - 자신 없다고 밝힌 범위라면 단순 암기 문제만 만들지 말고 개념 구분·적용 문제를 포함한다.
                 - 반드시 공부할 범위라면 핵심 개념을 빠뜨리지 않는다.
-                """.formatted(INJECTION_GUARD, GROUNDING_RULE);
+                """.formatted(roleLine(request), INJECTION_GUARD, groundingRule(request));
+    }
+
+    /** 무엇에 근거해 출제하는지 첫 줄에서 못박는다. */
+    private static String roleLine(AiQuizGenerationRequest request) {
+        return request.grounded()
+                ? "당신은 대학생의 시험 대비를 돕기 위해 강의자료 기반 4지선다 객관식 문제를 출제한다."
+                : "당신은 대학생의 시험 대비를 돕기 위해 표준 교과 지식으로 4지선다 객관식 문제를 출제한다.";
+    }
+
+    private static String groundingRule(AiQuizGenerationRequest request) {
+        return request.grounded() ? GROUNDING_RULE : GENERAL_KNOWLEDGE_RULE;
     }
 
     /** 퀴즈 생성의 사용자 메시지. 자료 본문과 학습 맥락은 태그로 감싼다. */

@@ -106,7 +106,7 @@ class QuizGenerationServiceTest {
 
         session = StudySession.create(SESSION_CODE, NOW.minusHours(5), 30L);
         setId(StudySession.class, session, SESSION_ID);
-        session.updateExamInfo("운영체제", NOW.plusHours(4), 180, 180, NOW.minusHours(4));
+        session.updateExamInfo("운영체제", null, NOW.plusHours(4), 180, 180, NOW.minusHours(4));
 
         topic = Topic.create(session, "CPU 스케줄링", "요약", List.of("Round Robin"),
                 TopicImportance.HIGH, 40, true, false, true, false,
@@ -272,18 +272,28 @@ class QuizGenerationServiceTest {
     }
 
     @Test
-    @DisplayName("근거로 쓸 강의자료 텍스트가 없으면 생성할 수 없다")
-    void rejectsWithoutSourceContext() {
+    @DisplayName("자료가 없으면 Topic 자체를 근거로 문제를 만든다")
+    void fallsBackToGeneralKnowledgeContext() {
+        // 예전에는 여기서 실패했다. 그러면 자료를 준비하지 못한 사용자는 계획까지 받고도
+        // 퀴즈를 풀 수 없다. Topic 의 요약과 핵심 개념이 곧 학습 내용이므로 그것을 근거로 쓴다.
         givenSessionAndTopic();
         given(quizRepository.findLatestRound(TOPIC_ID)).willReturn(0);
         given(studyStepRepository.findFirstByCurriculumStudySessionIdAndTopicId(SESSION_ID, TOPIC_ID))
                 .willReturn(Optional.of(completedStep()));
         given(documentRepository.findAllByStudySessionIdAndStatusOrderByCreatedAtAsc(
                 SESSION_ID, DocumentStatus.PARSED)).willReturn(List.of());
+        given(studyContextRepository.findByStudySessionId(SESSION_ID)).willReturn(Optional.empty());
+        given(quizRepository.saveAllAndFlush(anyList()))
+                .willAnswer(invocation -> invocation.getArgument(0));
 
-        assertThatThrownBy(() -> service.generate(SESSION_CODE, TOPIC_ID))
-                .isInstanceOf(NoQuizSourceContextException.class);
-        assertThat(aiQuizClient.callCount()).isZero();
+        QuizGenerationResult result = service.generate(SESSION_CODE, TOPIC_ID);
+
+        assertThat(result.created()).isTrue();
+        AiQuizGenerationRequest sent = aiQuizClient.requests().getLast();
+        // 근거가 Topic 이라는 사실이 프롬프트에 들어간다.
+        assertThat(sent.sourceContext()).contains(topic.getTitle(), topic.getSummary());
+        // 세션이 분석 전이라 grounded 는 false 다. 프롬프트가 "자료에 따르면" 을 쓰지 않게 한다.
+        assertThat(sent.grounded()).isFalse();
     }
 
     @Test

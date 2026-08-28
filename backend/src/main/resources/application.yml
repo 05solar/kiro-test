@@ -41,6 +41,14 @@ storage:
     root-path: ${STORAGE_ROOT_PATH:./uploads}
 
 ai:
+  # AI 호출 방식. 모든 AI 기능(분석·퀴즈)의 기본값이 된다.
+  #   mock    AI 를 부르지 않고 목 데이터를 만든다. 과금되지 않는다.
+  #   gemini  실제 AI 를 부른다. 아래 provider 설정을 따른다.
+  #
+  # 기본이 mock 인 이유는 화면을 한 번 확인할 때마다 과금되는 것을 막기 위해서다.
+  # 분석은 자료 조각 수만큼 부르므로 특히 비싸다.
+  # 배포에서는 LLM_MODE=gemini 를 넣는다(docker-compose 에 이미 들어 있다).
+  mode: ${LLM_MODE:mock}
   # AI 공급자. gemini(기본) 또는 anthropic. 도메인 코드는 공급자를 모른다.
   # 기본을 gemini 로 둔 것은 이 프로젝트가 Gemini 키로 운영되기 때문이다.
   provider: ${AI_PROVIDER:gemini}
@@ -78,7 +86,8 @@ quiz:
   # 기본이 mock 인 이유는 "새로운 퀴즈 만들기"처럼 여러 번 눌러 보게 되는 기능 때문이다.
   # 화면을 한 번 확인할 때마다 과금되는 것보다, 실수로 꺼져 있는 편이 낫다.
   # 배포에서는 QUIZ_AI_MODE=gemini 를 넣는다(docker-compose 에 이미 들어 있다).
-  ai-mode: ${QUIZ_AI_MODE:mock}
+  # 비워 두면 위의 ai.mode 를 따른다. 퀴즈만 따로 켜고 싶을 때 쓴다.
+  ai-mode: ${QUIZ_AI_MODE:${ai.mode:mock}}
   # Topic 하나당 생성할 문제 수. AI가 근거 부족으로 더 적게(최소 3개) 만들 수 있다.
   questions-per-topic: ${QUIZ_QUESTIONS_PER_TOPIC:5}
   # AI에 보낼 강의자료 추출 구간의 최대 길이(글자 수). 문서 전체를 다시 보내지 않는다.

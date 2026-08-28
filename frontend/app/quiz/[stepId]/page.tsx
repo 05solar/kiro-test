@@ -2,10 +2,11 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AppHeader, Ghost, PrimaryButton, SecondaryButton } from "@/app/_components/ui";
+import { AppHeader, Ghost, PrimaryButton, SecondaryButton, SourceBadge, SourceNotice } from "@/app/_components/ui";
 import { OPTION_TAGS } from "@/app/_components/data";
 import { useSessionStore } from "@/app/_components/session-store";
 import { useCurriculum } from "@/app/_components/use-curriculum";
+import { useSession } from "@/app/_components/use-session";
 import {
   ApiError,
   answerQuiz,
@@ -118,6 +119,8 @@ function QuizView({
 }) {
   const router = useRouter();
   const sessionCode = useSessionStore((state) => state.sessionCode);
+  // 이 문제들이 강의자료에서 나온 것인지, 일반적인 교과 지식에서 나온 것인지.
+  const { source } = useSession();
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
@@ -172,7 +175,11 @@ function QuizView({
             {currentIndex + 1} / {questions.length}
           </span>
         </div>
-        <div className="mb-2 text-[13px] text-[#888]">{topicTitle}</div>
+        <div className="mb-2 flex flex-wrap items-center gap-2.5">
+          <span className="text-[13px] text-[#888]">{topicTitle}</span>
+          <SourceBadge source={source} />
+        </div>
+        <SourceNotice source={source} className="mb-4" />
         <div className="mb-9 h-2 overflow-hidden rounded-full bg-[#FFF3E8]">
           <div className="h-full rounded-full bg-[#FF7A00] transition-[width] duration-300" style={{ width: `${progress}%` }} />
         </div>

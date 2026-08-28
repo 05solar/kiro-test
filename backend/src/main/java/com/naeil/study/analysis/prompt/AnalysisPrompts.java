@@ -1,6 +1,7 @@
 package com.naeil.study.analysis.prompt;
 
 import com.naeil.study.analysis.client.dto.AiChunkAnalysisRequest;
+import com.naeil.study.analysis.client.dto.AiGeneralKnowledgeRequest;
 import com.naeil.study.analysis.client.dto.AiDocumentReference;
 import com.naeil.study.analysis.client.dto.AiSourcedTopicCandidate;
 import com.naeil.study.analysis.client.dto.AiStudyContext;
@@ -192,6 +193,81 @@ public final class AnalysisPrompts {
         if (value != null) {
             builder.append(label).append(": ").append(value).append('\n');
         }
+    }
+
+    /**
+     * 강의자료 없이 주제를 만들 때의 시스템 프롬프트.
+     *
+     * <p><b>가장 중요한 지시는 "아는 척하지 마라"다.</b> 자료가 없는데 특정 교수자의 강의나
+     * 특정 교재의 목차인 것처럼 답하면, 사용자는 그것이 자기 수업 범위라고 믿는다.
+     * 그 오해가 이 경로에서 가장 큰 위험이다.
+     */
+    public static String generalKnowledgeSystemPrompt() {
+        return """
+                당신은 시험 학습 커리큘럼을 구성하는 교육용 AI다.
+
+                사용자가 강의자료를 제공하지 않았다.
+                따라서 특정 교수자의 강의나 특정 교재를 추정하지 말고,
+                일반적으로 알려진 표준 교과 지식만으로 학습 범위를 구조화한다.
+
+                # 규칙
+                %s
+                - 입력된 시험 범위를 벗어나지 않는다.
+                - 특정 교수자의 수업 내용을 아는 것처럼 쓰지 않는다.
+                - 특정 교재의 목차라고 단정하지 않는다.
+                - 일반적인 대학·학교 교육과정에서 다루는 표준 개념을 기준으로 구성한다.
+                - 너무 잘게 쪼개지 않는다. 한 번에 학습할 수 있는 크기로 나눈다.
+                - 범위 표현이 모호하면 가장 일반적인 교과 구성으로 해석한다.
+                - 범위에 들어갈지 불확실한 고급 내용은 넣지 않는다.
+
+                # importance (학습 우선순위)
+                시험 출제 확률이 아니다. 핵심 개념성, 다른 개념과의 연결성,
+                전체를 이해하는 데 필요한 정도로 판단한다.
+
+                VERY_HIGH  반드시 우선 학습해야 할 핵심
+                HIGH       높은 우선순위
+                MEDIUM     시간이 있다면 학습
+                LOW        시간이 부족하면 줄일 수 있는 세부 내용
+
+                # estimatedStudyMinutes
+                제대로 학습하는 데 필요한 시간을 분 단위로. 5 이상 120 이하.
+                사용자에게 시간이 얼마나 남았는지는 고려하지 않는다. 그 조정은 이후 단계에서 한다.
+
+                # 순서
+                선수 개념이 필요한 주제를 먼저 배치한다.
+
+                # 사용자 학습 맥락
+                맥락과 관련 있는 주제에는 해당 boolean 을 true 로 표시한다.
+                다만 표준 교과 범위 안에 있을 때만이다. 맥락에 있다고 범위 밖 주제를 만들지 않는다.
+
+                # sourceDocuments
+                자료가 없으므로 <b>항상 빈 배열</b>이다. 값을 지어내지 않는다.
+                """.formatted(INJECTION_GUARD);
+    }
+
+    /** 강의자료 없이 주제를 만들 때의 사용자 메시지. */
+    public static String generalKnowledgeUserMessage(AiGeneralKnowledgeRequest request) {
+        return """
+                # TASK
+                아래 과목과 시험 범위로 학습 주제 목록을 만들어라. 최대 %d개.
+
+                # COURSE INFORMATION
+                과목: %s
+
+                # EXAM SCOPE
+                <exam_scope>
+                %s
+                </exam_scope>
+
+                # USER PROVIDED STUDY CONTEXT
+                <user_study_context>
+                %s
+                </user_study_context>
+                """.formatted(
+                request.maxTopics(),
+                request.subject(),
+                request.examScope(),
+                formatStudyContext(request.studyContext()));
     }
 
     private static String formatCandidates(List<AiSourcedTopicCandidate> candidates) {

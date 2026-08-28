@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type CSSProperties } from "react";
 import { useExamStore } from "@/app/_components/store";
 import { useHydrated } from "@/app/_components/use-hydrated";
+import type { SourceLabel } from "@/lib/api/adapt";
 
 type GhostMood = "eyes" | "plain" | "smile" | "happy" | "worried" | "neutral" | "excited";
 
@@ -294,5 +295,37 @@ export function RequiredMark() {
     <span className="ml-1 text-[#E03131]" aria-hidden="true">
       *
     </span>
+  );
+}
+
+/**
+ * 학습 내용이 무엇에 근거해 만들어졌는지 알리는 표시.
+ *
+ * <p>자료를 올리지 않으면 서버가 과목명과 시험 범위만 보고 만든다. 그 사실을 감추면
+ * 사용자는 자기 강의자료에서 뽑은 내용이라고 믿고 그대로 외운다.
+ *
+ * <p>근거를 아직 모르는 상태(분석 전)에서는 아무것도 그리지 않는다.
+ */
+export function SourceBadge({ source }: { source: SourceLabel | null }) {
+  if (!source) return null;
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-bold ${
+        source.grounded ? "bg-[#FFF3E8] text-[#E85D00]" : "bg-[#EEF2FF] text-[#4C51BF]"
+      }`}
+    >
+      <span aria-hidden="true">{source.grounded ? "📚" : "💡"}</span>
+      {source.label}
+    </span>
+  );
+}
+
+/** 일반 지식으로 만들었을 때의 안내. 자료 기반이면 아무것도 그리지 않는다. */
+export function SourceNotice({ source, className = "" }: { source: SourceLabel | null; className?: string }) {
+  if (!source?.notice) return null;
+  return (
+    <p className={`rounded-xl border border-[#D7DDFF] bg-[#F5F7FF] px-4 py-3 text-[13px] leading-[1.7] text-[#3C3F8F] ${className}`}>
+      {source.notice}
+    </p>
   );
 }

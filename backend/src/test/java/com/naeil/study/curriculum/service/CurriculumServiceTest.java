@@ -92,8 +92,8 @@ class CurriculumServiceTest {
 
     /** 분석까지 끝나 계획을 만들 수 있는 세션으로 만든다. */
     private void givenReadySession(int remainingMinutes, LocalDateTime examAt) {
-        session.updateExamInfo("운영체제", examAt, remainingMinutes, remainingMinutes, NOW.minusHours(1));
-        session.startAnalyzing(NOW.minusMinutes(30));
+        session.updateExamInfo("운영체제", null, examAt, remainingMinutes, remainingMinutes, NOW.minusHours(1));
+        session.startAnalyzing(com.naeil.study.session.entity.StudySourceType.USER_MATERIAL, NOW.minusMinutes(30));
         session.markReady(NOW.minusMinutes(10));
         given(sessionService.getSessionAndTouch(SESSION_CODE)).willReturn(session);
     }
@@ -258,7 +258,7 @@ class CurriculumServiceTest {
         @Test
         @DisplayName("분석이 끝나지 않은 세션은 계획을 만들 수 없다")
         void failsWhenSessionIsNotReady() {
-            session.startAnalyzing(NOW.minusMinutes(5));
+            session.startAnalyzing(com.naeil.study.session.entity.StudySourceType.USER_MATERIAL, NOW.minusMinutes(5));
             given(sessionService.getSessionAndTouch(SESSION_CODE)).willReturn(session);
             givenNoExistingCurriculum();
 
