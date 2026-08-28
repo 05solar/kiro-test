@@ -7,6 +7,7 @@ import { AppHeader, Countdown, Ghost, PrimaryButton, RequiredMark, SpeechBubble 
 import { usePlanStore, useExamStore, type PrepState } from "@/app/_components/store";
 import { useSessionStore } from "@/app/_components/session-store";
 import { useHydrated } from "@/app/_components/use-hydrated";
+import { DatePickerField, TimePickerField } from "@/app/_components/date-time-picker";
 import { createSession, toMessage, updateExam } from "@/lib/api";
 import { toExamAt } from "@/lib/api/adapt";
 
@@ -54,9 +55,9 @@ export default function ExamInfoPage() {
   const setSessionCode = useSessionStore((state) => state.setSessionCode);
 
   const subjectRef = useRef<HTMLInputElement>(null);
-  const examDateRef = useRef<HTMLInputElement>(null);
-  const examTimeRef = useRef<HTMLInputElement>(null);
-  const fieldRefs: Record<RequiredField, React.RefObject<HTMLInputElement | null>> = {
+  const examDateRef = useRef<HTMLButtonElement>(null);
+  const examTimeRef = useRef<HTMLButtonElement>(null);
+  const fieldRefs: Record<RequiredField, React.RefObject<HTMLInputElement | HTMLButtonElement | null>> = {
     subject: subjectRef,
     examDate: examDateRef,
     examTime: examTimeRef,
@@ -185,36 +186,28 @@ export default function ExamInfoPage() {
                   <span className="mb-[9px] block text-[13.5px] font-bold">
                     시험 날짜<RequiredMark />
                   </span>
-                  <input
-                    ref={examDateRef}
-                    name="examDate"
-                    type="date"
+                  <DatePickerField
+                    triggerRef={examDateRef}
                     value={examDate}
-                    aria-required="true"
-                    aria-invalid={invalid.has("examDate")}
-                    onChange={(event) => {
-                      setExamDate(event.target.value);
+                    invalid={invalid.has("examDate")}
+                    onChange={(value) => {
+                      setExamDate(value);
                       clearInvalid("examDate");
                     }}
-                    className={inputClass("examDate")}
                   />
                 </label>
                 <label className="block">
                   <span className="mb-[9px] block text-[13.5px] font-bold">
                     시험 시간<RequiredMark />
                   </span>
-                  <input
-                    ref={examTimeRef}
-                    name="examTime"
-                    type="time"
+                  <TimePickerField
+                    triggerRef={examTimeRef}
                     value={examTime}
-                    aria-required="true"
-                    aria-invalid={invalid.has("examTime")}
-                    onChange={(event) => {
-                      setExamTime(event.target.value);
+                    invalid={invalid.has("examTime")}
+                    onChange={(value) => {
+                      setExamTime(value);
                       clearInvalid("examTime");
                     }}
-                    className={inputClass("examTime")}
                   />
                 </label>
               </div>

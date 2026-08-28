@@ -1,5 +1,6 @@
 import { request } from "./client";
 import type {
+  AnalysisProgressResponse,
   AnalysisResponse,
   CurriculumResponse,
   DocumentParseResponse,
@@ -83,6 +84,10 @@ export const updateStudyContext = (code: string, body: UpdateStudyContextRequest
 /** 실제 AI 를 부른다. 자료가 크면 분 단위로 걸릴 수 있다. */
 export const runAnalysis = (code: string, signal?: AbortSignal) =>
   request<AnalysisResponse>(`${s(code)}/analysis`, { method: "POST", signal });
+
+/** 분석이 도는 동안 폴링해서 실제 진행도(조각 n/전체)를 받는다. */
+export const getAnalysisProgress = (code: string) =>
+  request<AnalysisProgressResponse>(`${s(code)}/analysis/progress`);
 
 export const listTopics = async (code: string): Promise<TopicResponse[]> =>
   (await request<{ topics: TopicResponse[] }>(`${s(code)}/topics`)).topics;

@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AppHeader, CheckIcon, Ghost, PrimaryButton } from "@/app/_components/ui";
+import { AppHeader, CheckIcon, CheckMini, Ghost, PrimaryButton } from "@/app/_components/ui";
 import { useExamStore, usePlanStore } from "@/app/_components/store";
 import { useCurriculum } from "@/app/_components/use-curriculum";
 import { useHydrated } from "@/app/_components/use-hydrated";
@@ -12,15 +12,7 @@ import {
   type CurriculumStep,
   type PrepState,
 } from "@/lib/curriculum";
-import {
-  DEFAULT_NODE_LABEL_OFFSET,
-  GOAL_PROGRESS,
-  MAP_NODES,
-  NODE_LABEL_OFFSET,
-  NODE_PROGRESS,
-  TRACK_PATH_D,
-  type MapNode,
-} from "@/lib/mapNodes";
+import { rewardAfterSteps, TRACK_PATH_D } from "@/lib/mapNodes";
 
 const PREP_LABEL: Record<PrepState, string> = {
   none: "아예 안 봤어요",
@@ -39,8 +31,6 @@ const MODE_LABEL: Record<string, string> = {
 const PAD_TOP = 100;
 const VIEW_W = 900;
 const VIEW_H = 600 + PAD_TOP;
-
-const STEP_IDS = [1, 2, 3, 4, 5, 6, 7];
 
 export default function CurriculumPage() {
   const router = useRouter();
@@ -123,7 +113,6 @@ export default function CurriculumPage() {
     .filter((step) => !completedStepIds.includes(step.id))
     .reduce((total, step) => total + step.minutes, 0);
 
-  const cutStepSet = new Set(plan.cutStepIds);
   const totalSteps = plan.steps.length;
   const completedCount = plan.steps.filter((step) => completedStepIds.includes(step.id)).length;
   const percent = totalSteps > 0 ? Math.round((completedCount / totalSteps) * 100) : 0;
@@ -131,13 +120,9 @@ export default function CurriculumPage() {
   // GOAL 도달: cut 반영된 plan의 모든 STEP이 완료됐을 때만 true (상수 사용 안 함).
   const goalReached = totalSteps > 0 && orderedSteps.every((step) => completedStepIds.includes(step.id));
 
-  // 살아있는(=cut되지 않은) 상자만 카운트. 개봉 여부는 afterStepId STEP 완료로 판정.
-  const activeRewards = MAP_NODES.filter(
-    (node) => node.kind === "reward" && !cutStepSet.has(node.afterStepId)
-  );
-  const openedRewardCount = activeRewards.filter(
-    (node) => node.kind === "reward" && completedStepIds.includes(node.afterStepId)
-  ).length;
+  // 상자는 좌표가 아니라 규칙으로 놓는다 — 실제 STEP 수가 계획마다 다르기 때문이다.
+  const rewardAfter = rewardAfterSteps(orderedSteps.map((step) => step.id));
+  const openedRewardCount = rewardAfter.filter((id) => completedStepIds.includes(id)).length;
 
   /*
    * 잘린 STEP 과 '다시 볼 개념' 목록은 서버가 준 전체 단계에서 찾는다.
@@ -155,20 +140,6 @@ export default function CurriculumPage() {
   }));
   const [showCut, setShowCut] = useState(false);
 
-  const stepMeta = new Map<number, CurriculumStep>(plan.steps.map((step) => [step.id, step]));
-
-  // 경로는 고정이므로 진행 비율(p)은 좌표가 아니라 상수 NODE_PROGRESS 표에서 구한다.
-  // "마지막 완료 스텝"과 "다음 살아있는 스텝"은 반드시 orderedSteps(STEP 번호 순서) 기준으로만
-  // 판단한다. plan.steps는 skimmed 재배치로 순서가 달라져 진행 비율이 뒤틀릴 수 있다.
-  let progress = 0;
-  for (const step of orderedSteps) {
-    if (completedStepIds.includes(step.id)) {
-      progress = NODE_PROGRESS[step.id];
-    } else {
-      break;
-    }
-  }
-  if (goalReached) progress = GOAL_PROGRESS;
 
   const allDone = goalReached;
   const firstWeak = weakSteps[0];
@@ -181,7 +152,7 @@ export default function CurriculumPage() {
           <div>
             <div className="mb-[9px] text-[13px] font-bold text-[#FF7A00]">자료구조 · 3장 ~ 7장</div>
             <h1 className="font-jua mb-[7px] text-4xl tracking-[-1px]">오늘 밤 벼락치기 맵</h1>
-            <p className="text-[15px] text-[#888]">STEP {totalSteps}개 · 상자 {activeRewards.length}개</p>
+            <p className="text-[15px] text-[#888]">STEP {totalSteps}개 · 상자 {rewardAfter.length}개</p>
             {prepState === "review" && (
               <p className="mt-1 text-[13px] font-bold text-[#E85D00]">복습 모드 · 퀴즈 위주로 빠르게</p>
             )}
@@ -192,7 +163,7 @@ export default function CurriculumPage() {
               disabled={!firstWeak}
               onClick={() => firstWeak && router.push(`/study/${firstWeak}`)}
             >
-              {firstWeak ? "다시 볼 개념 복습하기" : "학습 완료 🎉"}
+              {firstWeak ? "다시 볼 개념 복습하기" : "학습 완료!"}
             </PrimaryButton>
           ) : (
             <PrimaryButton
@@ -230,13 +201,16 @@ export default function CurriculumPage() {
         <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div className="overflow-x-auto rounded-[22px] border border-[#eee] bg-[linear-gradient(#FFFDFB,#FFF9F3)]">
             <MapCanvas
-              progress={progress}
-              cutStepSet={cutStepSet}
+              steps={orderedSteps.map((step) => ({
+                id: step.id,
+                title: allStepTitles.get(step.id) ?? step.title,
+                mode: step.mode,
+              }))}
               completedStepIds={completedStepIds}
               currentStep={currentStepId}
               weakSteps={weakSteps}
               goalReached={goalReached}
-              stepMeta={stepMeta}
+              rewardAfter={rewardAfter}
               onNavigateStep={(stepId) => router.push(`/study/${stepId}`)}
             />
           </div>
@@ -247,21 +221,21 @@ export default function CurriculumPage() {
               <div className="h-2.5 overflow-hidden rounded-full bg-[#FFF3E8]"><div className="h-full rounded-full bg-[#FF7A00] transition-[width] duration-300" style={{ width: `${percent}%` }} /></div>
               <div className="mt-2.5 text-[12.5px] text-[#888]">
                 STEP {completedCount} / {totalSteps} 완료 ·{" "}
-                {remainingMinutes > 0 ? `남은 예상 ${formatMinutes(remainingMinutes)}` : "모든 STEP 완료 🎉"}
+                {remainingMinutes > 0 ? `남은 예상 ${formatMinutes(remainingMinutes)}` : "모든 STEP 완료!"}
               </div>
             </div>
             <div className="rounded-[18px] border border-[#eee] p-[26px]">
               <div className="mb-4 text-[13.5px] font-bold">보상</div>
-              <div className="mb-3.5 flex items-center gap-3"><div className="flex size-11 items-center justify-center rounded-xl bg-[#FFF3E8] text-xl">🍌</div><div><div className="text-[15px] font-bold">바나나 {openedRewardCount}개</div><div className="text-[12.5px] text-[#888]">상자 {activeRewards.length}개 중 {openedRewardCount}개 개봉</div></div></div>
+              <div className="mb-3.5 flex items-center gap-3"><div className="flex size-11 items-center justify-center rounded-xl bg-[#FFF3E8]">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/reward/coin.png" alt="" width={30} height={30} className="object-contain" /></div><div><div className="text-[15px] font-bold">코인 {openedRewardCount}개</div><div className="text-[12.5px] text-[#888]">상자 {rewardAfter.length}개 중 {openedRewardCount}개 개봉</div></div></div>
               <div className="flex gap-2">
-                {activeRewards.map((node, index) => (
-                  <div key={node.id} className={`h-1.5 flex-1 rounded-full ${index < openedRewardCount ? "bg-[#FF7A00]" : "bg-[#eee]"}`} />
+                {rewardAfter.map((id, index) => (
+                  <div key={id} className={`h-1.5 flex-1 rounded-full ${index < openedRewardCount ? "bg-[#FF7A00]" : "bg-[#eee]"}`} />
                 ))}
               </div>
             </div>
             <div className="rounded-[18px] border border-amber-200 bg-amber-50/40 p-[26px]">
               <div className="mb-3.5 flex items-center justify-between">
-                <span className="text-[13.5px] font-bold text-amber-800">🔖 다시 볼 개념</span>
+                <span className="flex items-center gap-1.5 text-[13.5px] font-bold text-amber-800"><svg width="11" height="13" viewBox="0 0 24 28" fill="none" aria-hidden="true"><path d="M5 2h14a1 1 0 0 1 1 1v23l-8-5.5L4 26V3a1 1 0 0 1 1-1Z" fill="#F59F00" stroke="#E8590C" strokeWidth="1.6" strokeLinejoin="round" /></svg>다시 볼 개념</span>
                 <span className="text-xs text-amber-700">{weakSteps.length}개</span>
               </div>
               {weakSteps.length ? (
@@ -300,7 +274,7 @@ export default function CurriculumPage() {
                   return (
                     <div key={step.id} className={`flex items-center gap-2.5 text-[13.5px] ${isCurrent ? "font-bold text-[#E85D00]" : "text-[#888]"}`}>
                       {isDone ? (
-                        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[#FFE0C4] text-[11px] text-[#E85D00]">✓</span>
+                        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[#FFE0C4]"><CheckMini size={10} /></span>
                       ) : isCurrent ? (
                         <span className="size-5 shrink-0 rounded-full bg-[#FF7A00]" />
                       ) : (
@@ -360,32 +334,46 @@ function CutBanner({ cutStepIds }: { cutStepIds: number[] }) {
         shown ? "translate-y-0 opacity-100" : "-translate-y-2 opacity-0"
       }`}
     >
-      <span aria-hidden="true">⏰</span>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0"><circle cx="12" cy="13" r="8.5" stroke="#B45309" strokeWidth="2" /><path d="M12 8.5V13l3 2M5 3 2.5 5.5M19 3l2.5 2.5" stroke="#B45309" strokeWidth="2" strokeLinecap="round" /></svg>
       <span>시간이 부족해 STEP {cutStepIds.join("·")}은(는) 제외했어요.</span>
     </div>
   );
 }
 
+type MapStep = { id: number; title: string; mode: CurriculumStep["mode"] };
+
 type MapCanvasProps = {
-  progress: number;
-  cutStepSet: Set<number>;
+  /** 살아있는 STEP 을 진행 순서대로. 좌표는 여기서 경로를 따라 계산한다. */
+  steps: MapStep[];
   completedStepIds: number[];
   currentStep: number;
   weakSteps: number[];
   goalReached: boolean;
-  stepMeta: Map<number, CurriculumStep>;
+  /** 이 STEP 을 완료하면 열리는 상자 목록 */
+  rewardAfter: number[];
   onNavigateStep: (stepId: number) => void;
 };
 
-function MapCanvas({ progress, cutStepSet, completedStepIds, currentStep, weakSteps, goalReached, stepMeta, onNavigateStep }: MapCanvasProps) {
+/** STEP 이 경로 위에서 차지하는 진행 비율. 시작 여백을 두고 0.9 까지 고르게 편다. */
+function stepProgressAt(index: number, count: number): number {
+  if (count <= 1) return 0.06;
+  return 0.04 + (index / (count - 1)) * 0.86;
+}
+
+/**
+ * 벼락치기 맵.
+ *
+ * <p>STEP 노드를 고정 좌표가 아니라 <b>경로 위 진행 비율</b>로 놓는다.
+ * 계획마다 STEP 수가 다르기 때문이다 — 5개든 9개든 같은 길 위에 고르게 늘어선다.
+ * 좌표는 마운트 후 경로 길이를 재서 계산한다(SSR 에서는 getPointAtLength 를 쓸 수 없다).
+ */
+function MapCanvas({ steps, completedStepIds, currentStep, weakSteps, goalReached, rewardAfter, onNavigateStep }: MapCanvasProps) {
   const maskId = useId();
+  const roadGradientId = useId();
   const fullPathRef = useRef<SVGPathElement>(null);
   const [length, setLength] = useState(0);
-  const [character, setCharacter] = useState<{ x: number; y: number } | null>(null);
   const [hasMeasured, setHasMeasured] = useState(false);
 
-  // TRACK_PATH_D는 고정 상수이므로 길이도 마운트 시 한 번만 구하면 된다.
-  // getTotalLength/getPointAtLength는 SSR에서 동작하지 않으므로 effect 내부에서만 호출한다.
   useEffect(() => {
     const el = fullPathRef.current;
     if (!el) return;
@@ -393,23 +381,61 @@ function MapCanvas({ progress, cutStepSet, completedStepIds, currentStep, weakSt
     setHasMeasured(true);
   }, []);
 
-  // 캐릭터 좌표는 항상 fullPathRef 기준 getPointAtLength(L*progress)로만 계산한다.
-  useEffect(() => {
+  // STEP·상자·시험장 좌표를 경로에서 뽑는다. 경로 길이가 잡힌 뒤에만 그린다.
+  const layout = (() => {
     const el = fullPathRef.current;
-    if (!el || length <= 0) return;
+    if (!el || length <= 0) return null;
+    const at = (p: number) => el.getPointAtLength(length * Math.min(Math.max(p, 0), 1));
+
+    const stepNodes = steps.map((step, index) => {
+      const p = stepProgressAt(index, steps.length);
+      const point = at(p);
+      return { ...step, index, p, x: point.x, y: point.y };
+    });
+    const progressOf = new Map(stepNodes.map((node) => [node.id, node.p]));
+
+    const rewardNodes = rewardAfter
+      .map((afterId) => {
+        const index = stepNodes.findIndex((node) => node.id === afterId);
+        if (index < 0 || index >= stepNodes.length - 1) return null;
+        const p = (stepNodes[index].p + stepNodes[index + 1].p) / 2;
+        const point = at(p);
+        return { afterId, x: point.x, y: point.y };
+      })
+      .filter((node): node is { afterId: number; x: number; y: number } => node !== null);
+
+    const goalPoint = at(1);
+    return { stepNodes, progressOf, rewardNodes, goalPoint };
+  })();
+
+  // 캐릭터 진행 비율 — 마지막으로 완료한 STEP 의 위치. 전부 끝나면 시험장.
+  let progress = 0.02;
+  if (layout) {
+    for (const step of steps) {
+      if (completedStepIds.includes(step.id)) {
+        progress = layout.progressOf.get(step.id) ?? progress;
+      } else {
+        break;
+      }
+    }
+  }
+  if (goalReached) progress = 1;
+
+  const character = (() => {
+    const el = fullPathRef.current;
+    if (!el || length <= 0) return null;
     const pt = el.getPointAtLength(length * progress);
-    setCharacter({ x: pt.x, y: pt.y });
-  }, [length, progress]);
+    return { x: pt.x, y: pt.y };
+  })();
 
   const dashOffset = length > 0 ? length * (1 - progress) : 0;
 
   // 캐릭터 앞쪽(다음 목적지까지)만 옅은 점선으로 "앞으로 갈 길"을 보여준다.
   const nextProgress = (() => {
-    if (goalReached) return null;
-    const candidates = STEP_IDS.filter((id) => !cutStepSet.has(id)).map((id) => NODE_PROGRESS[id]);
-    candidates.push(GOAL_PROGRESS);
-    const next = candidates.find((value) => value > progress + 1e-6);
-    return next ?? null;
+    if (!layout || goalReached) return null;
+    const candidates = layout.stepNodes.map((node) => node.p);
+    candidates.push(1);
+    return candidates.find((value) => value > progress + 1e-6) ?? null;
   })();
   const aheadSegment =
     length > 0 && nextProgress !== null && nextProgress > progress
@@ -426,8 +452,12 @@ function MapCanvas({ progress, cutStepSet, completedStepIds, currentStep, weakSt
     <div className="relative" style={{ width: VIEW_W, height: VIEW_H }}>
       <svg width={VIEW_W} height={VIEW_H} viewBox={`0 ${-PAD_TOP} ${VIEW_W} ${VIEW_H}`} className="absolute inset-0" aria-hidden="true">
         <defs>
-          {/* 완주 구간(흰색)만 보이게 하는 마스크. strokeDasharray는 여기서만
-              "진행 연장" 용도로 쓰고, 점선 레이어(3층)의 dasharray와는 절대 겹치지 않는다. */}
+          {/* 길 표면의 세로 그라데이션 — 위가 밝고 아래가 짙은 찰흙 질감의 바탕 */}
+          <linearGradient id={roadGradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#FFE7CC" />
+            <stop offset="55%" stopColor="#FFD9B4" />
+            <stop offset="100%" stopColor="#F8C48D" />
+          </linearGradient>
           <mask id={maskId} maskUnits="userSpaceOnUse" x={0} y={-PAD_TOP} width={VIEW_W} height={VIEW_H}>
             <rect x={0} y={-PAD_TOP} width={VIEW_W} height={VIEW_H} fill="black" />
             {length > 0 && (
@@ -445,15 +475,24 @@ function MapCanvas({ progress, cutStepSet, completedStepIds, currentStep, weakSt
           </mask>
         </defs>
 
-        {/* 1층 - 배경 트랙: 항상 전체 표시 */}
-        <path ref={fullPathRef} d={TRACK_PATH_D} stroke="#FFE0C4" strokeWidth={26} fill="none" strokeLinecap="round" />
-        {/* 2층 - 완주 채움: 옅은 오렌지, dashoffset으로 진행분만 노출(진행 연장 애니메이션의 핵심) */}
+        {/*
+          클레이모피즘 길 — 4겹으로 찰흙 튜브를 흉내낸다.
+          1) 바닥 그림자: 살짝 아래로 밀린 짙은 주황  2) 몸통: 그라데이션
+          3) 윗면 하이라이트: 좁고 밝은 선  4) 진행/점선 오버레이(기존 유지)
+        */}
+        <g transform="translate(0,6)">
+          <path d={TRACK_PATH_D} stroke="rgba(214,112,18,0.30)" strokeWidth={32} fill="none" strokeLinecap="round" />
+        </g>
+        <path ref={fullPathRef} d={TRACK_PATH_D} stroke={`url(#${roadGradientId})`} strokeWidth={30} fill="none" strokeLinecap="round" />
+        <g transform="translate(0,-7)">
+          <path d={TRACK_PATH_D} stroke="rgba(255,255,255,0.65)" strokeWidth={7} fill="none" strokeLinecap="round" />
+        </g>
         {length > 0 && (
           <path
             d={TRACK_PATH_D}
             stroke="#FF7A00"
-            strokeOpacity={0.22}
-            strokeWidth={26}
+            strokeOpacity={0.26}
+            strokeWidth={30}
             fill="none"
             strokeLinecap="round"
             strokeDasharray={length}
@@ -461,7 +500,6 @@ function MapCanvas({ progress, cutStepSet, completedStepIds, currentStep, weakSt
             style={{ transition: hasMeasured ? "stroke-dashoffset 0.8s ease-out" : "none" }}
           />
         )}
-        {/* 3층 - 완주 점선: 마스크로 완주 구간에만 노출, dasharray는 점선 패턴 전용(흐르는 애니메이션) */}
         {length > 0 && (
           <path
             d={TRACK_PATH_D}
@@ -474,7 +512,6 @@ function MapCanvas({ progress, cutStepSet, completedStepIds, currentStep, weakSt
             mask={`url(#${maskId})`}
           />
         )}
-        {/* 캐릭터 앞쪽 다음 목적지까지 옅은 점선으로 "갈 길"을 표시 */}
         {aheadSegment && (
           <path
             d={TRACK_PATH_D}
@@ -489,52 +526,57 @@ function MapCanvas({ progress, cutStepSet, completedStepIds, currentStep, weakSt
         )}
       </svg>
 
-      {MAP_NODES.map((node) => {
-        if (node.kind === "step") {
-          const isCut = cutStepSet.has(node.stepId);
-          return (
-            <StepNode
-              key={node.id}
-              node={node}
-              isCut={isCut}
-              isDone={completedStepIds.includes(node.stepId)}
-              // 전부 완료(p===1)면 캐릭터가 GOAL에 있으므로, 마지막 STEP도
-              // 더 이상 "지금 여기" 펄스/pill이 아니라 일반 완료 노드로만 표시한다.
-              isCurrent={node.stepId === currentStep && !goalReached}
-              isLocked={node.stepId > currentStep}
-              isWeak={weakSteps.includes(node.stepId)}
-              mode={stepMeta.get(node.stepId)?.mode ?? "full"}
-              onNavigate={() => onNavigateStep(node.stepId)}
-            />
-          );
-        }
-        if (node.kind === "reward") {
-          const rewardCut = cutStepSet.has(node.afterStepId);
-          const opened = !rewardCut && completedStepIds.includes(node.afterStepId);
-          if (rewardCut) return null; // afterStep이 cut되면 상자도 숨긴다.
-          return (
-            <div
-              key={node.id}
-              // 노드 라벨(z-10)보다 낮게 두어 바나나가 라벨을 가리지 않게 한다.
-              className={`absolute z-0 flex size-12 items-center justify-center rounded-xl border-2 text-lg ${
-                opened ? "border-[#FFE0C4] bg-white" : "border-dashed border-[#FFE0C4] bg-[#FFF3E8] opacity-75"
-              }`}
-              style={{ left: node.x - 24, top: node.y - 24 + PAD_TOP }}
-            >
-              {opened ? "🍌" : "📦"}
-            </div>
-          );
-        }
-        // goal — 원본 위치(left-742 top-52) 그대로 복원
+      {layout?.stepNodes.map((node) => (
+        <StepNode
+          key={node.id}
+          stepId={node.id}
+          title={node.title}
+          mode={node.mode}
+          x={node.x}
+          y={node.y}
+          labelAbove={node.index % 2 === 1}
+          isDone={completedStepIds.includes(node.id)}
+          isCurrent={node.id === currentStep && !goalReached}
+          isLocked={node.id > currentStep}
+          isWeak={weakSteps.includes(node.id)}
+          onNavigate={() => onNavigateStep(node.id)}
+        />
+      ))}
+
+      {layout?.rewardNodes.map((node) => {
+        const opened = completedStepIds.includes(node.afterId);
         return (
-          <div key={node.id} className="absolute w-[104px] text-center" style={{ left: 742, top: 52 + PAD_TOP }}>
-            <div className="mx-auto flex size-20 items-center justify-center rounded-[20px] border-2 border-[#FFE0C4] bg-white text-[30px]">🏁</div>
-            <div className="font-jua mt-[9px] text-sm text-[#E85D00]">오전 9시<br />시험장</div>
+          <div
+            key={`reward-${node.afterId}`}
+            className="absolute z-0"
+            style={{ left: node.x - 30, top: node.y - 38 + PAD_TOP }}
+            title={opened ? "상자를 열었어요" : "다음 STEP 을 완료하면 열려요"}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={opened ? "/reward/box-open.png" : "/reward/box-closed.png"}
+              alt=""
+              width={60}
+              height={54}
+              draggable={false}
+              className={`select-none object-contain drop-shadow-[0_6px_10px_rgba(180,90,10,.25)] ${opened ? "" : "opacity-85"}`}
+            />
           </div>
         );
       })}
 
-      {/* 캐릭터 — 경로 위 단일 말풍선 */}
+      {layout && (
+        <div className="absolute z-10 w-[104px] text-center" style={{ left: layout.goalPoint.x - 52, top: layout.goalPoint.y - 46 + PAD_TOP }}>
+          <div className="clay-circle mx-auto flex size-20 items-center justify-center rounded-[24px]">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M6 21V4" stroke="#E85D00" strokeWidth="2.4" strokeLinecap="round" />
+              <path d="M6 4h11l-2.5 3.5L17 11H6" fill="#FF7A00" stroke="#E85D00" strokeWidth="1.6" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <div className="font-jua mt-[9px] text-sm text-[#E85D00]">시험장</div>
+        </div>
+      )}
+
       {character && (
         <div
           className="absolute z-30"
@@ -549,7 +591,7 @@ function MapCanvas({ progress, cutStepSet, completedStepIds, currentStep, weakSt
             <div className="font-jua whitespace-nowrap rounded-[12px_12px_12px_3px] border border-[#FFE0C4] bg-white px-[13px] py-2 text-[13.5px] shadow-[0_4px_12px_rgba(0,0,0,.07)]">
               {characterMessage}
             </div>
-            <Ghost width={62} mood={goalReached ? "excited" : "eyes"} className="animate-bob drop-shadow-[0_8px_12px_rgba(255,122,0,.3)]" />
+            <Ghost width={62} mood={goalReached ? "happy" : "default"} className="animate-bob drop-shadow-[0_8px_12px_rgba(255,122,0,.3)]" />
           </div>
         </div>
       )}
@@ -557,95 +599,90 @@ function MapCanvas({ progress, cutStepSet, completedStepIds, currentStep, weakSt
   );
 }
 
+/**
+ * 경로 위 STEP 동그라미. 클레이모피즘 질감이고, 숫자는 원의 정중앙에 놓는다.
+ */
 function StepNode({
-  node,
-  isCut,
+  stepId,
+  title,
+  mode,
+  x,
+  y,
+  labelAbove,
   isDone,
   isCurrent,
   isLocked,
   isWeak,
-  mode,
   onNavigate,
 }: {
-  node: Extract<MapNode, { kind: "step" }>;
-  isCut: boolean;
+  stepId: number;
+  title: string;
+  mode: CurriculumStep["mode"];
+  x: number;
+  y: number;
+  labelAbove: boolean;
   isDone: boolean;
   isCurrent: boolean;
   isLocked: boolean;
   isWeak: boolean;
-  mode: CurriculumStep["mode"];
   onNavigate: () => void;
 }) {
-  const size = isCurrent ? 88 : isDone ? 72 : 68;
-  const left = node.x - size / 2;
-  const top = node.y - size / 2 + PAD_TOP;
+  const size = isCurrent ? 84 : isDone ? 70 : 66;
+  const left = x - size / 2;
+  const top = y - size / 2 + PAD_TOP;
+  // 라벨은 위·아래를 번갈아 놓아 촘촘한 구간에서 서로 겹치지 않게 한다.
+  const labelTop = labelAbove ? y - size / 2 - 58 + PAD_TOP : y + size / 2 + 10 + PAD_TOP;
 
-  // STEP별 라벨 offset. node.x/node.y 좌표 기준 절대값이라 노드 크기(size)와 무관하다.
-  // isCurrent일 때 노드 지름이 88px까지 커지므로, size에 상대적인 위치를 쓰면
-  // 노드가 라벨(특히 원 안의 숫자)을 가리는 회귀가 재발한다.
-  const offset = NODE_LABEL_OFFSET[node.stepId] ?? DEFAULT_NODE_LABEL_OFFSET;
-  const labelCenterX = node.x + offset.dx;
-  const labelTop = node.y + offset.dy + PAD_TOP;
+  const weakRing = isWeak ? "ring-2 ring-amber-400 ring-offset-2" : "";
+  const numberClass = "font-jua flex size-full items-center justify-center leading-none";
 
   return (
-    <div className={`transition-all duration-500 ${isCut ? "pointer-events-none opacity-25 grayscale" : ""}`}>
+    <div>
       {isCurrent ? (
         <div className="absolute" style={{ left, top, width: size, height: size }}>
           <div className="absolute inset-[-10px] animate-pulse-ring rounded-full bg-[#FF7A00]" />
           <button
             type="button"
-            className={`font-jua absolute inset-0 flex cursor-pointer items-center justify-center rounded-full border-4 bg-[#FF7A00] text-[26px] text-white shadow-[0_10px_24px_rgba(255,122,0,.4)] ${isWeak ? "border-amber-400" : "border-white"}`}
             onClick={onNavigate}
+            className={`clay-circle-active absolute inset-0 cursor-pointer rounded-full text-[26px] text-white ${weakRing}`}
           >
-            {node.stepId}
+            <span className={numberClass}>{stepId}</span>
           </button>
         </div>
       ) : (
         <button
           type="button"
-          disabled={isLocked || isCut}
-          onClick={() => !isLocked && !isCut && onNavigate()}
+          disabled={isLocked}
+          onClick={() => !isLocked && onNavigate()}
           style={{ left, top, width: size, height: size }}
-          className={`absolute flex items-center justify-center rounded-full border-[3px] shadow-[0_4px_12px_rgba(0,0,0,.06)] ${
+          className={`absolute rounded-full ${weakRing} ${
             isDone
-              ? `cursor-pointer bg-[#FFE0C4] ${isWeak ? "border-amber-400" : "border-white"}`
-              : `font-jua cursor-default border-2 bg-white text-[21px] text-[#888] ${isWeak ? "border-amber-400" : "border-[#eee]"}`
+              ? "clay-done cursor-pointer"
+              : `clay-circle text-[21px] ${isLocked ? "cursor-default text-[#b9b9b9]" : "cursor-pointer text-[#8a6a4d]"}`
           }`}
         >
-          {isDone ? <CheckIcon /> : node.stepId}
+          {isDone ? (
+            <span className="flex size-full items-center justify-center"><CheckIcon /></span>
+          ) : (
+            <span className={numberClass}>{stepId}</span>
+          )}
         </button>
       )}
 
-      {/*
-        라벨: SVG 경로(z-index 없는 기본 stacking, 배경)보다 위, 상자(z-0)보다 위,
-        말풍선(z-30)보다는 아래인 z-20에 둔다. 반투명 흰 배경 칩으로 선 위에서도 읽히게 한다.
-      */}
       <div
         className={`absolute z-20 w-[150px] text-center text-[12.5px] ${
           isCurrent ? "font-bold text-[#E85D00]" : isDone ? "font-bold text-[#888]" : "text-[#888]"
         }`}
-        style={{ left: labelCenterX, top: labelTop, transform: "translate(-50%, 0)" }}
+        style={{ left: x, top: labelTop, transform: "translate(-50%, 0)" }}
       >
-        {isCurrent ? (
-          <>
-            <span className="inline-block rounded-full bg-[#FF7A00] px-3 py-[5px] text-[12.5px] font-bold text-white">STEP {node.stepId}</span>
-            <div className="mt-[5px] flex items-center justify-center gap-1 font-medium text-[#222]">
-              <span className="rounded-md bg-white/85 px-1.5 py-0.5">{node.label}</span>
-              {mode === "skim" && <span className="rounded-full bg-[#F4F4F4] px-1.5 py-0.5 text-[10px] text-[#888]">훑기</span>}
-              {mode === "review" && <span className="rounded-full bg-[#FFF3E8] px-1.5 py-0.5 text-[10px] font-bold text-[#E85D00]">퀴즈</span>}
-            </div>
-          </>
-        ) : (
-          <>
-            <span className="rounded-md bg-white/85 px-1.5 py-0.5">STEP {node.stepId}</span>
-            <br />
-            <span className="mt-1 inline-flex items-center gap-1 font-normal">
-              <span className="rounded-md bg-white/85 px-1.5 py-0.5">{node.label}</span>
-              {mode === "skim" && <span className="rounded-full bg-[#F4F4F4] px-1.5 py-0.5 text-[10px] text-[#888]">훑기</span>}
-              {mode === "review" && <span className="rounded-full bg-[#FFF3E8] px-1.5 py-0.5 text-[10px] font-bold text-[#E85D00]">퀴즈</span>}
-            </span>
-          </>
-        )}
+        <span className={`inline-block rounded-full px-3 py-[5px] text-[12px] font-bold ${isCurrent ? "bg-[#FF7A00] text-white" : "bg-white/85 text-[#888]"}`}>
+          STEP {stepId}
+        </span>
+        <div className="mt-[5px] flex items-center justify-center gap-1 font-medium text-[#222]">
+          <span className="max-w-[140px] truncate rounded-md bg-white/85 px-1.5 py-0.5">{title}</span>
+          {mode === "skim" && <span className="rounded-full bg-[#F4F4F4] px-1.5 py-0.5 text-[10px] text-[#888]">훑기</span>}
+          {mode === "review" && <span className="rounded-full bg-[#FFF3E8] px-1.5 py-0.5 text-[10px] font-bold text-[#E85D00]">퀴즈</span>}
+        </div>
       </div>
     </div>
   );

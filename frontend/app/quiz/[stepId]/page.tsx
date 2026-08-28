@@ -183,9 +183,12 @@ function QuizView({
             {question.options.map((option, index) => {
               const isAnswer = answered && index === result.correctIndex;
               const isPicked = index === picked;
+              // 내가 고른 보기가 오답이면 빨간 테두리로 표시한다. 무엇을 골랐는지가
+              // 정답 표시만큼 중요하다 — 그래야 무엇과 헷갈렸는지 보인다.
+              const isWrongPick = answered && isPicked && !result.correct;
               let stateClass = "border-[#eee] bg-white text-[#222] hover:border-[#FFE0C4]";
               if (isAnswer) stateClass = "border-[#FF7A00] bg-[#FFF3E8] font-bold text-[#E85D00]";
-              else if (answered && isPicked) stateClass = "border-[#eee] bg-[#FAFAFA] text-[#888]";
+              else if (isWrongPick) stateClass = "border-[#E03131] border-2 bg-[#FDECEE] text-[#B02A37]";
               else if (answered) stateClass = "border-[#eee] bg-white text-[#888]";
               return (
                 <button
@@ -212,7 +215,7 @@ function QuizView({
 
           {answered && (
             <div className="mt-6 flex flex-col items-start gap-4 border-t border-[#eee] pt-6 sm:flex-row sm:items-center">
-              <Ghost width={44} mood={result.correct ? "smile" : "worried"} className="animate-bob-small shrink-0" />
+              <Ghost width={44} mood={result.correct ? "smile" : "sad"} className="animate-bob-small shrink-0" />
               <div className="flex-1 text-[14.5px] leading-[1.7]">
                 {result.correct
                   ? `정답! ${result.explanation}`
@@ -233,23 +236,37 @@ function QuizView({
   );
 }
 
+/**
+ * 로딩 화면. 스켈레톤이 문제 화면의 골격을 미리 보여주고,
+ * AI 가 문제를 만드는 중({@code generating})이면 분석 화면과 같은 작업 중 캐릭터를 앞에 세운다.
+ */
 function QuizLoading({ generating = false }: { generating?: boolean }) {
   return (
     <div className="min-h-screen bg-white text-[#222]">
       <AppHeader />
-      <main className="mx-auto max-w-[820px] animate-pulse px-6 py-12 sm:px-10">
-        <div className="mb-8 h-3 w-36 rounded bg-[#FFF3E8]" />
-        <div className="rounded-[20px] border border-[#eee] p-9">
-          <div className="mb-8 h-7 w-3/4 rounded bg-[#eee]" />
-          <div className="grid gap-3">
-            {[1, 2, 3, 4].map((item) => (
-              <div key={item} className="h-16 rounded-[14px] bg-[#fafafa]" />
-            ))}
+      <main className="relative mx-auto max-w-[820px] px-6 py-12 sm:px-10">
+        {/* 스켈레톤 — 뒤에서 깜빡이며 문제 화면의 자리를 잡아 둔다 */}
+        <div className={`animate-pulse ${generating ? "opacity-60" : ""}`}>
+          <div className="mb-8 h-3 w-36 rounded bg-[#FFF3E8]" />
+          <div className="rounded-[20px] border border-[#eee] p-9">
+            <div className="mb-8 h-7 w-3/4 rounded bg-[#eee]" />
+            <div className="grid gap-3">
+              {[1, 2, 3, 4].map((item) => (
+                <div key={item} className="h-16 rounded-[14px] bg-[#fafafa]" />
+              ))}
+            </div>
+            {!generating && <p className="mt-6 text-center text-sm text-[#888]">문제 불러오는 중…</p>}
           </div>
-          <p className="mt-6 text-center text-sm text-[#888]">
-            {generating ? "자료를 보고 문제를 만드는 중… 30초쯤 걸려요." : "문제 불러오는 중…"}
-          </p>
         </div>
+
+        {generating && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+            <Ghost width={104} mood="progress" className="animate-bob" />
+            <p className="rounded-full border border-[#FFE0C4] bg-white/90 px-5 py-2 text-sm font-bold text-[#E85D00] shadow-[0_6px_18px_rgba(255,122,0,.15)]">
+              자료를 보고 문제를 만드는 중… 30초쯤 걸려요
+            </p>
+          </div>
+        )}
       </main>
     </div>
   );

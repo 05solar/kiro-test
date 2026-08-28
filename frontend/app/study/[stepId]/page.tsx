@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AppHeader, Countdown, Ghost, PrimaryButton } from "@/app/_components/ui";
+import { AppHeader, CheckMini, Countdown, Ghost, PrimaryButton } from "@/app/_components/ui";
 import { type StudyContent } from "@/app/_components/data";
 import { useSessionStore } from "@/app/_components/session-store";
 import { usePlanStore } from "@/app/_components/store";
@@ -205,14 +205,19 @@ function StudyView({
                   }`}
                 >
                   {done ? (
-                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#FFE0C4] text-xs text-[#E85D00]">✓</span>
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#FFE0C4]"><CheckMini size={11} /></span>
                   ) : active ? (
                     <span className="font-jua flex size-6 shrink-0 items-center justify-center rounded-full bg-[#FF7A00] text-[13px] text-white">{step.id}</span>
                   ) : (
                     <span className="size-6 shrink-0 rounded-full border-2 border-[#eee]" />
                   )}
                   <span className={`min-w-0 flex-1 truncate text-[13.5px] ${active ? "font-bold text-[#E85D00]" : "text-[#888]"}`}>{step.id}. {step.title}</span>
-                  {bookmarked && <span className="shrink-0 text-xs" title="다시 볼 개념">🔖</span>}
+                  {bookmarked && (
+                    <svg width="12" height="14" viewBox="0 0 24 28" fill="none" aria-hidden="true" className="shrink-0">
+                      <title>다시 볼 개념</title>
+                      <path d="M5 2h14a1 1 0 0 1 1 1v23l-8-5.5L4 26V3a1 1 0 0 1 1-1Z" fill="#F59F00" stroke="#E8590C" strokeWidth="1.6" strokeLinejoin="round" />
+                    </svg>
+                  )}
                 </button>
               );
             })}
@@ -277,7 +282,7 @@ function StudyView({
                   : "border-[#eee] bg-white text-[#888] hover:border-amber-300 hover:text-amber-700"
               }`}
             >
-              {isWeak ? "다시 볼 개념 ✓" : "나중에 다시 볼 개념으로 표시"}
+              {isWeak ? "다시 볼 개념으로 표시됨" : "나중에 다시 볼 개념으로 표시"}
             </button>
           </div>
         </main>

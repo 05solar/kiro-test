@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FlowSteps } from "@/app/_components/flow-steps";
-import { AppHeader, Ghost, PrimaryButton, RequiredMark, SecondaryButton, SpeechBubble } from "@/app/_components/ui";
+import { AppHeader, CheckMini, Ghost, PrimaryButton, RequiredMark, SecondaryButton, SpeechBubble } from "@/app/_components/ui";
 import { useSessionStore } from "@/app/_components/session-store";
 import { useExamStore } from "@/app/_components/store";
 import { useHydrated } from "@/app/_components/use-hydrated";
@@ -197,7 +197,13 @@ export default function UploadPage() {
                     : "border-[#FFE0C4] bg-[#FFFDFB] hover:bg-[#FFF3E8]"
               }`}
             >
-              <div className="mb-5 flex size-16 items-center justify-center rounded-2xl bg-[#FFF3E8] text-[30px]" aria-hidden="true">📄</div>
+              <div className="mb-5 flex size-16 items-center justify-center rounded-2xl bg-[#FFF3E8]" aria-hidden="true">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+                  <path d="M6 2h8l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z" stroke="#FF7A00" strokeWidth="1.8" strokeLinejoin="round" />
+                  <path d="M14 2v5h5" stroke="#FF7A00" strokeWidth="1.8" strokeLinejoin="round" />
+                  <path d="M9 13h6M9 17h6" stroke="#FF7A00" strokeWidth="1.8" strokeLinecap="round" />
+                </svg>
+              </div>
               <strong className="mb-2 text-[17px]">파일을 끌어다 놓거나 클릭해서 선택</strong>
               <span className="text-[13px] leading-6 text-[#888]">PDF, DOCX, TXT · 개당 최대 {MAX_FILE_MB}MB</span>
             </button>
@@ -213,7 +219,12 @@ export default function UploadPage() {
             <div className="mt-4 grid gap-2.5">
               {documents.map((doc) => (
                 <div key={doc.id} className="flex items-center gap-3 rounded-xl border border-[#FFE0C4] bg-[#FFF3E8] px-4 py-3.5">
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-white text-xl">📚</span>
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-white" aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <path d="M4 19V5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2Zm0 0a2 2 0 0 0 2 2h13" stroke="#FF7A00" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M9 7h6" stroke="#FF7A00" strokeWidth="1.8" strokeLinecap="round" />
+                    </svg>
+                  </span>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-bold">{doc.originalFileName}</div>
                     <div className="mt-1 text-xs text-[#888]">
@@ -322,10 +333,12 @@ export default function UploadPage() {
             <div className="rounded-[18px] border border-[#eee] p-5">
               <h2 className="mb-3 text-[13.5px] font-bold">분석할 내용</h2>
               <ul className="grid gap-2.5 text-[13px] text-[#888]">
-                <li>✓ 단원별 핵심 개념</li>
-                <li>✓ 시험 출제 가능성</li>
-                <li>✓ 남은 시간별 학습 순서</li>
-                <li>✓ STEP별 확인 퀴즈</li>
+                {["단원별 핵심 개념", "시험 출제 가능성", "남은 시간별 학습 순서", "STEP별 확인 퀴즈"].map((item) => (
+                  <li key={item} className="flex items-center gap-2">
+                    <CheckMini />
+                    {item}
+                  </li>
+                ))}
               </ul>
             </div>
           </aside>

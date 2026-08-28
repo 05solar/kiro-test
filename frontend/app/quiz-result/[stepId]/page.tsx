@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AppHeader, Ghost, PrimaryButton, SecondaryButton } from "@/app/_components/ui";
+import { AppHeader, CheckMini, Ghost, PrimaryButton, SecondaryButton } from "@/app/_components/ui";
 import { useSessionStore } from "@/app/_components/session-store";
 import { useCurriculum } from "@/app/_components/use-curriculum";
 import {
@@ -95,7 +95,7 @@ export default function QuizResultPage() {
       <div className="min-h-screen bg-white text-[#222]">
         <AppHeader />
         <main className="mx-auto max-w-[720px] px-6 py-24 text-center">
-          <Ghost width={70} mood="worried" className="animate-bob-small mx-auto mb-5" />
+          <Ghost width={70} mood="sad" className="animate-bob-small mx-auto mb-5" />
           <h1 className="font-jua mb-3 text-3xl">결과를 불러오지 못했어요</h1>
           <p className="mb-8 text-[14.5px] leading-7 text-[#888]">{error}</p>
           <PrimaryButton onClick={() => router.push("/curriculum")}>커리큘럼으로 돌아가기</PrimaryButton>
@@ -124,7 +124,7 @@ export default function QuizResultPage() {
       <AppHeader />
       <main className="mx-auto max-w-[900px] px-6 pb-24 pt-[52px] sm:px-10">
         <section className="mb-6 flex flex-col items-center gap-6 rounded-[22px] border border-[#FFE0C4] bg-[#FFF3E8] p-7 text-center sm:flex-row sm:gap-8 sm:p-9 sm:text-left">
-          <Ghost width={104} mood={passed ? "excited" : "worried"} className="animate-bob shrink-0 drop-shadow-[0_12px_18px_rgba(255,122,0,.22)]" />
+          <Ghost width={104} mood={passed ? "happy" : "sad"} className="animate-bob shrink-0 drop-shadow-[0_12px_18px_rgba(255,122,0,.22)]" />
           <div>
             {passed && <div className="mb-2 inline-block rounded-full bg-[#FF7A00] px-3 py-1 text-xs font-bold text-white">STEP {stepId} 완료!</div>}
             <div className="mb-[9px] text-[13px] font-bold text-[#E85D00]">STEP {stepId} 퀴즈 결과</div>
@@ -165,7 +165,7 @@ export default function QuizResultPage() {
             <div className="grid gap-2.5">
               {strongQuestions.map((item) => (
                 <div key={item.quizId} className="flex items-start gap-[11px] rounded-xl border border-[#eee] px-4 py-3.5">
-                  <span className="mt-0.5 text-[13px] text-[#E85D00]">✓</span>
+                  <span className="mt-1"><CheckMini size={12} /></span>
                   <span className="text-[14.5px] text-[#888]">{item.quiz!.question}</span>
                 </div>
               ))}
