@@ -1,3 +1,5 @@
+![내일까지 해야 하는데 — 랜딩, 시험 정보 입력, AI 자료 분석, 학습 STEP, 벼락치기 맵 화면](docs/screenshots/overview.png)
+
 # 내일까지 해야 하는데
 
 시험까지 남은 시간과 업로드한 강의자료를 AI가 분석해, 지금 남은 시간 안에서 실제로 수행 가능한
@@ -97,6 +99,7 @@ DB 접속 정보는 환경변수로 주입한다. 자세한 내용은 [backend/R
 - [docs/api/error-codes.md](docs/api/error-codes.md) — 공통 에러 코드
 - [docs/database.md](docs/database.md) — DB 구조
 - [docs/backend-anatomy.html](docs/backend-anatomy.html) — 백엔드 동작 원리 (도면·흐름도, 브라우저로 연다)
+- [docs/system-architecture.html](docs/system-architecture.html) — 전체 시스템 도면과 계층별 기술 스택 (브라우저로 연다)
 - [docs/deployment.html](docs/deployment.html) — AWS 배포 점검표
 
 ## 알려진 환경 이슈
