@@ -1,0 +1,1119 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="EC2 인스턴스 위의 컨테이너 배치부터 요청 경로·도메인 파이프라인·AI 경계까지, 계층별 기술 스택과 함께 정리한 시스템 도면.">
+<title>내일까지 시스템 도면</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+/* ── 토큰 ──────────────────────────────────────────────────────────────────
+   저장소의 다른 문서(architecture.html, backend-anatomy.html)가 쓰는 주황을
+   그대로 이어받는다. 다만 이 문서는 도면이라 중성색을 더 차갑게 눌렀고,
+   "밖으로 나가는 호출"에만 청록 하나를 따로 뒀다. 색이 곧 경계다.         */
+:root {
+  --paper:      #fdfcfa;
+  --wash:       #f5f2ec;
+  --wash-2:     #ebe6dd;
+  --ink:        #17150f;
+  --ink-2:      #4e483f;
+  --muted:      #8b8278;
+  --line:       #e2dcd2;
+  --line-2:     #cfc7ba;
+  --brand:      #d2570a;
+  --brand-wash: #fdf0e4;
+  --brand-line: #f4d3b4;
+  --ext:        #1f6f7c;   /* 외부(AI) 호출 — 신뢰 경계를 넘는 것만 */
+  --ext-wash:   #e6f2f3;
+  --ext-line:   #b8dade;
+  --host:       #f0ece3;   /* EC2 호스트 바탕 */
+  --warn:       #b03028;
+  --warn-wash:  #fbecea;
+  --shadow:     0 1px 2px rgba(23,21,15,.05), 0 10px 28px rgba(23,21,15,.06);
+  --radius:     10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper:      #131210;
+    --wash:       #1b1916;
+    --wash-2:     #242118;
+    --ink:        #f2ede5;
+    --ink-2:      #c6bdb1;
+    --muted:      #948b80;
+    --line:       #302c26;
+    --line-2:     #443e35;
+    --brand:      #ff9247;
+    --brand-wash: #2b1d11;
+    --brand-line: #4d331c;
+    --ext:        #5fbccb;
+    --ext-wash:   #10262a;
+    --ext-line:   #1e4750;
+    --host:       #201d18;
+    --warn:       #f08078;
+    --warn-wash:  #2c1614;
+    --shadow:     0 1px 2px rgba(0,0,0,.4), 0 10px 28px rgba(0,0,0,.38);
+  }
+}
+:root[data-theme="dark"] {
+  --paper:      #131210;
+  --wash:       #1b1916;
+  --wash-2:     #242118;
+  --ink:        #f2ede5;
+  --ink-2:      #c6bdb1;
+  --muted:      #948b80;
+  --line:       #302c26;
+  --line-2:     #443e35;
+  --brand:      #ff9247;
+  --brand-wash: #2b1d11;
+  --brand-line: #4d331c;
+  --ext:        #5fbccb;
+  --ext-wash:   #10262a;
+  --ext-line:   #1e4750;
+  --host:       #201d18;
+  --warn:       #f08078;
+  --warn-wash:  #2c1614;
+  --shadow:     0 1px 2px rgba(0,0,0,.4), 0 10px 28px rgba(0,0,0,.38);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "IBM Plex Sans KR", system-ui, -apple-system, "Malgun Gothic", sans-serif;
+  font-size: 16px;
+  line-height: 1.72;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 28px 120px;
+}
+.prose { max-width: 68ch; }
+
+/* ── 머리말 ───────────────────────────────────────────────────────────── */
+.masthead {
+  border-bottom: 1px solid var(--line);
+  padding: 72px 0 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.eyebrow {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--brand);
+}
+h1 {
+  font-family: Jua, "IBM Plex Sans KR", sans-serif;
+  font-size: clamp(34px, 5.2vw, 58px);
+  line-height: 1.12;
+  letter-spacing: -.01em;
+  margin: 0;
+  text-wrap: balance;
+  font-weight: 400;
+}
+.lede {
+  max-width: 62ch;
+  font-size: 17.5px;
+  color: var(--ink-2);
+  margin: 0;
+}
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--muted);
+}
+.meta span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 11px;
+  background: var(--wash);
+}
+
+/* ── 섹션 ─────────────────────────────────────────────────────────────── */
+section { padding-top: 76px; }
+.sec-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+.sec-num {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brand);
+  letter-spacing: .04em;
+}
+h2 {
+  font-size: clamp(23px, 2.6vw, 29px);
+  line-height: 1.3;
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  text-wrap: balance;
+}
+h3 {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 40px 0 10px;
+  letter-spacing: -.005em;
+}
+p { margin: 0 0 16px; }
+p:last-child { margin-bottom: 0; }
+a { color: var(--brand); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; border-radius: 3px; }
+code, .mono {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: .88em;
+}
+code {
+  background: var(--wash-2);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+/* ── 도면 ─────────────────────────────────────────────────────────────── */
+figure {
+  margin: 34px 0 0;
+  background: var(--wash);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 30px 26px 20px;
+  box-shadow: var(--shadow);
+  overflow-x: auto;
+}
+figure svg {
+  display: block;
+  width: 100%;
+  min-width: 880px;      /* 이보다 좁아지면 라벨이 읽히지 않는다. 대신 가로로 스크롤한다. */
+  max-width: 100%;
+  height: auto;
+  color: var(--ink-2);
+}
+figcaption {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-size: 13.5px;
+  line-height: 1.66;
+  color: var(--muted);
+  min-width: 880px;
+  max-width: 96ch;
+}
+figcaption b { color: var(--ink-2); font-weight: 600; }
+
+/* SVG 안에서 반복해 쓰는 것들.
+   ── 한글이 들어가는 줄에는 절대 Mono 를 쓰지 않는다. IBM Plex Mono 에는 한글
+      글리프가 없어서 글자마다 다른 폰트로 대체되고, 자간과 높이가 어긋나 깨져 보인다.
+      식별자·경로처럼 순수 ASCII 인 줄에만 .t-code 를 쓴다.                      */
+.box       { fill: var(--paper); stroke: var(--line-2); stroke-width: 1.5; }
+.box-brand { fill: var(--brand-wash); stroke: var(--brand-line); stroke-width: 1.5; }
+.box-ext   { fill: var(--ext-wash); stroke: var(--ext-line); stroke-width: 1.5; }
+.box-soft  { fill: var(--wash-2); stroke: var(--line-2); stroke-width: 1.5; }
+.box-host  { fill: var(--host); stroke: var(--line-2); stroke-width: 1.5; }
+.bound     { fill: none; stroke: var(--line-2); stroke-width: 1.5; stroke-dasharray: 7 6; }
+
+.t-title { font-family: "IBM Plex Sans KR", sans-serif; font-size: 15px; font-weight: 600; fill: var(--ink); }
+.t-sub   { font-family: "IBM Plex Sans KR", sans-serif; font-size: 11.5px; font-weight: 400; fill: var(--ink-2); }
+.t-dim   { font-family: "IBM Plex Sans KR", sans-serif; font-size: 11px;   font-weight: 400; fill: var(--muted); }
+.t-edge  { font-family: "IBM Plex Sans KR", sans-serif; font-size: 11.5px; font-weight: 500; fill: var(--ink-2); }
+.t-code  { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 11.5px; fill: var(--ink-2); }
+.t-code-dim { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 11px; fill: var(--muted); }
+.t-ext   { font-family: "IBM Plex Sans KR", sans-serif; font-size: 11.5px; font-weight: 500; fill: var(--ext); }
+.t-brand { font-family: "IBM Plex Sans KR", sans-serif; font-size: 11.5px; font-weight: 500; fill: var(--brand); }
+
+.edge      { stroke: var(--line-2); stroke-width: 1.6; fill: none; }
+.edge-ink  { stroke: var(--ink-2); stroke-width: 1.8; fill: none; }
+.edge-ext  { stroke: var(--ext); stroke-width: 2.2; fill: none; }
+.edge-dash { stroke: var(--line-2); stroke-width: 1.5; fill: none; stroke-dasharray: 5 5; }
+
+/* ── 표 ───────────────────────────────────────────────────────────────── */
+.table-scroll { overflow-x: auto; margin-top: 30px; }
+table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  font-size: 14.5px;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 13px 16px 13px 0;
+  border-bottom: 1px solid var(--line);
+}
+thead th {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line-2);
+  padding-bottom: 9px;
+}
+tbody th {
+  font-weight: 600;
+  white-space: nowrap;
+  padding-right: 24px;
+}
+td.stack { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--ink-2); }
+td.why { color: var(--ink-2); }
+tbody tr:last-child th, tbody tr:last-child td { border-bottom: none; }
+
+/* ── 카드 ─────────────────────────────────────────────────────────────── */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(268px, 1fr));
+  gap: 16px;
+  margin-top: 30px;
+}
+.card {
+  background: var(--wash);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 20px 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.card h4 { margin: 0; font-size: 15px; font-weight: 600; }
+.card .tag {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--brand);
+}
+.card p { font-size: 14px; color: var(--ink-2); margin: 0; line-height: 1.62; }
+
+.note {
+  margin-top: 28px;
+  border-left: 3px solid var(--brand);
+  background: var(--brand-wash);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 16px 20px;
+  font-size: 14.5px;
+  color: var(--ink-2);
+  max-width: 74ch;
+}
+.note b { color: var(--ink); }
+.note.warn { border-left-color: var(--warn); background: var(--warn-wash); }
+
+ul.tight { margin: 12px 0 0; padding-left: 20px; }
+ul.tight li { margin-bottom: 7px; color: var(--ink-2); }
+ul.tight li::marker { color: var(--line-2); }
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-bottom: 20px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.legend i { display: inline-block; width: 22px; height: 0; border-top: 2.4px solid; vertical-align: middle; margin-right: 7px; }
+.legend .ext { color: var(--ext); }
+.legend .ink { color: var(--ink-2); }
+
+footer {
+  margin-top: 96px;
+  padding-top: 26px;
+  border-top: 1px solid var(--line);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+}
+
+@media (max-width: 640px) {
+  .wrap { padding: 0 18px 80px; }
+  .masthead { padding-top: 48px; }
+  figure { padding: 20px 16px 16px; }
+  section { padding-top: 56px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header class="masthead">
+  <div class="eyebrow">System Architecture</div>
+  <h1>내일까지 해야 하는데 — 시스템 도면</h1>
+  <p class="lede">
+    로그인이 없다. 8자리 세션 코드 하나가 접근 키이고, 그 아래에 강의자료 · Topic ·
+    학습 계획 · 퀴즈가 매달린다. EC2 한 대 위에 올린 컨테이너 셋과 그 사이를 오가는 호출,
+    각 자리에 놓인 기술을 한 장으로 정리한다.
+  </p>
+  <div class="meta">
+    <span>AWS EC2 · Amazon Linux 2023</span>
+    <span>Next.js 16 + React 19</span>
+    <span>Spring Boot 3.5 / JDK 21</span>
+    <span>PostgreSQL 16</span>
+    <span>Flyway V1–V5</span>
+    <span>Gemini · Anthropic</span>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section id="topology">
+  <div class="sec-head"><span class="sec-num">01</span><h2>배치 — EC2 한 대, 컨테이너 셋, 열린 포트 하나</h2></div>
+  <div class="prose">
+    <p>
+      운영은 EC2 인스턴스 한 대다. 그 위에서 <code>docker compose up -d --build</code> 한 줄이
+      세 컨테이너를 띄운다. 인스턴스 밖에서 닿을 수 있는 것은 보안 그룹이 여는
+      <code>80</code> 뿐이고, 백엔드와 DB 는 <code>expose</code> 로만 열려 컴포즈 내부
+      네트워크에서만 보인다.
+    </p>
+  </div>
+
+  <figure>
+    <div class="legend">
+      <span class="ink"><i></i>인스턴스 안의 호출</span>
+      <span class="ext"><i></i>인스턴스 밖으로 나가는 호출 — 외부 AI API</span>
+    </div>
+    <svg viewBox="0 0 1200 812" role="img"
+         aria-label="EC2 인스턴스 안에서 docker compose가 frontend, backend, db 세 컨테이너와 두 볼륨을 띄우고, 보안 그룹이 여는 80번 포트만 밖에서 닿으며, 백엔드만이 인스턴스 밖 Gemini API를 호출한다">
+      <defs>
+        <marker id="m1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+        </marker>
+        <marker id="m1x" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" fill="var(--ext)"/>
+        </marker>
+      </defs>
+
+      <!-- 인바운드 -->
+      <text class="t-title" x="16" y="44">인터넷</text>
+      <text class="t-dim"   x="16" y="66">보안 그룹 인바운드 80 · 22</text>
+      <path class="edge-ink" d="M22 84 L22 318 L332 318" marker-end="url(#m1)"/>
+      <text class="t-edge" x="112" y="306">HTTP :80 → 컨테이너 :3000</text>
+
+      <!-- EC2 호스트 -->
+      <rect class="box-host" x="52" y="126" width="800" height="640" rx="12"/>
+      <text class="t-title" x="76" y="160">EC2 인스턴스</text>
+      <text class="t-dim"   x="76" y="182">Amazon Linux 2023 · t3.small 이상 · EBS 20GB · docker + compose plugin</text>
+
+      <!-- compose 네트워크 -->
+      <rect class="bound" x="78" y="218" width="750" height="514" rx="10"/>
+      <text class="t-dim" x="98" y="244">docker compose · project “naeil” · 내부 브리지 네트워크</text>
+
+      <!-- frontend -->
+      <rect class="box-brand" x="344" y="258" width="440" height="120" rx="9"/>
+      <text class="t-title" x="368" y="290">frontend</text>
+      <text class="t-code"  x="368" y="314">Next.js 16 · React 19 · TypeScript 5</text>
+      <text class="t-code"  x="368" y="334">App Router · Tailwind 4 · zustand</text>
+      <text class="t-dim"   x="368" y="358">node:24-alpine · standalone 출력 · 호스트 80 에 바인딩</text>
+
+      <!-- backend -->
+      <rect class="box" x="344" y="408" width="440" height="120" rx="9"/>
+      <text class="t-title" x="368" y="440">backend</text>
+      <text class="t-code"  x="368" y="464">Spring Boot 3.5 · JDK 21 · Data JPA</text>
+      <text class="t-code"  x="368" y="484">Flyway · Actuator · Validation</text>
+      <text class="t-dim"   x="368" y="508">temurin:21-jre · expose 8080 · 밖에서 안 보인다</text>
+
+      <!-- db -->
+      <rect class="box" x="344" y="558" width="440" height="120" rx="9"/>
+      <text class="t-title" x="368" y="590">db</text>
+      <text class="t-code"  x="368" y="614">PostgreSQL 16-alpine · jsonb · uuid</text>
+      <text class="t-dim"   x="368" y="638">pg_isready 헬스체크</text>
+      <text class="t-dim"   x="368" y="658">expose 5432 · 밖에서 안 보인다</text>
+
+      <!-- 볼륨 -->
+      <rect class="box-soft" x="100" y="408" width="140" height="120" rx="9"/>
+      <text class="t-dim"   x="120" y="436">volume</text>
+      <text class="t-title" x="120" y="460">uploads</text>
+      <text class="t-code-dim" x="120" y="484">/app/uploads</text>
+      <text class="t-dim"   x="120" y="506">강의자료 원본</text>
+
+      <rect class="box-soft" x="100" y="558" width="140" height="120" rx="9"/>
+      <text class="t-dim"   x="120" y="586">volume</text>
+      <text class="t-title" x="120" y="610">db-data</text>
+      <text class="t-dim"   x="120" y="634">세션 · 퀴즈</text>
+      <text class="t-dim"   x="120" y="654">down 으로 유지</text>
+
+      <!-- 외부 AI -->
+      <rect class="box-ext" x="910" y="408" width="270" height="120" rx="9"/>
+      <text class="t-title" x="932" y="440" fill="var(--ext)">Google Gemini API</text>
+      <text class="t-code"  x="932" y="464" fill="var(--ext)">generativelanguage</text>
+      <text class="t-code"  x="932" y="484" fill="var(--ext)">.googleapis.com/v1beta</text>
+      <text class="t-dim"   x="932" y="508">대안: Anthropic Claude</text>
+
+      <!-- 연결 -->
+      <line class="edge-ink" x1="564" y1="378" x2="564" y2="402" marker-end="url(#m1)"/>
+      <text class="t-edge" x="592" y="397">/api/* 프록시 · BACKEND_URL</text>
+
+      <line class="edge-ink" x1="564" y1="528" x2="564" y2="552" marker-end="url(#m1)"/>
+      <text class="t-edge" x="592" y="547">JDBC · HikariCP · pool 10</text>
+
+      <line class="edge-ink" x1="338" y1="468" x2="248" y2="468" marker-end="url(#m1)"/>
+      <text class="t-edge" x="293" y="452" text-anchor="middle">파일 쓰기</text>
+
+      <line class="edge-ink" x1="338" y1="618" x2="248" y2="618" marker-end="url(#m1)"/>
+      <text class="t-edge" x="293" y="602" text-anchor="middle">영속</text>
+
+      <line class="edge-ext" x1="790" y1="468" x2="904" y2="468" marker-end="url(#m1x)"/>
+      <text class="t-ext" x="847" y="452" text-anchor="middle">HTTPS · REST</text>
+      <text class="t-dim" x="847" y="492" text-anchor="middle">아웃바운드만</text>
+
+      <text class="t-brand" x="52" y="796">밖으로 열리는 포트는 하나 — 보안 그룹의 80 뿐이다. 백엔드와 DB 는 EC2 안에서만 보인다.</text>
+    </svg>
+    <figcaption>
+      <b>경계가 곧 색이다.</b> 청록 선 하나만 인스턴스를 벗어난다 — 백엔드가 AI 공급자를 부르는
+      호출. 화면은 같은 오리진 <code>/api/*</code> 만 부르므로 CORS 설정이 필요 없고, 백엔드
+      주소가 클라이언트 번들에 들어가지 않는다. 세션 코드는 서버 DB 와 방문자의 <code>localStorage</code>
+      두 곳에만 있고, 그 밖으로 나가지 않는다.
+    </figcaption>
+  </figure>
+
+  <div class="note">
+    <b>rewrites 대신 Route Handler 를 쓴 이유.</b> <code>next.config.ts</code> 의 rewrites 는
+    destination 이 <b>빌드 시점</b>에 평가돼 이미지에 박힌다. 도커 빌드 때 백엔드 주소가 없으면
+    <code>localhost:8080</code> 이 그대로 굳어, EC2 에서 환경변수를 줘도 바뀌지 않는다.
+    <code>app/api/[...path]/route.ts</code> 는 요청마다 <code>BACKEND_URL</code> 을 읽으므로
+    같은 이미지를 로컬 · 스테이징 · EC2 에 그대로 올린다.
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section id="stack">
+  <div class="sec-head"><span class="sec-num">02</span><h2>어느 자리에 무엇을 썼나</h2></div>
+  <div class="prose">
+    <p>자리마다 고른 것과, 그 자리에서 그것이어야 했던 이유를 한 줄로 붙였다.</p>
+  </div>
+
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr><th>자리</th><th>기술</th><th>그 자리에서 하는 일</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th>호스트</th>
+          <td class="stack">AWS EC2 · Amazon Linux 2023<br>t3.small 이상 · EBS 20GB</td>
+          <td class="why">인스턴스 한 대에 세 컨테이너를 올린다. 보안 그룹은 <code>80</code>(또는 <code>PUBLIC_PORT</code>)과 <code>22</code> 만 연다.</td>
+        </tr>
+        <tr>
+          <th>화면</th>
+          <td class="stack">Next.js 16 (App Router)<br>React 19 · TypeScript 5</td>
+          <td class="why">11개 라우트. 랜딩 · 시험정보 · 업로드 · 분석 · 커리큘럼 · 학습 · 퀴즈 · 결과 · 다시풀기 · 전체정리.</td>
+        </tr>
+        <tr>
+          <th>화면 상태</th>
+          <td class="stack">zustand + persist</td>
+          <td class="why"><code>localStorage</code> 에는 <b>세션 코드와 아직 안 보낸 입력값만</b> 둔다. 진행 상태는 전부 서버가 갖는다 — 두 벌이면 어긋났을 때 판단 근거가 없다.</td>
+        </tr>
+        <tr>
+          <th>스타일</th>
+          <td class="stack">Tailwind CSS 4 (@tailwindcss/postcss)</td>
+          <td class="why">전용 UI 프리미티브는 <code>app/_components/ui.tsx</code> 한 파일에 모았다.</td>
+        </tr>
+        <tr>
+          <th>API 전달</th>
+          <td class="stack">Next Route Handler<br><code>app/api/[...path]/route.ts</code></td>
+          <td class="why">런타임 프록시. 스트리밍 업로드 통과, 5분 타임아웃, 백엔드 불가 시 <code>BACKEND_UNAVAILABLE</code> 502 로 변환.</td>
+        </tr>
+        <tr>
+          <th>API 클라이언트</th>
+          <td class="stack"><code>lib/api/client.ts</code></td>
+          <td class="why">백엔드 호출의 유일한 통로. <code>ApiError(code)</code> / <code>NetworkError</code> 로 화면이 분기한다.</td>
+        </tr>
+        <tr>
+          <th>웹 계층</th>
+          <td class="stack">Spring Web MVC<br>Bean Validation</td>
+          <td class="why">컨트롤러 11개. 경로가 전부 <code>/api/sessions/{sessionCode}/…</code> 로 시작한다 — 세션 코드가 곧 접근 키다.</td>
+        </tr>
+        <tr>
+          <th>에러</th>
+          <td class="stack">@RestControllerAdvice<br>ErrorCode enum</td>
+          <td class="why">모든 실패가 <code>{code, message}</code> 한 형태로 나간다. 운영 프로파일은 스택트레이스를 응답에 싣지 않는다.</td>
+        </tr>
+        <tr>
+          <th>영속</th>
+          <td class="stack">Spring Data JPA · Hibernate<br>PostgreSQL 16 · HikariCP</td>
+          <td class="why">테이블 10개. 배열형 값(<code>key_points</code>, <code>options</code>, <code>topic_reviews</code>)은 <code>jsonb</code>.</td>
+        </tr>
+        <tr>
+          <th>스키마</th>
+          <td class="stack">Flyway 10<br>+ flyway-database-postgresql</td>
+          <td class="why">V1–V5. 애플리케이션이 뜨면서 스스로 적용하고, Hibernate 는 <code>ddl-auto: validate</code> 로 확인만 한다.</td>
+        </tr>
+        <tr>
+          <th>문서 파싱</th>
+          <td class="stack">Apache PDFBox 3.0.8<br>Apache POI (ooxml) 5.5.1</td>
+          <td class="why">PDF / DOCX / TXT → 정규화된 텍스트. <code>DocumentParserFactory</code> 가 확장자로 고른다.</td>
+        </tr>
+        <tr>
+          <th>AI 호출</th>
+          <td class="stack">Gemini REST (JDK HttpClient)<br>anthropic-java 2.34.0</td>
+          <td class="why">분석 · 퀴즈 · 챗봇 · 오답요약 넷 다 인터페이스 하나씩. 공급자는 <code>ai.provider</code> 로 고른다.</td>
+        </tr>
+        <tr>
+          <th>파일 저장</th>
+          <td class="stack"><code>StorageService</code> → LocalStorageService</td>
+          <td class="why">인터페이스로 끊어 뒀다. EC2 의 도커 볼륨 <code>uploads</code> 에 쓰고, S3 로 갈아끼울 자리를 남겼다.</td>
+        </tr>
+        <tr>
+          <th>배치</th>
+          <td class="stack">@Scheduled (Spring)</td>
+          <td class="why">매일 04:00 (Asia/Seoul) 만료 세션과 그 파일을 200건씩 지운다.</td>
+        </tr>
+        <tr>
+          <th>헬스체크</th>
+          <td class="stack">Spring Boot Actuator</td>
+          <td class="why"><code>/actuator/health</code> 만 연다. DB 지표를 포함해, 200 만 보고 살았다고 판단하지 않는다.</td>
+        </tr>
+        <tr>
+          <th>테스트</th>
+          <td class="stack">JUnit 5 · MockMvc · H2<br>Vitest (프론트)</td>
+          <td class="why">백엔드 테스트가 외부 DB 없이 돈다. AI 는 <code>Fake*Client</code> 로 대체.</td>
+        </tr>
+        <tr>
+          <th>패키징</th>
+          <td class="stack">Docker multi-stage<br>Compose</td>
+          <td class="why">백엔드는 JDK 빌드 → JRE 실행, 프론트는 deps → build → standalone runner. 둘 다 non-root.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section id="request">
+  <div class="sec-head"><span class="sec-num">03</span><h2>요청 하나가 지나가는 길</h2></div>
+  <div class="prose">
+    <p>
+      화면 코드의 <code>fetch("/api/…")</code> 부터 SQL 까지, 모든 요청이 같은 계단을 밟는다.
+      AI 가 필요한 요청만 아래로 한 번 더 내려간다.
+    </p>
+  </div>
+
+  <figure>
+    <svg viewBox="0 0 1160 386" role="img"
+         aria-label="화면 코드의 fetch가 Next 라우트 핸들러, Spring 컨트롤러, 서비스, 리포지토리를 거쳐 PostgreSQL에 닿고, 서비스에서만 AI 클라이언트를 통해 외부 모델을 호출한다">
+      <defs>
+        <marker id="m2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+        </marker>
+        <marker id="m2x" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" fill="var(--ext)"/>
+        </marker>
+      </defs>
+
+      <!-- 계단 -->
+      <rect class="box-brand" x="12" y="66" width="168" height="80" rx="9"/>
+      <text class="t-title" x="30" y="96">화면 코드</text>
+      <text class="t-code"  x="30" y="118">lib/api/client.ts</text>
+      <text class="t-dim"   x="30" y="138">React 19 · zustand</text>
+
+      <rect class="box-brand" x="202" y="66" width="168" height="80" rx="9"/>
+      <text class="t-title" x="220" y="96">Route Handler</text>
+      <text class="t-code"  x="220" y="118">app/api/[...path]</text>
+      <text class="t-dim"   x="220" y="138">Next 서버 · 런타임</text>
+
+      <rect class="box" x="392" y="66" width="168" height="80" rx="9"/>
+      <text class="t-title" x="410" y="96">Controller</text>
+      <text class="t-code"  x="410" y="118">@RestController</text>
+      <text class="t-dim"   x="410" y="138">DTO · @Valid</text>
+
+      <rect class="box" x="582" y="66" width="168" height="80" rx="9"/>
+      <text class="t-title" x="600" y="96">Service</text>
+      <text class="t-sub"   x="600" y="118">도메인 규칙</text>
+      <text class="t-dim"   x="600" y="138">Planner · Validator</text>
+
+      <rect class="box" x="772" y="66" width="168" height="80" rx="9"/>
+      <text class="t-title" x="790" y="96">Repository</text>
+      <text class="t-code"  x="790" y="118">Spring Data JPA</text>
+      <text class="t-dim"   x="790" y="138">@Transactional</text>
+
+      <rect class="box-soft" x="962" y="66" width="168" height="80" rx="9"/>
+      <text class="t-title" x="980" y="96">PostgreSQL</text>
+      <text class="t-code"  x="980" y="118">16-alpine</text>
+      <text class="t-dim"   x="980" y="138">EC2 안</text>
+
+      <line class="edge-ink" x1="180" y1="106" x2="196" y2="106" marker-end="url(#m2)"/>
+      <line class="edge-ink" x1="370" y1="106" x2="386" y2="106" marker-end="url(#m2)"/>
+      <line class="edge-ink" x1="560" y1="106" x2="576" y2="106" marker-end="url(#m2)"/>
+      <line class="edge-ink" x1="750" y1="106" x2="766" y2="106" marker-end="url(#m2)"/>
+      <line class="edge-ink" x1="940" y1="106" x2="956" y2="106" marker-end="url(#m2)"/>
+
+      <text class="t-edge" x="191" y="46" text-anchor="middle">fetch</text>
+      <text class="t-edge" x="381" y="46" text-anchor="middle">프록시</text>
+      <text class="t-edge" x="571" y="46" text-anchor="middle">코드 검증</text>
+      <text class="t-edge" x="761" y="46" text-anchor="middle">엔티티</text>
+      <text class="t-edge" x="951" y="46" text-anchor="middle">SQL</text>
+
+      <!-- 실패 경로 -->
+      <line class="edge-dash" x1="476" y1="146" x2="476" y2="218" marker-end="url(#m2)"/>
+      <text class="t-edge" x="488" y="190">실패 시</text>
+      <rect class="box-soft" x="340" y="224" width="252" height="80" rx="9"/>
+      <text class="t-title" x="360" y="254">전역 예외 처리</text>
+      <text class="t-code"  x="360" y="276">@RestControllerAdvice</text>
+      <text class="t-code-dim" x="360" y="296">ErrorCode → {code, message}</text>
+
+      <!-- AI 경로 -->
+      <line class="edge-ext" x1="666" y1="146" x2="666" y2="218" marker-end="url(#m2x)"/>
+      <text class="t-ext" x="678" y="190">AI 필요 시</text>
+      <rect class="box-ext" x="640" y="224" width="252" height="80" rx="9"/>
+      <text class="t-title" x="660" y="254" fill="var(--ext)">AI Client</text>
+      <text class="t-sub"   x="660" y="276" fill="var(--ext)">분석 · 퀴즈 · 챗봇 · 요약</text>
+      <text class="t-dim"   x="660" y="296">타임아웃 45~180초 · 재시도 2회</text>
+
+      <line class="edge-ext" x1="892" y1="264" x2="926" y2="264" marker-end="url(#m2x)"/>
+      <rect class="box-ext" x="932" y="224" width="198" height="80" rx="9"/>
+      <text class="t-title" x="952" y="254" fill="var(--ext)">외부 모델</text>
+      <text class="t-sub"   x="952" y="276" fill="var(--ext)">Gemini / Claude</text>
+      <text class="t-dim"   x="952" y="296">EC2 밖</text>
+
+      <text class="t-dim" x="12" y="352">AI 를 부르는 서비스에는 @Transactional 이 없다 — 수십 초 동안 DB 커넥션을 잡지 않기 위해서다.</text>
+      <text class="t-dim" x="12" y="372">상태 변경은 AnalysisStateWriter · DocumentParseStateWriter 의 짧은 트랜잭션으로 나눈다.</text>
+    </svg>
+    <figcaption>
+      <b>트랜잭션 경계가 AI 호출을 피해 간다.</b> 긴 외부 호출을 트랜잭션 안에 두면 커넥션 풀
+      (기본 10) 이 금방 마른다. 그래서 오래 걸리는 서비스는 트랜잭션 없이 흐르고, 상태를 바꾸는
+      순간에만 별도 Writer 로 짧게 커밋한다.
+    </figcaption>
+  </figure>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section id="pipeline">
+  <div class="sec-head"><span class="sec-num">04</span><h2>도메인 파이프라인 — 코드에서 오답 요약까지</h2></div>
+  <div class="prose">
+    <p>
+      최상위 도메인은 <code>User</code> 가 아니라 <code>StudySession</code> 이다. 세션 코드가
+      발급되면 그 아래로 자료 → Topic → 계획 → 퀴즈 → 오답이 차례로 매달린다.
+      네 지점에서만 AI 를 부른다.
+    </p>
+  </div>
+
+  <figure>
+    <div class="legend">
+      <span class="ink"><i></i>서버 계산 · 저장</span>
+      <span class="ext"><i></i>AI 호출</span>
+    </div>
+    <svg viewBox="0 0 1080 478" role="img"
+         aria-label="세션에서 문서 업로드, 텍스트 추출, AI 토픽 생성, 커리큘럼 배분, 퀴즈 생성, 채점, 오답 요약으로 이어지는 파이프라인과 곁가지 학습 챗봇">
+      <defs>
+        <marker id="m3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+        </marker>
+        <marker id="m3x" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" fill="var(--ext)"/>
+        </marker>
+      </defs>
+
+      <!-- 윗줄 -->
+      <rect class="box-brand" x="16" y="70" width="196" height="92" rx="9"/>
+      <text class="t-title" x="34" y="100">StudySession</text>
+      <text class="t-sub"   x="34" y="122">8자리 코드 · 시험 일시</text>
+      <text class="t-dim"   x="34" y="142">SecureRandom · 중복 재시도</text>
+
+      <rect class="box" x="300" y="70" width="196" height="92" rx="9"/>
+      <text class="t-title" x="318" y="100">Document</text>
+      <text class="t-code"  x="318" y="122">PDF · DOCX · TXT</text>
+      <text class="t-dim"   x="318" y="142">최대 10개 · 각 20MB</text>
+
+      <rect class="box" x="584" y="70" width="196" height="92" rx="9"/>
+      <text class="t-title" x="602" y="100">추출 텍스트</text>
+      <text class="t-code"  x="602" y="122">PDFBox · POI</text>
+      <text class="t-dim"   x="602" y="142">8,000자 조각 · 300 겹침</text>
+
+      <rect class="box" x="868" y="70" width="196" height="92" rx="9"/>
+      <text class="t-title" x="886" y="100">Topic</text>
+      <text class="t-sub"   x="886" y="122">중요도 · 예상 시간</text>
+      <text class="t-dim"   x="886" y="142">최대 30개</text>
+
+      <line class="edge-ink" x1="216" y1="116" x2="294" y2="116" marker-end="url(#m3)"/>
+      <text class="t-edge" x="256" y="100" text-anchor="middle">업로드</text>
+      <line class="edge-ink" x1="500" y1="116" x2="578" y2="116" marker-end="url(#m3)"/>
+      <text class="t-edge" x="540" y="100" text-anchor="middle">텍스트 추출</text>
+      <line class="edge-ext" x1="784" y1="116" x2="862" y2="116" marker-end="url(#m3x)"/>
+      <text class="t-ext" x="824" y="100" text-anchor="middle">AI 분석</text>
+
+      <!-- 줄 바꿈 연결 -->
+      <line class="edge-ink" x1="966" y1="162" x2="966" y2="226" marker-end="url(#m3)"/>
+      <text class="t-edge" x="954" y="198" text-anchor="end">남은 시간에 맞춰 배분</text>
+
+      <!-- 아랫줄 (오른쪽 → 왼쪽) -->
+      <rect class="box-brand" x="868" y="232" width="196" height="104" rx="9"/>
+      <text class="t-title" x="886" y="262">Curriculum</text>
+      <text class="t-sub"   x="886" y="284">StudyStep 순서 · 배정시간</text>
+      <text class="t-code-dim" x="886" y="306">CurriculumPlanner</text>
+      <text class="t-dim"   x="886" y="326">완료마다 재조정</text>
+
+      <rect class="box" x="584" y="232" width="196" height="104" rx="9"/>
+      <text class="t-title" x="602" y="262">Quiz</text>
+      <text class="t-sub"   x="602" y="284">4지선다 · 해설 · 난이도</text>
+      <text class="t-dim"   x="602" y="306">Topic 당 5문항 · 회차</text>
+      <text class="t-dim"   x="602" y="326">근거 자료 20,000자</text>
+
+      <rect class="box" x="300" y="232" width="196" height="104" rx="9"/>
+      <text class="t-title" x="318" y="262">QuizResult</text>
+      <text class="t-sub"   x="318" y="284">선택 · 정오 · 응답시각</text>
+      <text class="t-dim"   x="318" y="306">서버 채점</text>
+
+      <rect class="box" x="16" y="232" width="196" height="104" rx="9"/>
+      <text class="t-title" x="34" y="262">오답 요약</text>
+      <text class="t-code"  x="34" y="284">WrongAnswerSummary</text>
+      <text class="t-dim"   x="34" y="306">Topic 별 복습 우선순위</text>
+      <text class="t-dim"   x="34" y="326">jsonb 스냅샷</text>
+
+      <line class="edge-ext" x1="862" y1="284" x2="786" y2="284" marker-end="url(#m3x)"/>
+      <text class="t-ext" x="824" y="268" text-anchor="middle">문항 생성</text>
+      <line class="edge-ink" x1="578" y1="284" x2="502" y2="284" marker-end="url(#m3)"/>
+      <text class="t-edge" x="540" y="268" text-anchor="middle">채점</text>
+      <line class="edge-ext" x1="294" y1="284" x2="218" y2="284" marker-end="url(#m3x)"/>
+      <text class="t-ext" x="256" y="268" text-anchor="middle">AI 요약</text>
+
+      <!-- 곁가지 -->
+      <line class="edge-dash" x1="682" y1="336" x2="682" y2="380" marker-end="url(#m3)"/>
+      <text class="t-edge" x="694" y="364">학습 중 언제든</text>
+      <rect class="box-ext" x="300" y="386" width="480" height="68" rx="9"/>
+      <text class="t-title" x="320" y="414" fill="var(--ext)">학습 챗봇</text>
+      <text class="t-sub"   x="320" y="438" fill="var(--ext)">최근 8턴 + 자료 6,000자 · 45초 타임아웃 · ChatMessage 로 보관</text>
+    </svg>
+    <figcaption>
+      <b>AI 를 부르는 곳은 네 군데뿐이다</b> — Topic 분석, 퀴즈 생성, 오답 요약, 챗봇. 나머지는
+      전부 서버 계산이다. 특히 <b>시간 배분은 AI 가 하지 않는다</b>: 분석은 자료 전체의 Topic 을
+      만들고, 남은 시간에 맞춘 취사선택은 <code>CurriculumPlanner</code> 의 결정론적 규칙이 한다.
+      그래서 Topic 예상시간 합이 남은 시간을 넘어도 정상이다.
+    </figcaption>
+  </figure>
+
+  <div class="note">
+    <b>자료가 없어도 굴러간다.</b> 업로드 없이 시험 범위만 적으면 <code>source_type</code> 이
+    일반지식 모드로 잡히고, 조각 분석 대신 범위 텍스트만으로 Topic 을 만든다(V2 마이그레이션).
+    파이프라인의 나머지 구간은 그대로다.
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section id="ai">
+  <div class="sec-head"><span class="sec-num">05</span><h2>AI 경계 — 인터페이스 하나, 구현 넷</h2></div>
+  <div class="prose">
+    <p>
+      도메인 코드는 공급자를 모른다. 어떤 구현이 꽂힐지는 기동할 때 <code>@Bean</code> 이
+      설정값을 보고 한 번 정한다. 분석 · 퀴즈 · 챗봇 · 오답요약이 각각 같은 모양을 가진다.
+    </p>
+  </div>
+
+  <figure>
+    <svg viewBox="0 0 1000 366" role="img"
+         aria-label="서비스는 AiAnalysisClient 인터페이스만 알고, 기동 시 설정에 따라 Gemini, Claude, Mock, Unavailable 네 구현 중 하나가 주입된다">
+      <defs>
+        <marker id="m4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <rect class="box-brand" x="150" y="14" width="700" height="72" rx="9"/>
+      <text class="t-title" x="172" y="42">AI 를 쓰는 서비스 넷</text>
+      <text class="t-code"  x="172" y="64">AnalysisService · QuizGenerationService · ChatService · WrongAnswerSummaryService</text>
+
+      <line class="edge-ink" x1="500" y1="86" x2="500" y2="124" marker-end="url(#m4)"/>
+      <text class="t-edge" x="512" y="110">인터페이스에만 의존</text>
+
+      <rect class="bound" x="300" y="130" width="400" height="60" rx="9"/>
+      <text class="t-title" x="324" y="156">AiAnalysisClient</text>
+      <text class="t-dim"   x="324" y="177">interface — 퀴즈 · 챗봇 · 오답요약도 같은 모양</text>
+
+      <line class="edge-dash" x1="500" y1="190" x2="500" y2="214"/>
+      <line class="edge-dash" x1="128" y1="214" x2="872" y2="214"/>
+      <text class="t-brand" x="514" y="234">AiClientConfig 의 @Bean 이 기동 시 한 번 고른다</text>
+
+      <line class="edge-dash" x1="128" y1="214" x2="128" y2="250" marker-end="url(#m4)"/>
+      <line class="edge-dash" x1="376" y1="214" x2="376" y2="250" marker-end="url(#m4)"/>
+      <line class="edge-dash" x1="624" y1="214" x2="624" y2="250" marker-end="url(#m4)"/>
+      <line class="edge-dash" x1="872" y1="214" x2="872" y2="250" marker-end="url(#m4)"/>
+
+      <rect class="box-ext" x="28" y="256" width="200" height="88" rx="9"/>
+      <text class="t-title" x="48" y="284" fill="var(--ext)">Gemini</text>
+      <text class="t-code"  x="48" y="306" fill="var(--ext)">GeminiAnalysisClient</text>
+      <text class="t-dim"   x="48" y="326">ai.provider=gemini · 기본</text>
+
+      <rect class="box-ext" x="276" y="256" width="200" height="88" rx="9"/>
+      <text class="t-title" x="296" y="284" fill="var(--ext)">Claude</text>
+      <text class="t-code"  x="296" y="306" fill="var(--ext)">ClaudeAnalysisClient</text>
+      <text class="t-dim"   x="296" y="326">ai.provider=anthropic</text>
+
+      <rect class="box-soft" x="524" y="256" width="200" height="88" rx="9"/>
+      <text class="t-title" x="544" y="284">Mock</text>
+      <text class="t-code"  x="544" y="306">MockAiAnalysisClient</text>
+      <text class="t-dim"   x="544" y="326">ai.mode=mock · 개발 기본</text>
+
+      <rect class="box-soft" x="772" y="256" width="200" height="88" rx="9"/>
+      <text class="t-title" x="792" y="284">Unavailable</text>
+      <text class="t-sub"   x="792" y="306">요청 시점에만 실패</text>
+      <text class="t-dim"   x="792" y="326">API 키가 비었을 때</text>
+    </svg>
+    <figcaption>
+      <b>기본값이 <code>mock</code> 인 것은 의도다.</b> 분석은 자료 조각 수만큼 모델을 부르고,
+      챗봇과 “새 퀴즈 만들기”는 화면을 한 번 확인하는 동안에도 여러 번 눌린다. 개발에서 실수로
+      과금되는 것보다 실수로 꺼져 있는 편이 낫다 — EC2 에서는 컴포즈가 <code>LLM_MODE=gemini</code> 를
+      넣는다. 키가 없을 때 기동을 막지 않고 <b>요청 시점에만</b> 실패시키는 것도 같은 이유다.
+    </figcaption>
+  </figure>
+
+  <div class="cards">
+    <div class="card">
+      <span class="tag">응답 신뢰</span>
+      <h4>모델 응답을 그대로 믿지 않는다</h4>
+      <p><code>AiTopicResponseValidator</code> · <code>AiQuizResponseValidator</code> 가 형식과 값을 검사한 뒤에야 엔티티가 된다. 정답 인덱스 범위, 선택지 개수, 빈 문자열이 여기서 걸린다.</p>
+    </div>
+    <div class="card">
+      <span class="tag">재시도</span>
+      <h4>연결 오류 · 429 · 5xx 에만</h4>
+      <p>응답 형식이 어긋난 것은 재시도하지 않는다. 같은 프롬프트로 다시 불러도 같은 모양이 올 가능성이 크고, 그동안 사용자는 계속 기다린다.</p>
+    </div>
+    <div class="card">
+      <span class="tag">프롬프트</span>
+      <h4>도메인별 Prompts 클래스</h4>
+      <p><code>AnalysisPrompts</code> · <code>QuizPrompts</code> · <code>ChatPrompts</code> · <code>WrongAnswerSummaryPrompts</code>. 프롬프트가 코드 여기저기 흩어지지 않는다.</p>
+    </div>
+    <div class="card">
+      <span class="tag">비용</span>
+      <h4>보내는 양에 상한을 둔다</h4>
+      <p>퀴즈 20,000자 · 오답요약 Topic 당 8,000자 · 챗봇 6,000자. 매 요청마다 문서 전체를 다시 보내지 않는다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section id="progress">
+  <div class="sec-head"><span class="sec-num">06</span><h2>느린 작업을 화면에 보여주는 법</h2></div>
+  <div class="prose">
+    <p>
+      분석은 한 번의 동기 요청 안에서 조각 수만큼 모델을 부른다. 수십 초가 걸린다. 화면이 가짜
+      타이머를 돌리는 대신 <b>지금 몇 번째 조각을 읽는 중인지</b> 보여줄 수 있게, 진행도를 따로 뺐다.
+    </p>
+  </div>
+
+  <figure>
+    <svg viewBox="0 0 960 300" role="img"
+         aria-label="분석 화면이 분석 요청을 기다리는 동안 별도의 진행률 요청을 폴링하고, 백엔드는 메모리 트래커에 조각 진행도를 기록해 그 요청에 답한다">
+      <defs>
+        <marker id="m5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <rect class="box-brand" x="16" y="60" width="176" height="180" rx="9"/>
+      <text class="t-title" x="36" y="92">분석 화면</text>
+      <text class="t-code"  x="36" y="114">app/analysis</text>
+      <text class="t-dim"   x="36" y="152">요청 하나는 기다리고,</text>
+      <text class="t-dim"   x="36" y="172">다른 하나로 진행도를 묻는다</text>
+
+      <rect class="bound" x="288" y="18" width="656" height="264" rx="12"/>
+      <text class="t-dim" x="306" y="42">backend · 단일 인스턴스 전제</text>
+
+      <rect class="box" x="320" y="62" width="248" height="86" rx="9"/>
+      <text class="t-title" x="340" y="92">AnalysisService</text>
+      <text class="t-sub"   x="340" y="114">조각별 1차 분석 → 통합</text>
+      <text class="t-dim"   x="340" y="134">@Transactional 없음</text>
+
+      <rect class="box-soft" x="664" y="62" width="248" height="86" rx="9"/>
+      <text class="t-title" x="684" y="92">진행률 트래커</text>
+      <text class="t-code"  x="684" y="114">ConcurrentHashMap</text>
+      <text class="t-dim"   x="684" y="134">메모리 · PREPARING → …</text>
+
+      <rect class="box" x="320" y="190" width="248" height="76" rx="9"/>
+      <text class="t-title" x="340" y="220">진행률 조회 API</text>
+      <text class="t-sub"   x="340" y="242">phase · 완료조각 / 전체 · %</text>
+
+      <line class="edge-ink" x1="192" y1="102" x2="314" y2="102" marker-end="url(#m5)"/>
+      <text class="t-edge" x="196" y="88">분석 요청 (동기)</text>
+      <text class="t-dim"  x="196" y="132">응답까지 수십 초</text>
+
+      <line class="edge-ink" x1="568" y1="105" x2="658" y2="105" marker-end="url(#m5)"/>
+      <text class="t-edge" x="613" y="92" text-anchor="middle">조각마다 기록</text>
+
+      <line class="edge-ink" x1="192" y1="228" x2="314" y2="228" marker-end="url(#m5)"/>
+      <text class="t-edge" x="196" y="214">진행률 폴링</text>
+
+      <path class="edge-ink" d="M568 228 L620 228 L620 148" marker-end="url(#m5)"/>
+      <text class="t-edge" x="586" y="216">읽기</text>
+    </svg>
+    <figcaption>
+      진행도는 DB 에 두지 않는다 — 다시 만들 수 있는 일시 상태이고, 서버가 재시작되면 분석 자체가
+      끊기므로 함께 사라지는 것이 맞다. <b>수평 확장의 유일한 걸림돌이 여기다.</b> 진행도가 인스턴스
+      메모리에 있으므로 EC2 를 두 대로 늘리면 폴링이 엉뚱한 인스턴스에 닿을 수 있다. 그때는 이
+      <code>Map</code> 하나를 Redis 같은 공유 저장소로 옮기면 된다 — 나머지 코드는 그대로다.
+    </figcaption>
+  </figure>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section id="data">
+  <div class="sec-head"><span class="sec-num">07</span><h2>데이터 — 테이블 10개, 뿌리는 하나</h2></div>
+  <div class="prose">
+    <p>
+      모든 행이 결국 <code>study_sessions.id</code> 에 매달린다. 세션이 만료되면 그 아래가 통째로
+      사라지고, EC2 볼륨의 원본 파일도 함께 지워진다.
+    </p>
+  </div>
+
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>테이블</th><th>담는 것</th><th>눈여겨볼 컬럼</th></tr></thead>
+      <tbody>
+        <tr><th>study_sessions</th><td class="why">8자리 코드, 시험 일시, 남은 학습시간, 만료일</td><td class="stack">session_code(8) · expires_at · source_type · exam_scope</td></tr>
+        <tr><th>documents</th><td class="why">업로드 원본과 추출 텍스트</td><td class="stack">storage_path · extracted_text · status · character_count</td></tr>
+        <tr><th>study_contexts</th><td class="why">교수 강조 · 약한 부분 · 족보 · 필수 범위</td><td class="stack">professor_emphasis · weak_areas · past_exam_info</td></tr>
+        <tr><th>topics</th><td class="why">AI 가 만든 학습 주제</td><td class="stack">key_points(jsonb) · importance · *_matched 4개 플래그</td></tr>
+        <tr><th>curriculums</th><td class="why">계획 한 벌</td><td class="stack">initial_remaining_minutes · total_allocated_minutes</td></tr>
+        <tr><th>study_steps</th><td class="why">순서가 있는 학습 단계</td><td class="stack">allocated_minutes · actual_study_minutes · skip_reason · priority_reasons(jsonb)</td></tr>
+        <tr><th>quizzes</th><td class="why">4지선다 문항</td><td class="stack">options(jsonb) · correct_index · round · source_document_ids(jsonb)</td></tr>
+        <tr><th>quiz_results</th><td class="why">답안과 채점</td><td class="stack">selected_index · is_correct · answered_at</td></tr>
+        <tr><th>wrong_answer_summaries</th><td class="why">오답 기반 복습 요약</td><td class="stack">topic_reviews(jsonb) · source_latest_answered_at</td></tr>
+        <tr><th>chat_messages</th><td class="why">학습 챗봇 대화</td><td class="stack">role · message_order (V4 에서 추가)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>스키마가 바뀌는 경로는 하나뿐이다</h3>
+  <div class="prose">
+    <p>
+      마이그레이션은 <code>backend/src/main/resources/db/migration</code> 에만 둔다.
+      백엔드가 기동하면서 Flyway 가 먼저 적용하고, 그다음 Hibernate 가
+      <code>ddl-auto: validate</code> 로 엔티티와 맞는지 검사한다. 두 겹인 이유 —
+      마이그레이션 파일을 빠뜨리면 Flyway 는 아무 불평 없이 성공한다. 어긋났다는 사실을
+      알려 주는 것은 뒤의 검증뿐이고, 그것도 <b>EC2 가 아니라 내 컴퓨터에서</b> 알려 준다.
+    </p>
+    <ul class="tight">
+      <li><code>V1</code> 초기 스키마 &nbsp;·&nbsp; <code>V2</code> 일반지식 모드 &nbsp;·&nbsp; <code>V3</code> 챗봇 &nbsp;·&nbsp; <code>V4</code> 대화 순서 &nbsp;·&nbsp; <code>V5</code> 퀴즈 프롬프트 잔여 텍스트 정리</li>
+      <li><code>baseline-on-migrate</code> — Flyway 도입 전에 손으로 만든 DB 도 V2 부터 이어 붙는다.</li>
+      <li>운영 프로파일은 <code>flyway.clean</code> 을 아예 막아 둔다.</li>
+    </ul>
+  </div>
+
+  <div class="note warn">
+    <b>예전 방식이 실제로 죽였던 것.</b> 컴포즈의 <code>initdb</code> 로 <code>schema.sql</code> 을
+    넣던 시절에는 <b>빈 볼륨으로 처음 뜰 때만</b> 동작했다. 데이터가 있는 DB 에는 아무 일도
+    일어나지 않아, 사람이 EC2 에 들어가 <code>psql</code> 로 먼저 적용해야 했고 그 순서를 한 번
+    틀리면 새 이미지가 기동 중 죽었다. 지금 <code>docs/schema.sql</code> 은 참고용이다.
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section id="ops">
+  <div class="sec-head"><span class="sec-num">08</span><h2>EC2 위에서의 기동과 운영</h2></div>
+  <div class="prose">
+    <p>
+      배포는 인스턴스에 들어가 <code>git pull</code> 후 <code>docker compose up -d --build</code>
+      한 줄이다. 필요한 것은 저장소 루트의 <code>.env</code> 하나뿐이다.
+    </p>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <span class="tag">인스턴스</span>
+      <h4>t3.small 이상 · EBS 20GB</h4>
+      <p>t3.micro 에서는 프론트 빌드가 메모리 부족으로 죽는다. 그런 경우 다른 곳에서 이미지를 만들어 ECR 에 올리고, EC2 는 받아 쓰기만 한다.</p>
+    </div>
+    <div class="card">
+      <span class="tag">보안 그룹</span>
+      <h4>인바운드 80 과 22 만</h4>
+      <p>백엔드 8080 과 DB 5432 는 컴포즈 내부 네트워크에만 붙어 있어 그룹에 규칙을 더할 필요가 없다. 실제로 밖에서 안 열리는지 확인 목록에 넣어 뒀다.</p>
+    </div>
+    <div class="card">
+      <span class="tag">순서</span>
+      <h4>db → backend → frontend</h4>
+      <p>각 단계가 <code>condition: service_healthy</code> 로 묶여 있다. DB 는 <code>pg_isready</code>, 백엔드는 <code>/actuator/health</code>. 없으면 첫 기동에서 연결 실패로 죽는다.</p>
+    </div>
+    <div class="card">
+      <span class="tag">기동 유예</span>
+      <h4>start_period 120초</h4>
+      <p>첫 기동에는 마이그레이션이 함께 돈다. 작은 인스턴스에서는 JVM 기동만으로 30초를 넘긴다. 이 구간의 실패는 재시도로 세지 않는다.</p>
+    </div>
+    <div class="card">
+      <span class="tag">시간대</span>
+      <h4>Asia/Seoul 을 세 겹으로</h4>
+      <p><code>app.timezone</code> · 컨테이너 <code>TZ</code> · DB <code>TZ</code>. EC2 기본은 UTC 라, 두지 않으면 “남은 시간”이 9시간 부풀려진다.</p>
+    </div>
+    <div class="card">
+      <span class="tag">데이터</span>
+      <h4>볼륨 둘은 재배포에도 남는다</h4>
+      <p><code>docker compose down</code> 으로는 지워지지 않는다. 다만 <code>down -v</code> 는 <code>db-data</code> 와 <code>uploads</code> 를 <b>지운다</b> — 사용자 데이터가 사라진다.</p>
+    </div>
+    <div class="card">
+      <span class="tag">보존</span>
+      <h4>매일 04:00 정리</h4>
+      <p>마지막 접근 후 30일. 조회에 성공할 때마다 연장된다. 만료분은 200건씩 지우고, 볼륨의 파일도 함께 지운다.</p>
+    </div>
+    <div class="card">
+      <span class="tag">비밀</span>
+      <h4>키는 이미지에 넣지 않는다</h4>
+      <p>인스턴스의 <code>.env</code> → 컴포즈 환경변수 → 프로세스. 로그와 예외 메시지에도 키를 넣지 않는다. 운영 프로파일은 <code>.env</code> import 자체를 끈다.</p>
+    </div>
+    <div class="card">
+      <span class="tag">로그</span>
+      <h4>운영은 root WARN</h4>
+      <p>개발 기본값 DEBUG 를 그대로 올리면 로그 비용과 노이즈가 함께 커진다. 애플리케이션 패키지만 INFO.</p>
+    </div>
+  </div>
+
+  <h3>배포 후 확인 순서</h3>
+  <div class="prose">
+    <ul class="tight">
+      <li>세 컨테이너가 <code>healthy</code> 인가 — <code>docker compose ps</code></li>
+      <li>컨테이너 안의 시각이 KST 인가 — 이것부터 본다</li>
+      <li>화면이 열리는가, <code>/api/*</code> 가 프록시되는가</li>
+      <li>인스턴스 밖에서 <code>8080</code> 이 <b>안</b> 열리는가</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section id="seams">
+  <div class="sec-head"><span class="sec-num">09</span><h2>바꿔 끼울 수 있게 남겨 둔 자리</h2></div>
+  <div class="prose">
+    <p>지금은 단순하게 두되, 늘어날 때 어디를 건드릴지 미리 끊어 둔 이음매들이다.</p>
+  </div>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>이음매</th><th>지금</th><th>바꿀 때</th></tr></thead>
+      <tbody>
+        <tr><th><code>StorageService</code></th><td class="stack">LocalStorageService → EC2 도커 볼륨</td><td class="why">S3 구현 추가. 도메인 코드는 인터페이스만 안다.</td></tr>
+        <tr><th><code>Ai*Client</code></th><td class="stack">Gemini (기본) / Claude / Mock</td><td class="why">공급자 추가는 구현 클래스 + Config 분기 한 줄.</td></tr>
+        <tr><th><code>AnalysisProgressTracker</code></th><td class="stack">인스턴스 메모리</td><td class="why">EC2 2대 이상이면 공유 저장소로.</td></tr>
+        <tr><th>분석 실행</th><td class="stack">동기 한 요청</td><td class="why">호출 흐름을 컨트롤러 밖에 둬서, 큐로 옮길 때 컨트롤러를 안 건드린다.</td></tr>
+        <tr><th>DB</th><td class="stack">같은 인스턴스의 컨테이너</td><td class="why">RDS 로 뺄 때 <code>DB_URL</code> 만 바꾼다. 볼륨과 헬스체크만 컴포즈에서 걷어내면 된다.</td></tr>
+        <tr><th>진입</th><td class="stack">EC2 보안 그룹 :80 직결</td><td class="why">ALB/CloudFront 를 앞에 세울 때 <code>forward-headers-strategy: framework</code> 가 이미 켜져 있다.</td></tr>
+        <tr><th>CORS</th><td class="stack">비활성 (같은 오리진)</td><td class="why">프론트를 다른 도메인에 올릴 때만 <code>CORS_ALLOWED_ORIGINS</code> 를 채운다.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  <span>내일까지 해야 하는데 · 시스템 도면</span>
+  <span>EC2 1대 · 컨테이너 3 · 볼륨 2</span>
+  <span>backend 11 controllers · 10 tables · 5 migrations</span>
+  <span>frontend 11 routes</span>
+</footer>
+
+</div>
+
+</body>
+</html>
